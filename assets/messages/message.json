@@ -1,8 +1,0 @@
-{
-  "name": "messages",
-  "version": "5.01",
-  "code_text1": "With our 2-Step Verification, you can rest assured that the election data is secure.\nTo access this option, you'll simply need to enter a unique five-digit code, adding\nan extra layer of protection to your election process. So whether you're accessing\nsensitive data or simply want to ensure the safety of election records, our\n2-Step Verification has got you covered.",
-  "make_sure": "Please ensure that all candidate information is accurate and complete before proceeding to the\nnext step. Once the nomination list is generated, no modifications i.e (updates, deletions, or additions)\ncan be made to the candidate data.",
-  "final_list": "Kindly select  the sequence of the category in which you prefer the categories to be \ndisplayed during the election.",
-  "re_result": "Are you sure you want to regenerate the result?\nRegenerating the result will overwrite the existing data.\n Are you certain you want to proceed?"
-}
