@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="Website Initial setup: Remove unused" />
+    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="96" />
+    <option name="cachedIndexableFilesCount" value="105" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -61,7 +61,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;#5 on webapp&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;webapp&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
@@ -121,6 +121,7 @@
       <workItem from="1770486327903" duration="686000" />
       <workItem from="1770487149833" duration="752000" />
       <workItem from="1770533379252" duration="244000" />
+      <workItem from="1770535847807" duration="31000" />
     </task>
     <task id="LOCAL-00001" summary="Website Initial setup: Remove unused">
       <option name="closed" value="true" />
@@ -130,7 +131,15 @@
       <option name="project" value="LOCAL" />
       <updated>1770533473902</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation.">
+      <option name="closed" value="true" />
+      <created>1770535856666</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1770535856666</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -138,6 +147,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Website Initial setup: Remove unused" />
-    <option name="LAST_COMMIT_MESSAGE" value="Website Initial setup: Remove unused" />
+    <MESSAGE value="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
   </component>
 </project>

@@ -91,10 +91,12 @@ function VerifyEmailContent() {
                 </p>
 
                 {status && (
-                    <Alert variant={status.type === 'error' ? "danger" : "success"}>
-                        {status.type === 'success' ? <CheckCircle2 size={16} /> :
+                    <Alert variant={status.type === 'error' ? "destructive" : "default"} className={status.type === 'success' ? 'border-green-500/50 bg-green-500/10' : ''}>
+                        {status.type === 'success' ? <CheckCircle2 size={16} className="text-green-600" /> :
                             <AlertCircle size={16} />}
-                        <AlertDescription className={"text-start text-destructive"}>{status.message}</AlertDescription>
+                        <AlertDescription className={status.type === 'error' ? "text-destructive" : "text-green-700"}>
+                            {status.message}
+                        </AlertDescription>
                     </Alert>
                 )}
             </CardContent>

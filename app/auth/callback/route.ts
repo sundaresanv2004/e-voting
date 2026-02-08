@@ -22,8 +22,19 @@ export async function GET(request: NextRequest) {
                 new URL(`/auth/verified?email=${encodeURIComponent(email || '')}&next=${encodeURIComponent(next)}`, request.url)
             )
         }
+
+        // If there's an error, redirect to error page with error details
+        if (error) {
+            const errorCode = error.code || 'verification_failed'
+            const errorMessage = encodeURIComponent(error.message)
+            return NextResponse.redirect(
+                new URL(`/auth/auth-code-error?error_code=${errorCode}&error_description=${errorMessage}`, request.url)
+            )
+        }
     }
 
-    // If there's an error or no code, redirect to login
-    return NextResponse.redirect(new URL('/auth/login?error=verification_failed', request.url))
+    // If there's no code, redirect to error page
+    return NextResponse.redirect(
+        new URL('/auth/auth-code-error?error=missing_code&error_description=Verification code is missing', request.url)
+    )
 }
