@@ -4,110 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/(root)/contact/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/(root)/layout.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/(root)/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/(root)/privacy/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/(root)/terms/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/landing/hero.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/legal/legal-layout.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/shared/back-button.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/shared/setTheme.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/ui/alert.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/ui/button.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/components/ui/theme-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/schemas/auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/schemas/contact.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/public/images/hero_image.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/E-Voting.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/E-Voting.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Installer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/connection_setup.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/date_time.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/dialogs.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/forgot_password.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/manage_database.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/order_category.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/snack_bar.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/theme.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/verification_dialog.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/window_actions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/functions/window_close.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/all_done.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/candidate_add.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/candidate_delete.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/candidate_edit.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/candidate_home.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/candidate_profile.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/category.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/connect_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/create_account.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/election_options.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/election_settings.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/home.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/login.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/menubar.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/settings.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/settings_options.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/start_menu.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/summary_view.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/vote_home.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/vote_login.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/pages/vote_options.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/files/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/files/check_installation.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/files/local_files_scr.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/files/manage_files.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/files/settings_file.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/auth.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/check_files.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/connect_firebase.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/firestore.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/firebase/realtime_db.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/user/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/user/code_verification.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/service/user/login_auth.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/default_setting.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/enc_data.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/file_path.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/Background-1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/Background-2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/Background-3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/Background-4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/content_image-1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/verification_img.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/messages/all_done.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/messages/error.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/messages/firebase_project.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/messages/message.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/messages/warning.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vote.py" beforeDir="false" />
-    </list>
+    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="Website Initial setup: Remove unused" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="89" />
+    <option name="cachedIndexableFilesCount" value="96" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -123,6 +27,16 @@
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/sundaresanv2004/e-voting.git&quot;,
     &quot;accountId&quot;: &quot;f9bc9436-28fb-455c-a459-711a2abe7ef3&quot;
+  },
+  &quot;recentNewPullRequestHead&quot;: {
+    &quot;server&quot;: {
+      &quot;useHttp&quot;: false,
+      &quot;host&quot;: &quot;github.com&quot;,
+      &quot;port&quot;: null,
+      &quot;suffix&quot;: null
+    },
+    &quot;owner&quot;: &quot;sundaresanv2004&quot;,
+    &quot;repository&quot;: &quot;e-voting&quot;
   }
 }</component>
   <component name="McpProjectServerCommands">
@@ -147,7 +61,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;webapp&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;#5 on webapp&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
@@ -206,10 +120,24 @@
       <workItem from="1770486217054" duration="101000" />
       <workItem from="1770486327903" duration="686000" />
       <workItem from="1770487149833" duration="752000" />
+      <workItem from="1770533379252" duration="244000" />
     </task>
+    <task id="LOCAL-00001" summary="Website Initial setup: Remove unused">
+      <option name="closed" value="true" />
+      <created>1770533473902</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1770533473902</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Website Initial setup: Remove unused" />
+    <option name="LAST_COMMIT_MESSAGE" value="Website Initial setup: Remove unused" />
   </component>
 </project>

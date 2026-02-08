@@ -46,7 +46,24 @@ function SignupForm() {
     async function onSubmit(data: SignupInput) {
         setError(null)
 
-        console.log("Submitting signup form", data)
+        startTransition(async () => {
+            try {
+                const formData = new FormData()
+                formData.append('email', data.email)
+                formData.append('password', data.password)
+                formData.append('name', data.name)
+
+                const { signUp } = await import('@/app/auth/actions')
+                const result = await signUp(formData)
+
+                if (!result.success && result.error) {
+                    setError(result.error)
+                }
+                // If successful, the action will redirect automatically
+            } catch (err) {
+                setError('An unexpected error occurred. Please try again.')
+            }
+        })
     }
 
     return (
@@ -70,16 +87,20 @@ function SignupForm() {
                     {error && (
                         <Alert variant="destructive">
                             <AlertCircle size={16} className="text-destructive" />
-                            <AlertDescription className="text-sm flex items-center space-x-1 text-destructive">
-                                {error}
-                                {error.includes("already registered") && (
-                                    <Link
-                                        href="/auth/login"
-                                        className="font-medium underline underline-offset-4 hover:text-destructive-foreground text-destructive"
-                                    >
-                                        Login instead
-                                    </Link>
-                                )}
+                            <AlertDescription className="text-sm text-destructive">
+                                <span>{error}</span>
+                                {(error.toLowerCase().includes("already registered") ||
+                                    error.toLowerCase().includes("already exists")) && (
+                                        <>
+                                            {" "}
+                                            <Link
+                                                href="/auth/login"
+                                                className="font-medium underline underline-offset-4 hover:text-destructive-foreground"
+                                            >
+                                                Login here
+                                            </Link>
+                                        </>
+                                    )}
                             </AlertDescription>
                         </Alert>
                     )}

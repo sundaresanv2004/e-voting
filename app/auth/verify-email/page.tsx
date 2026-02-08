@@ -35,7 +35,19 @@ function VerifyEmailContent() {
 
         setStatus(null)
         startTransition(async () => {
-            console.log("Resending email to", email)
+            try {
+                const { resendVerificationEmail } = await import('@/app/auth/actions')
+                const result = await resendVerificationEmail(email)
+
+                if (result.success) {
+                    setStatus({ type: 'success', message: "Verification email sent! Check your inbox." })
+                    setTimer(60) // Reset timer to 60 seconds after successful resend
+                } else {
+                    setStatus({ type: 'error', message: result.error || "Failed to send verification email." })
+                }
+            } catch (err) {
+                setStatus({ type: 'error', message: "An unexpected error occurred. Please try again." })
+            }
         })
     }
 
