@@ -1,18 +1,25 @@
 services:
   web:
     container_name: e-voting-app
+    # Local development: reads from .env file
+    # Production: environment variables are injected by the hosting platform
+    # NOTE: Remove or comment out 'env_file' in production if the platform doesn't support .env files
+    env_file:
+      - path: .env
+        required: false # Makes .env optional - won't fail if file doesn't exist
     build:
       context: .
       dockerfile: Dockerfile
       args:
         # Build-time variables (embedded in client bundle)
+        # These MUST be set as environment variables before running docker compose
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY}
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000" # Allow custom port via PORT env var, default to 3000
     environment:
       # Runtime environment variables
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       # Public variables (embedded in client bundle)
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY}
