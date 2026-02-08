@@ -1,5 +1,0 @@
-flet~=0.22.1
-pandas~=2.2.2
-pyrebase4~=4.8.0
-firebase-admin~=6.5.0
-numpy~=1.26.4

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app/(root)/contact/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/(root)/layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/(root)/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/(root)/privacy/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/(root)/terms/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/landing/hero.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/legal/legal-layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/shared/back-button.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/shared/setTheme.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/ui/alert.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/ui/button.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/ui/theme-provider.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/schemas/auth.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/schemas/contact.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/images/hero_image.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/E-Voting.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/E-Voting.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Installer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/connection_setup.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/date_time.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/dialogs.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/forgot_password.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/manage_database.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/order_category.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/snack_bar.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/theme.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/verification_dialog.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/window_actions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/functions/window_close.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/all_done.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/candidate_add.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/candidate_delete.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/candidate_edit.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/candidate_home.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/candidate_profile.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/category.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/connect_server.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/create_account.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/election_options.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/election_settings.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/home.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/login.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/menubar.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/settings.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/settings_options.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/start_menu.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/summary_view.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/vote_home.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/vote_login.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/vote_options.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/files/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/files/check_installation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/files/local_files_scr.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/files/manage_files.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/files/settings_file.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/auth.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/check_files.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/connect_firebase.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/firestore.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/firebase/realtime_db.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/user/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/user/code_verification.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/service/user/login_auth.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/default_setting.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/enc_data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/file_path.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/Background-1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/Background-2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/Background-3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/Background-4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/content_image-1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/verification_img.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/messages/all_done.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/messages/error.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/messages/firebase_project.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/messages/message.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/messages/warning.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vote.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="89" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;sundaresanv2004&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/sundaresanv2004/e-voting.git&quot;,
+    &quot;accountId&quot;: &quot;f9bc9436-28fb-455c-a459-711a2abe7ef3&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="39LrVT12chI17lyAKVJT4VvDUfu" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;webapp&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/sundar/WebstormProjects/e-voting/lib&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/sundar/WebstormProjects/e-voting/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/lib" />
+      <recent name="$PROJECT_DIR$/public" />
+      <recent name="$PROJECT_DIR$/components" />
+      <recent name="$PROJECT_DIR$/components/ui" />
+      <recent name="$PROJECT_DIR$/app" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/(root)" />
+    </key>
+  </component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.29346.242" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="" />
+      <created>1770486215798</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1770486215798</updated>
+      <workItem from="1770486217054" duration="101000" />
+      <workItem from="1770486327903" duration="686000" />
+      <workItem from="1770487149833" duration="752000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
