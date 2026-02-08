@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 export type AuthResult = {
     success: boolean
     error?: string
+    code?: string
     data?: any
 }
 
@@ -124,6 +125,22 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     })
 
     if (error) {
+        // Provide user-friendly error messages
+        // Note: We don't reveal if email exists for security reasons
+        if (error.message.toLowerCase().includes('invalid login credentials')) {
+            return {
+                success: false,
+                error: 'Invalid email or password. Please try again.',
+                code: 'INVALID_CREDENTIALS' // Generic - don't reveal if email exists
+            }
+        }
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+            return {
+                success: false,
+                error: 'Please verify your email before logging in. Check your inbox for the verification link.',
+                code: 'EMAIL_NOT_CONFIRMED'
+            }
+        }
         return { success: false, error: error.message }
     }
 
@@ -148,6 +165,35 @@ export async function signOut(): Promise<AuthResult> {
 
     redirect('/auth/login')
 }
+
+/**
+ * Sign in with Google OAuth
+ * Redirects to Google consent screen
+ */
+export async function signInWithGoogle(): Promise<AuthResult> {
+    const supabase = await createClient()
+    const headersList = await headers()
+    const origin = headersList.get('origin') || 'http://localhost:3000'
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: `${origin}/auth/callback`,
+        }
+    })
+
+    if (error) {
+        return { success: false, error: error.message }
+    }
+
+    // Redirect to Google OAuth consent screen
+    if (data.url) {
+        redirect(data.url)
+    }
+
+    return { success: true }
+}
+
 
 /**
  * Update user email (requires re-verification)

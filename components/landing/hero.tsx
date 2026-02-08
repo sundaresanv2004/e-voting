@@ -2,9 +2,9 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import {ChevronRight, Vote, Clock, ShieldCheck, BadgeCheck} from 'lucide-react';
-import {BackgroundRippleEffect} from "@/components/ui/background-ripple-effect"
-import {Button} from "@/components/ui/button"
+import { ChevronRight, Vote, Clock, ShieldCheck, BadgeCheck, LayoutDashboard } from 'lucide-react';
+import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
+import { Button } from "@/components/ui/button"
 
 export default function Hero() {
     return (
@@ -28,18 +28,18 @@ export default function Hero() {
                             "radial-gradient(ellipse 140% 100% at 50% 30%, black 0%, black 15%, rgba(0,0,0,0.95) 25%, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.7) 45%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.25) 75%, rgba(0,0,0,0.12) 85%, rgba(0,0,0,0.04) 93%, transparent 100%)",
                     }}
                 >
-                    <BackgroundRippleEffect rows={12} cols={24} cellSize={60}/>
+                    <BackgroundRippleEffect rows={12} cols={24} cellSize={60} />
                 </div>
                 <div className="light:block dark:hidden">
-                    <BackgroundRippleEffect rows={12} cols={24} cellSize={60}/>
+                    <BackgroundRippleEffect rows={12} cols={24} cellSize={60} />
                 </div>
             </div>
 
             <div
-                className="absolute inset-0 pointer-events-none bg-linear-to-t from-background via-transparent to-transparent opacity-50 dark:from-gray-950 dark:via-transparent dark:to-transparent dark:opacity-60"/>
+                className="absolute inset-0 pointer-events-none bg-linear-to-t from-background via-transparent to-transparent opacity-50 dark:from-gray-950 dark:via-transparent dark:to-transparent dark:opacity-60" />
 
             <div
-                className="absolute inset-0 pointer-events-none opacity-0 dark:opacity-40 bg-linear-to-br from-blue-500/10 via-transparent to-purple-500/10"/>
+                className="absolute inset-0 pointer-events-none opacity-0 dark:opacity-40 bg-linear-to-br from-blue-500/10 via-transparent to-purple-500/10" />
 
             {/* Main content container */}
             <div className="relative z-10 w-full max-w-7xl cursor-default mx-auto px-6 py-16 pointer-events-none">
@@ -48,7 +48,7 @@ export default function Hero() {
                     <div className="text-center lg:text-left space-y-8 pointer-events-auto">
                         <div
                             className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary/20 to-primary/10 dark:from-blue-500/25 dark:to-blue-600/15 border border-primary/40 dark:border-blue-500/50 rounded-full backdrop-blur-xl hover:backdrop-blur-2xl transition-all duration-300 hover:from-primary/25 hover:to-primary/15 dark:hover:from-blue-500/35 dark:hover:to-blue-600/25">
-                            <div className="w-2 h-2 bg-green-500 dark:bg-green-300 rounded-full animate-pulse"/>
+                            <div className="w-2 h-2 bg-green-500 dark:bg-green-300 rounded-full animate-pulse" />
                             <span className="text-xs font-semibold text-primary/90 dark:text-blue-300">Secure Digital Elections</span>
                         </div>
 
@@ -70,6 +70,7 @@ export default function Hero() {
                             colleges, and organizations.
                         </p>
 
+                        {/* Always show Dashboard and Vote - middleware handles auth */}
                         <div
                             className="flex flex-col sm:flex-row items-center lg:items-start lg:justify-start justify-center gap-4 pt-4">
                             <Button
@@ -77,7 +78,8 @@ export default function Hero() {
                                 size="lg"
                                 className="group"
                             >
-                                <Link href="/auth/login">
+                                <Link href="/dashboard">
+                                    <LayoutDashboard className="w-5 h-5" strokeWidth={2} />
                                     Dashboard
                                     <ChevronRight
                                         strokeWidth={2}
@@ -135,10 +137,10 @@ export default function Hero() {
                     <div className="hidden lg:flex items-center justify-center pointer-events-none">
                         <div className="relative w-full max-w-lg">
                             <div
-                                className="absolute -inset-24 bg-linear-to-br from-primary/30 via-primary/10 to-transparent dark:from-blue-500/40 dark:via-blue-600/20 dark:to-transparent rounded-full blur-3xl opacity-70 animate-pulse"/>
+                                className="absolute -inset-24 bg-linear-to-br from-primary/30 via-primary/10 to-transparent dark:from-blue-500/40 dark:via-blue-600/20 dark:to-transparent rounded-full blur-3xl opacity-70 animate-pulse" />
 
                             <div
-                                className="absolute -inset-12 bg-linear-to-tl from-accent/20 via-transparent to-primary/15 dark:from-cyan-500/30 dark:via-transparent dark:to-blue-500/25 rounded-full blur-2xl opacity-60 animate-pulse [animation-delay:1s]"/>
+                                className="absolute -inset-12 bg-linear-to-tl from-accent/20 via-transparent to-primary/15 dark:from-cyan-500/30 dark:via-transparent dark:to-blue-500/25 rounded-full blur-2xl opacity-60 animate-pulse [animation-delay:1s]" />
 
                             {/* Image */}
                             <div className="relative">

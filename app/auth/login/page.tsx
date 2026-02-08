@@ -38,7 +38,27 @@ function LoginForm() {
 
     async function onSubmit(data: LoginInput) {
         setError(null)
-        console.log("Submitting login form", data)
+
+        startTransition(async () => {
+            try {
+                const formData = new FormData()
+                formData.append('email', data.email)
+                formData.append('password', data.password)
+                if (data.redirectTo) {
+                    formData.append('next', data.redirectTo)
+                }
+
+                const { signIn } = await import('@/app/auth/actions')
+                const result = await signIn(formData)
+
+                if (!result.success) {
+                    setError(result.error || 'Login failed. Please try again.')
+                }
+                // On success, signIn action will redirect automatically
+            } catch (err) {
+                setError('An unexpected error occurred. Please try again.')
+            }
+        })
     }
 
     return (
@@ -62,7 +82,9 @@ function LoginForm() {
                     {error && (
                         <Alert variant="destructive">
                             <AlertCircle size={16} className="text-destructive" />
-                            <AlertDescription className="text-destructive">{error}</AlertDescription>
+                            <AlertDescription className="text-destructive">
+                                {error}
+                            </AlertDescription>
                         </Alert>
                     )}
 

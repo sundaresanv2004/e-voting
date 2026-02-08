@@ -48,17 +48,25 @@ export async function updateSession(request: NextRequest) {
 
     const user = data?.claims
 
-    // Optional: Add route protection logic here
-    // Example:
-    // if (
-    //   !user &&
-    //   !request.nextUrl.pathname.startsWith('/login') &&
-    //   !request.nextUrl.pathname.startsWith('/auth')
-    // ) {
-    //   const url = request.nextUrl.clone()
-    //   url.pathname = '/login'
-    //   return NextResponse.redirect(url)
-    // }
+    // Route protection logic
+    const path = request.nextUrl.pathname
+    const isAuthPage = path.startsWith('/auth/login') || path.startsWith('/auth/signup')
+    const isProtectedRoute = path.startsWith('/dashboard') || path.startsWith('/vote')
+
+    // Redirect authenticated users from auth pages to dashboard
+    if (user && isAuthPage) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/dashboard'
+        return NextResponse.redirect(redirectUrl)
+    }
+
+    // Redirect unauthenticated users from protected routes to login
+    if (!user && isProtectedRoute) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/auth/login'
+        redirectUrl.searchParams.set('next', path)
+        return NextResponse.redirect(redirectUrl)
+    }
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
     // creating a new response object with NextResponse.next() make sure to:

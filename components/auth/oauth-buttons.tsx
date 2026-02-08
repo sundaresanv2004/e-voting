@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useTransition } from "react"
+import React, { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { signInWithGoogle } from "@/app/auth/actions"
 
 interface OAuthButtonsProps {
     disabled?: boolean
@@ -33,29 +34,53 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
     const [isPending, startTransition] = useTransition()
+    const [error, setError] = useState<string | null>(null)
 
     const handleSocialLogin = (provider: 'google') => {
-        console.log(provider)
-        // startTransition(async () => {
-        // await signInWithOAuth(provider)
-        // })
+        setError(null)
+        startTransition(async () => {
+            try {
+                const result = await signInWithGoogle()
+                // If we get a result and it's not successful, show the error
+                if (result && !result.success && result.error) {
+                    setError(result.error)
+                }
+                // Note: If redirect() is called in the action, it will throw and we won't reach here
+                // The redirect error is intentional and handled by Next.js
+            } catch (err) {
+                // Only show error if it's not a Next.js redirect error
+                // Next.js redirect() throws a special error with digest property
+                const isRedirectError = err && typeof err === 'object' && 'digest' in err
+                if (!isRedirectError) {
+                    setError('Failed to initiate login. Please try again.')
+                }
+                // If it's a redirect error, that's expected - just let it happen
+            }
+        })
     }
 
     // Combined disabled state (either parent is busy or we are redirecting)
     const isDisabled = disabled || isPending
 
     return (
-        <div className="grid grid-cols-1 gap-4">
-            <Button
-                variant="outline"
-                type="button"
-                className="bg-primary/50 bg-blur-4xl w-full"
-                onClick={() => handleSocialLogin('google')}
-                disabled={isDisabled}
-            >
-                {isPending ? <Spinner className="h-4 w-4" /> : <GoogleIcon className="h-4 w-4 mr-2" />}
-                Continue with Google
-            </Button>
+        <div className="space-y-4">
+            {error && (
+                <div className="text-sm text-red-600 dark:text-red-400 text-center">
+                    {error}
+                </div>
+            )}
+            <div className="grid grid-cols-1 gap-4">
+                <Button
+                    variant="outline"
+                    type="button"
+                    className="bg-primary/50 bg-blur-4xl w-full"
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={isDisabled}
+                >
+                    {isPending ? <Spinner className="h-4 w-4" /> : <GoogleIcon className="h-4 w-4 mr-2" />}
+                    Continue with Google
+                </Button>
+            </div>
         </div>
     )
 }

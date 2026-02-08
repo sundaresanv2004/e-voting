@@ -14,13 +14,23 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && data.user) {
-            // Get user email for the verified page
-            const email = data.user.email
+            // Check if this is an OAuth login (Google) or email verification
+            // OAuth providers will have app_metadata.provider or identities with provider info
+            const isOAuthLogin = data.user.app_metadata.provider === 'google' ||
+                data.user.identities?.some(identity => identity.provider === 'google')
 
-            // Redirect to verified page with email
-            return NextResponse.redirect(
-                new URL(`/auth/verified?email=${encodeURIComponent(email || '')}&next=${encodeURIComponent(next)}`, request.url)
-            )
+            if (isOAuthLogin) {
+                // OAuth login - redirect directly to dashboard or next URL
+                return NextResponse.redirect(
+                    new URL(next === '/' ? '/dashboard' : next, request.url)
+                )
+            } else {
+                // Email verification - show verified page
+                const email = data.user.email
+                return NextResponse.redirect(
+                    new URL(`/auth/verified?email=${encodeURIComponent(email || '')}&next=${encodeURIComponent(next)}`, request.url)
+                )
+            }
         }
 
         // If there's an error, redirect to error page with error details

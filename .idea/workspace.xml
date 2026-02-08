@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
+    <list default="true" id="26b798b5-74a6-4f71-91bb-7be22ebb36d4" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -122,6 +122,7 @@
       <workItem from="1770487149833" duration="752000" />
       <workItem from="1770533379252" duration="244000" />
       <workItem from="1770535847807" duration="31000" />
+      <workItem from="1770537033968" duration="24000" />
     </task>
     <task id="LOCAL-00001" summary="Website Initial setup: Remove unused">
       <option name="closed" value="true" />
@@ -139,7 +140,23 @@
       <option name="project" value="LOCAL" />
       <updated>1770535856666</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="feat: Implement email verification with welcome and verification email templates and an authentication error page.">
+      <option name="closed" value="true" />
+      <created>1770537044223</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1770537044223</updated>
+    </task>
+    <task id="LOCAL-00004" summary="feat: Implement email verification with welcome and verification email templates and an authentication error page.">
+      <option name="closed" value="true" />
+      <created>1770537048982</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1770537048982</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -148,6 +165,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Website Initial setup: Remove unused" />
     <MESSAGE value="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: Integrate Supabase for authentication and data management, including client/server utilities, middleware, and comprehensive setup documentation." />
+    <MESSAGE value="feat: Implement email verification with welcome and verification email templates and an authentication error page." />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Implement email verification with welcome and verification email templates and an authentication error page." />
   </component>
 </project>
