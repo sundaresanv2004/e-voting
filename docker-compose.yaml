@@ -1,12 +1,9 @@
 services:
   web:
     container_name: e-voting-app
-    # Local development: reads from .env file
-    # Production: environment variables are injected by the hosting platform
-    # NOTE: Remove or comment out 'env_file' in production if the platform doesn't support .env files
-    env_file:
-      - path: .env
-        required: false # Makes .env optional - won't fail if file doesn't exist
+    # Production-ready configuration that works everywhere:
+    # - Local: Docker Compose automatically reads .env file if present
+    # - Production (Coolify/Railway/etc): Uses environment variables from platform
     build:
       context: .
       dockerfile: Dockerfile
