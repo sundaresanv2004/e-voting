@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - E-Voting</title>
+    <style>
+        /* Reset styles */
+        body, table, td, a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        /* Prevent Gmail from changing colors */
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+    </style>
+</head>
+<body style="background-color: #f4f4f5; margin: 0; padding: 0;">
+    <!-- Email Container -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f5;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <!-- Main Content -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                    
+                    <!-- Header with Icon -->
+                    <tr>
+                        <td style="padding: 40px 40px 0 40px; text-align: center;">
+                            <div style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 16px; border-radius: 16px; margin-bottom: 24px;">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 8L10.89 13.26C11.19 13.47 11.54 13.59 11.9 13.59H12.1C12.46 13.59 12.81 13.47 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Title -->
+                    <tr>
+                        <td style="padding: 0 40px 16px 40px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #18181b; line-height: 1.2;">
+                                Verify Your Email Address
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Description -->
+                    <tr>
+                        <td style="padding: 0 40px 32px 40px; text-align: center;">
+                            <p style="margin: 0; font-size: 16px; color: #71717a; line-height: 1.6;">
+                                Thanks for signing up for E-Voting! To complete your registration and start participating in elections, please verify your email address.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- CTA Button -->
+                    <tr>
+                        <td style="padding: 0 40px 32px 40px; text-align: center;">
+                            <a href="{{ .ConfirmationURL }}" 
+                               style="display: inline-block; 
+                                      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); 
+                                      color: #ffffff; 
+                                      font-size: 16px; 
+                                      font-weight: 600; 
+                                      text-decoration: none; 
+                                      padding: 14px 32px; 
+                                      border-radius: 8px; 
+                                      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);">
+                                Verify Email Address
+                            </a>
+                        </td>
+                    </tr>
+                    
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding: 0 40px 24px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="border-top: 1px solid #e4e4e7;"></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Alternative Link -->
+                    <tr>
+                        <td style="padding: 0 40px 16px 40px;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #71717a; line-height: 1.6;">
+                                If the button doesn't work, copy and paste this link into your browser:
+                            </p>
+                            <p style="margin: 0; word-break: break-all;">
+                                <a href="{{ .ConfirmationURL }}" 
+                                   style="color: #6366f1; text-decoration: none; font-size: 14px;">
+                                    {{ .ConfirmationURL }}
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Security Notice -->
+                    <tr>
+                        <td style="padding: 24px 40px 32px 40px; background-color: #fafafa; border-radius: 0 0 12px 12px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 16px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                                        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+                                            <strong style="font-weight: 600;">Security Notice:</strong> If you didn't create an account with E-Voting, please ignore this email. This link will expire in 24 hours.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                </table>
+                
+                <!-- Footer -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 24px auto 0;">
+                    <tr>
+                        <td style="text-align: center; padding: 0 20px;">
+                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #a1a1aa; line-height: 1.5;">
+                                This email was sent by <strong style="color: #71717a;">E-Voting Platform</strong>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.5;">
+                                Need help? Contact us at <a href="mailto:support@e-voting.com" style="color: #6366f1; text-decoration: none;">support@e-voting.com</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
