@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  e-voting:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time arguments for NEXT_PUBLIC_ variables
+        # These are required during the build process
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY}
+
+    image: e-voting:latest
+
+    container_name: e-voting-app
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY}
+      # Optional: Uncomment if you need the service role key
+      # - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+
+    restart: unless-stopped
+
+    # Health check to ensure the app is running
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Optional: Define networks for better isolation
+networks:
+  default:
+    name: e-voting-network
