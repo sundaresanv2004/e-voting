@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
             } else {
                 // Email verification - show verified page
                 const email = data.user.email
+                // Redirect to verified page - we will handle sign out there since
+                // signing out here can cause issues with the session exchange/cookies
+
                 return NextResponse.redirect(
                     new URL(`/auth/verified?email=${encodeURIComponent(email || '')}&next=${encodeURIComponent(next)}`, request.url)
                 )

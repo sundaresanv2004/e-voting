@@ -147,8 +147,13 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
     // Get redirect param if exists
     const nextUrl = formData.get('next') as string | null
 
-    // Redirect to the next URL or home
-    redirect(nextUrl || '/')
+    // Return success with redirect URL
+    return {
+        success: true,
+        data: {
+            redirectUrl: '/dashboard'
+        }
+    }
 }
 
 /**

@@ -53,9 +53,17 @@ function LoginForm() {
 
                 if (!result.success) {
                     setError(result.error || 'Login failed. Please try again.')
+                    return
                 }
-                // On success, signIn action will redirect automatically
+
+                // Handle client-side redirect
+                if (result.data?.redirectUrl) {
+                    router.push(result.data.redirectUrl)
+                } else {
+                    router.push('/dashboard')
+                }
             } catch (err) {
+                console.error("Login error:", err)
                 setError('An unexpected error occurred. Please try again.')
             }
         })

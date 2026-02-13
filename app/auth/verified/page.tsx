@@ -13,6 +13,16 @@ function VerifiedContent() {
     const email = searchParams.get('email')
     const next = searchParams.get('next')
 
+    // Sign out the user when they land on this page
+    React.useEffect(() => {
+        const signOut = async () => {
+            const { createClient } = await import("@/lib/supabase/client")
+            const supabase = createClient()
+            await supabase.auth.signOut()
+        }
+        signOut()
+    }, [])
+
     return (
         <Card className="w-full border-none shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">
             <CardHeader className="text-center pt-0 md:pt-6">
