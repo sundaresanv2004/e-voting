@@ -62,7 +62,7 @@ function VerifyEmailContent() {
                 <div className="flex justify-center mb-4">
                     <div
                         className="p-3 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 ring-4 ring-primary/5">
-                        <Mail size={32} />
+                        <Mail size={32} className="text-primary" />
                     </div>
                 </div>
                 <CardTitle className="text-2xl font-bold">Check your email</CardTitle>

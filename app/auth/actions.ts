@@ -8,6 +8,7 @@ export type AuthResult = {
     success: boolean
     error?: string
     code?: string
+    message?: string
     data?: any
 }
 
@@ -168,6 +169,61 @@ export async function signOut(): Promise<AuthResult> {
         return { success: false, error: error.message }
     }
 
+    redirect('/auth/login')
+}
+
+/**
+ * Send password reset email
+ */
+export async function forgotPasswordAction(email: string): Promise<AuthResult> {
+    if (!email) {
+        return { success: false, error: 'Email is required' }
+    }
+
+    const supabase = await createClient()
+    const headersList = await headers()
+    const origin = headersList.get('origin') || 'http://localhost:3000'
+
+    // We use the callback route which handles code exchange
+    // and then redirects to the reset-password page
+    const redirectTo = `${origin}/auth/callback?next=/auth/reset-password&type=recovery`
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+    })
+
+    if (error) {
+        // For security, we shouldn't reveal if the email exists or not
+        // But for better UX during development/debugging we might want to log it
+        console.error('Reset password error:', error)
+    }
+
+    return { success: true, message: 'If an account exists with this email, you will receive a password reset link.' }
+}
+
+/**
+ * Update user password
+ */
+export async function updatePasswordAction(password: string): Promise<AuthResult> {
+    const supabase = await createClient()
+
+    const { error } = await supabase.auth.updateUser({
+        password
+    })
+
+    if (error) {
+        return { success: false, error: error.message }
+    }
+
+    return { success: true, message: 'Password updated successfully' }
+}
+
+/**
+ * Sign out the current user and redirect to login
+ */
+export async function logoutAction(): Promise<void> {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
     redirect('/auth/login')
 }
 

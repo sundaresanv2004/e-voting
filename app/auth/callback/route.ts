@@ -24,6 +24,11 @@ export async function GET(request: NextRequest) {
                 return NextResponse.redirect(
                     new URL(next === '/' ? '/dashboard' : next, request.url)
                 )
+            } else if (requestUrl.searchParams.get('type') === 'recovery') {
+                // Password recovery - redirect to reset password page (next URL)
+                return NextResponse.redirect(
+                    new URL(next, request.url)
+                )
             } else {
                 // Email verification - show verified page
                 const email = data.user.email
