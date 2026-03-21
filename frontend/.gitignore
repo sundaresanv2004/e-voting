@@ -30,6 +30,7 @@ pnpm-debug.log*
 
 # env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -47,3 +48,5 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+/generated/prisma
