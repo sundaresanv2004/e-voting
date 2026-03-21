@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -38,15 +39,23 @@ function LoginForm() {
 
         startTransition(async () => {
             try {
-                // Mocking the backend call
-                await new Promise(resolve => setTimeout(resolve, 1000))
+                const result = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                })
 
-                // Handle client-side redirect
+                if (result?.error) {
+                    setError("Invalid email or password")
+                    return
+                }
+
                 if (redirectTo) {
                     router.push(redirectTo)
                 } else {
                     router.push('/dashboard')
                 }
+                router.refresh()
             } catch (err) {
                 console.error("Login error:", err)
                 setError('An unexpected error occurred. Please try again.')

@@ -45,10 +45,21 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy prisma folder to include schema and migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+# Copy the start script
+COPY --chown=nextjs:nodejs start.sh ./start.sh
+
+# Install the prisma CLI natively in the runner image
+RUN npm install prisma
+
+# Give execution permission to the start script
+RUN chmod +x ./start.sh
+
 USER nextjs
 
 EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["./start.sh"]

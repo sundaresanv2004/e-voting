@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { PasswordStrength } from "@/components/auth/password-strength"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,8 @@ function SignupForm() {
         setError(null)
 
         const formData = new FormData(e.currentTarget)
+        const name = formData.get("name") as string
+        const email = formData.get("email") as string
         const password = formData.get("password") as string
         const confirmPassword = formData.get("confirmPassword") as string
         const acceptTerms = formData.get("acceptTerms")
@@ -47,15 +50,24 @@ function SignupForm() {
 
         startTransition(async () => {
             try {
-                // Mocking the backend call
-                await new Promise(resolve => setTimeout(resolve, 1000))
-                
-                // Simulate successful signup and redirect
-                if (nextParam) {
-                    router.push(nextParam)
-                } else {
-                    router.push('/dashboard')
+                const res = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password, name })
+                })
+
+                if (!res.ok) {
+                    const msg = await res.text()
+                    setError(msg || "Something went wrong")
+                    return
                 }
+
+                if (nextParam) {
+                    router.push(`/auth/login?next=${encodeURIComponent(nextParam)}`)
+                } else {
+                    router.push('/auth/login')
+                }
+                router.refresh()
             } catch (err) {
                 setError('An unexpected error occurred. Please try again.')
             }

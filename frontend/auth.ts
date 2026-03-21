@@ -6,9 +6,20 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(db),
-  session: { strategy: "jwt" },
   ...authConfig,
+  adapter: PrismaAdapter(db),
+  session: {
+    strategy: "jwt",
+    maxAge: 1 * 60 * 60, // 1 hour
+  },
+  logger: {
+    error(error) {
+      if (error?.name === "CredentialsSignin") {
+        return
+      }
+      console.error(error)
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -20,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           return null
         }
-        
+
         const user = await db.user.findUnique({
           where: { email: credentials.email as string }
         })
@@ -37,7 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (passwordsMatch) {
           return user
         }
-        
+
         return null
       }
     })
