@@ -8,6 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://myuser:mypassword@db:5432/e_voting
+      - AUTH_SECRET=my-super-secret-auth-string-please-change-in-production
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3001/ || exit 1"]
       interval: 30s
