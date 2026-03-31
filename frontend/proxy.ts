@@ -7,16 +7,23 @@ export default auth((req: any) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth?.user
   const hasOrganization = !!(req.auth?.user as any)?.organizationId
+  const isEmailVerified = !!(req.auth?.user as any)?.emailVerified
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname)
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
+  const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
 
   if (isApiAuthRoute) return undefined
 
   if (isAuthRoute) {
     if (isLoggedIn) {
+      if (!isEmailVerified) {
+        if (isVerifyRoute) return undefined
+        return Response.redirect(new URL('/auth/verify-email', nextUrl))
+      }
+      
       const redirectUrl = hasOrganization ? '/dashboard' : '/setup/organization'
       return Response.redirect(new URL(redirectUrl, nextUrl))
     }
@@ -27,7 +34,11 @@ export default auth((req: any) => {
     return Response.redirect(new URL('/auth/login', nextUrl))
   }
 
-  if (isLoggedIn && !hasOrganization && !isSetupRoute && !isPublicRoute) {
+  if (isLoggedIn && !isEmailVerified && !isVerifyRoute && !isPublicRoute) {
+    return Response.redirect(new URL('/auth/verify-email', nextUrl))
+  }
+
+  if (isLoggedIn && isEmailVerified && !hasOrganization && !isSetupRoute && !isPublicRoute) {
     return Response.redirect(new URL('/setup/organization', nextUrl))
   }
 

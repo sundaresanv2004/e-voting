@@ -63,9 +63,9 @@ function SignupForm() {
                 }
 
                 if (nextParam) {
-                    router.push(`/auth/login?next=${encodeURIComponent(nextParam)}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(nextParam)}`)
                 } else {
-                    router.push('/auth/login')
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
                 }
                 router.refresh()
             } catch (err) {

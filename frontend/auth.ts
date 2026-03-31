@@ -19,17 +19,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role
         token.organizationId = user.organizationId
+        token.emailVerified = user.emailVerified
       }
       
       if (trigger === "update") {
         if (token.sub) {
           const freshUser = await db.user.findUnique({
             where: { id: token.sub },
-            select: { role: true, organizationId: true }
+            select: { role: true, organizationId: true, emailVerified: true }
           })
           if (freshUser) {
             token.role = freshUser.role
             token.organizationId = freshUser.organizationId
+            token.emailVerified = freshUser.emailVerified
           }
         }
       }
@@ -47,6 +49,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (token.organizationId && session.user) {
         session.user.organizationId = token.organizationId as string
+      }
+
+      if (session.user) {
+        session.user.emailVerified = token.emailVerified as Date | null
       }
 
       return session

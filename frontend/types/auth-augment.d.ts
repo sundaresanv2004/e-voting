@@ -6,12 +6,14 @@ declare module "next-auth" {
     user: {
       role: UserRole
       organizationId: string | null
+      emailVerified: Date | null
     } & DefaultSession["user"]
   }
 
   interface User {
     role: UserRole
     organizationId: string | null
+    emailVerified?: Date | null
   }
 }
 
@@ -19,6 +21,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     role?: UserRole
     organizationId?: string | null
+    emailVerified?: Date | null
   }
 }
 
@@ -26,5 +29,6 @@ declare module "@auth/core/adapters" {
   interface AdapterUser {
     role: UserRole
     organizationId: string | null
+    emailVerified: Date | null
   }
 }

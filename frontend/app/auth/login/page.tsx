@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition, Suspense } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
+import { ViewIcon, ViewOffSlashIcon, Alert01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
@@ -86,6 +86,15 @@ function LoginForm() {
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive" />
                             <AlertDescription className="text-destructive">
                                 {error}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {searchParams.get("verified") === "true" && (
+                        <Alert className="bg-primary/10 border-primary/20">
+                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-primary" />
+                            <AlertDescription className="text-primary font-medium">
+                                Email verified successfully! You can now log in.
                             </AlertDescription>
                         </Alert>
                     )}
