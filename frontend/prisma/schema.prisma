@@ -11,20 +11,74 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  ORG_ADMIN
+}
+
+enum OrganizationType {
+  SCHOOL
+  COLLEGE
+  OTHER
+}
+
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  role           UserRole  @default(USER)
+  organizationId String?
+  isActive       Boolean   @default(true)
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  accounts Account[]
+  sessions Session[]
+
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  createdOrganizations Organization[]         @relation("CreatedBy")
+  updatedSettings      OrganizationSettings[] @relation("UpdatedBy")
+}
+
+model Organization {
+  id              String           @id @default(cuid())
+  name            String
+  type            OrganizationType
+  code            String           @unique
+  logo            String?
+  createdByUserId String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+
+  creator  User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  members  User[]
+  settings OrganizationSettings?
+
+  @@index([code])
+}
+
+model OrganizationSettings {
+  id                       String   @id @default(cuid())
+  organizationId           String   @unique
+  allowStaffAddCandidates  Boolean  @default(false)
+  allowMachineSelfRegister Boolean  @default(true)
+  maxMachines              Int?
+  allowResultPublish       Boolean  @default(true)
+  electionRequiresApproval Boolean  @default(true)
+  voterImportEnabled       Boolean  @default(true)
+  updatedAt                DateTime @updatedAt
+  updatedByUserId          String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedBy    User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
 }
 
 model Account {

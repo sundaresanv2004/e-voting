@@ -3,25 +3,32 @@ import authConfig from "./auth.config"
 
 const { auth } = NextAuth(authConfig)
 
-export default auth((req) => {
+export default auth((req: any) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth?.user
+  const hasOrganization = !!(req.auth?.user as any)?.organizationId
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname)
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
+  const isSetupRoute = nextUrl.pathname.startsWith('/setup')
 
   if (isApiAuthRoute) return undefined
 
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return Response.redirect(new URL('/dashboard', nextUrl))
+      const redirectUrl = hasOrganization ? '/dashboard' : '/setup/organization'
+      return Response.redirect(new URL(redirectUrl, nextUrl))
     }
     return undefined
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
+  if (!isLoggedIn && !isPublicRoute && !isAuthRoute) {
     return Response.redirect(new URL('/auth/login', nextUrl))
+  }
+
+  if (isLoggedIn && !hasOrganization && !isSetupRoute && !isPublicRoute) {
+    return Response.redirect(new URL('/setup/organization', nextUrl))
   }
 
   return undefined
