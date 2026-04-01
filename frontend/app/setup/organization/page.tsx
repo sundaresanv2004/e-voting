@@ -48,9 +48,8 @@ export default function OrganizationSetupPage() {
                 // Update the session to include the new organizationId and role
                 await update()
 
-                // Immediate redirect to dashboard
-                router.push('/dashboard')
-                router.refresh()
+                // Hard reload to ensure the middleware picks up the new session cookie
+                window.location.href = '/dashboard'
             } catch (err) {
                 console.error("Setup error:", err)
                 setError('An unexpected error occurred. Please try again.')

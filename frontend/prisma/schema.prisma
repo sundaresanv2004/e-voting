@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,74 +6,55 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  USER
-  ORG_ADMIN
-}
-
-enum OrganizationType {
-  SCHOOL
-  COLLEGE
-  OTHER
-}
-
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String    @unique
-  emailVerified  DateTime?
-  image          String?
-  password       String?
-  role           UserRole  @default(USER)
-  organizationId String?
-  isActive       Boolean   @default(true)
-
-  organization Organization? @relation(fields: [organizationId], references: [id])
-
-  accounts Account[]
-  sessions Session[]
-
-  // Optional for WebAuthn support
-  Authenticator Authenticator[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id                   String                 @id @default(cuid())
+  name                 String?
+  email                String                 @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 UserRole               @default(USER)
+  organizationId       String?
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  accounts             Account[]
+  Authenticator        Authenticator[]
   createdOrganizations Organization[]         @relation("CreatedBy")
   updatedSettings      OrganizationSettings[] @relation("UpdatedBy")
+  sessions             Session[]
+  organization         Organization?          @relation(fields: [organizationId], references: [id])
 }
 
 model Organization {
-  id              String           @id @default(cuid())
+  id              String                @id @default(cuid())
   name            String
   type            OrganizationType
-  code            String           @unique
+  code            String                @unique
   logo            String?
   createdByUserId String
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-
-  creator  User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
-  members  User[]
-  settings OrganizationSettings?
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  creator         User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  settings        OrganizationSettings?
+  members         User[]
 
   @@index([code])
 }
 
 model OrganizationSettings {
-  id                       String   @id @default(cuid())
-  organizationId           String   @unique
-  allowStaffAddCandidates  Boolean  @default(false)
-  allowMachineSelfRegister Boolean  @default(true)
+  id                       String       @id @default(cuid())
+  organizationId           String       @unique
+  allowStaffAddCandidates  Boolean      @default(false)
+  allowMachineSelfRegister Boolean      @default(true)
   maxMachines              Int?
-  allowResultPublish       Boolean  @default(true)
-  electionRequiresApproval Boolean  @default(true)
-  voterImportEnabled       Boolean  @default(true)
-  updatedAt                DateTime @updatedAt
+  allowResultPublish       Boolean      @default(true)
+  electionRequiresApproval Boolean      @default(true)
+  voterImportEnabled       Boolean      @default(true)
+  updatedAt                DateTime     @updatedAt
   updatedByUserId          String
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  updatedBy    User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedBy                User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
 }
 
 model Account {
@@ -93,11 +69,9 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
 }
@@ -106,10 +80,9 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model VerificationToken {
@@ -120,7 +93,6 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-// Optional for WebAuthn support
 model Authenticator {
   credentialID         String  @unique
   userId               String
@@ -130,8 +102,18 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
+}
+
+enum UserRole {
+  USER
+  ORG_ADMIN
+}
+
+enum OrganizationType {
+  SCHOOL
+  COLLEGE
+  OTHER
 }

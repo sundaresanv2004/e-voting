@@ -1,8 +1,16 @@
 import type { NextAuthConfig } from "next-auth"
+import Google from "next-auth/providers/google"
 
 export default {
-  providers: [],
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
   pages: {
     signIn: "/auth/login",
+    error: "/auth/error",
   },
+  callbacks: {},
 } satisfies NextAuthConfig

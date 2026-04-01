@@ -111,11 +111,9 @@ export default function VerifyEmailPage() {
         }
     }
 
-    // Auto-trigger resend if coming from login and not verified
+    // Auto-trigger resend if redirected from middleware (email not yet verified)
     useEffect(() => {
         const shouldAutoResend = searchParams.get("resend") === "true" &&
-            resendTimer === 0 &&
-            !isResending &&
             !autoResendTriggered.current &&
             (session?.user ? !session.user.emailVerified : !!emailParam)
 
@@ -123,7 +121,8 @@ export default function VerifyEmailPage() {
             autoResendTriggered.current = true
             handleResend()
         }
-    }, [searchParams, session, resendTimer, isResending, handleResend, emailParam])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Run once on mount only
 
     return (
         <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">

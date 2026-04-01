@@ -8,75 +8,14 @@ import bcrypt from "bcryptjs"
 import { UserRole } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
   adapter: PrismaAdapter(db),
   session: {
     strategy: "jwt",
     maxAge: 1 * 60 * 60, // 1 hour
   },
-  callbacks: {
-    async jwt({ token, user, trigger, session }: any) {
-      if (user) {
-        token.role = user.role
-        token.organizationId = user.organizationId
-        token.emailVerified = user.emailVerified
-        console.log("JWT Callback (Initial) - User ID:", user.id, "Org ID:", user.organizationId);
-      }
-      
-      if (trigger === "update") {
-        if (token.sub) {
-          const freshUser = await db.user.findUnique({
-            where: { id: token.sub },
-            select: { role: true, organizationId: true, emailVerified: true }
-          })
-          
-          console.log("JWT Callback (Update) - Fresh User Org ID:", freshUser?.organizationId);
-          
-          if (freshUser) {
-            token.role = freshUser.role
-            token.organizationId = freshUser.organizationId
-            token.emailVerified = freshUser.emailVerified
-          }
-        }
-      }
-      
-      return token
-    },
-    async session({ session, token }: any) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub
-      }
-
-      if (token.role && session.user) {
-        session.user.role = token.role as UserRole
-      }
-
-      if (token.organizationId && session.user) {
-        session.user.organizationId = token.organizationId as string
-      }
-
-      if (session.user) {
-        session.user.emailVerified = token.emailVerified as Date | null
-      }
-
-      return session
-    },
-    async signIn({ user, account }: any) {
-      if (account?.provider === "credentials") {
-        return true
-      }
-      return true
-    },
-  },
-  logger: {
-    error(error: Error) {
-      if (error?.name === "CredentialsSignin") {
-        return
-      }
-      console.error(error)
-    },
-  },
+  ...authConfig,
   providers: [
+    ...authConfig.providers,
     Credentials({
       name: "credentials",
       credentials: {
@@ -107,6 +46,89 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         return null
       }
-    })
+    }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, trigger }: any) {
+      if (user) {
+        token.role = user.role
+        token.organizationId = user.organizationId
+        token.emailVerified = user.emailVerified
+      }
+      
+      // Re-fetch from DB on explicit update, or whenever key fields are missing.
+      // This ensures the middleware always has fresh data (no race conditions).
+      if (trigger === "update" || !token.organizationId || token.emailVerified === undefined) {
+        if (token.sub) {
+          const freshUser = await db.user.findUnique({
+            where: { id: token.sub },
+            select: { role: true, organizationId: true, emailVerified: true }
+          })
+          if (freshUser) {
+            token.role = freshUser.role
+            token.organizationId = freshUser.organizationId
+            token.emailVerified = freshUser.emailVerified
+          }
+        }
+      }
+      
+      return token
+    },
+    async session({ session, token }: any) {
+      if (token.sub && session.user) {
+        session.user.id = token.sub
+      }
+
+      if (token.role && session.user) {
+        session.user.role = token.role as UserRole
+      }
+
+      if (token.organizationId && session.user) {
+        session.user.organizationId = token.organizationId as string
+      }
+
+      if (session.user) {
+        session.user.emailVerified = token.emailVerified as Date | null
+      }
+
+      return session
+    },
+    async signIn({ user, account }: any) {
+      // For Google OAuth: always allow sign-in.
+      // We use updateMany (not update) so it doesn't throw if the user
+      // doesn't exist yet when signIn callback fires for brand-new users.
+      // The Prisma adapter creates the user record just after this callback.
+      if (account?.provider === "google") {
+        if (user?.email) {
+          await db.user.updateMany({
+            where: { email: user.email },
+            data: { emailVerified: new Date() }
+          })
+        }
+        return true
+      }
+      return true
+    },
+  },
+  // Use the linkAccount event to catch brand-new Google users
+  // (fires AFTER the adapter creates the user and account records).
+  events: {
+    async linkAccount({ user, account }) {
+      if (account.provider === "google" && user.email) {
+        await db.user.update({
+          where: { email: user.email },
+          data: { emailVerified: new Date() }
+        })
+      }
+    }
+  },
+  logger: {
+    error(error: Error) {
+      if (error?.name === "CredentialsSignin") {
+        return
+      }
+      console.error(error)
+    },
+  },
 })

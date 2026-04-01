@@ -1,8 +1,10 @@
 "use client"
 
 import React, { useState, useTransition } from "react"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { toast } from "sonner"
 
 interface OAuthButtonsProps {
     disabled?: boolean
@@ -33,31 +35,28 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
     const [isPending, startTransition] = useTransition()
-    const [error, setError] = useState<string | null>(null)
 
-    const handleSocialLogin = (provider: 'google') => {
-        setError(null)
+    const handleGoogleLogin = () => {
         startTransition(async () => {
-            console.log("Google login")
+            try {
+                await signIn("google", { redirectTo: "/dashboard" })
+            } catch (err) {
+                toast.error("Failed to sign in with Google.")
+            }
         })
     }
 
-    // Combined disabled state (either parent is busy or we are redirecting)
+    // Combined disabled state
     const isDisabled = disabled || isPending
 
     return (
         <div className="space-y-4">
-            {error && (
-                <div className="text-sm text-red-600 dark:text-red-400 text-center">
-                    {error}
-                </div>
-            )}
             <div className="grid grid-cols-1 gap-4">
                 <Button
                     variant="outline"
                     type="button"
                     className="bg-primary/50 bg-blur-4xl w-full"
-                    onClick={() => handleSocialLogin('google')}
+                    onClick={handleGoogleLogin}
                     disabled={isDisabled}
                 >
                     {isPending ? <Spinner className="h-4 w-4" /> : <GoogleIcon className="h-4 w-4 mr-2" />}

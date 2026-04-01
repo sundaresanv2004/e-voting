@@ -3,7 +3,9 @@ import { auth } from "./auth"
 export default auth((req: any) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth?.user
-  const hasOrganization = !!(req.auth?.user as any)?.organizationId
+
+  const organizationId = (req.auth?.user as any)?.organizationId
+  const hasOrganization = !!organizationId
   const isEmailVerified = !!(req.auth?.user as any)?.emailVerified
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
