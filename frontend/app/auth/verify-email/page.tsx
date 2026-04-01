@@ -1,29 +1,27 @@
 "use client"
 
 import Link from "next/link"
-import React, { useState, useEffect, useTransition } from "react"
+import React, { useState, useEffect, useTransition, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { motion, AnimatePresence } from "framer-motion"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { 
-  Mail01Icon, 
-  LeftToRightListNumberIcon,
-  Alert01Icon,
-  CheckmarkCircle01Icon,
-  ArrowRight01Icon,
-  RefreshIcon,
-  PencilEdit02Icon
+import {
+    Mail01Icon,
+    Alert01Icon,
+    CheckmarkCircle01Icon,
+    PencilEdit02Icon
 } from '@hugeicons/core-free-icons'
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
+import { REGEXP_ONLY_DIGITS } from "input-otp"
 import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSlot,
+    InputOTPSeparator
 } from "@/components/ui/input-otp"
 import { verifyEmail, resendVerificationCode } from "@/lib/actions/auth-actions"
 import { signOut } from "next-auth/react"
@@ -35,16 +33,17 @@ export default function VerifyEmailPage() {
     const searchParams = useSearchParams()
     const emailParam = searchParams.get("email")
     const nextParam = searchParams.get("next")
-    
+
     const displayEmail = session?.user?.email || emailParam
-    
+
     const [otp, setOtp] = useState("")
     const [isPending, startTransition] = useTransition()
     const [isResending, setIsResending] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
-    const [resendTimer, setResendTimer] = useState(0)
+    const [resendTimer, setResendTimer] = useState(searchParams.get("resend") === "true" ? 0 : RESEND_COOLDOWN)
     const router = useRouter()
+    const autoResendTriggered = useRef(false)
 
     useEffect(() => {
         let interval: NodeJS.Timeout
@@ -56,9 +55,10 @@ export default function VerifyEmailPage() {
         return () => clearInterval(interval)
     }, [resendTimer])
 
+
     const handleVerify = async (value: string) => {
         if (value.length !== 6) return
-        
+
         setError(null)
         startTransition(async () => {
             try {
@@ -71,17 +71,13 @@ export default function VerifyEmailPage() {
                 }
 
                 setSuccess(true)
-                
-                // If they are logged in, update the session. 
-                // However, the user wants to go to /auth/login after verification.
-                // To avoid redirection loops, we'll sign them out if they are logged in, 
-                // so they see the login page as requested.
+
                 if (session) {
                     await update()
                     await signOut({ redirect: false })
                 }
-                
-                const loginUrl = nextParam 
+
+                const loginUrl = nextParam
                     ? `/auth/login?next=${encodeURIComponent(nextParam)}&verified=true`
                     : '/auth/login?verified=true'
 
@@ -114,120 +110,132 @@ export default function VerifyEmailPage() {
         }
     }
 
+    // Auto-trigger resend if coming from login and not verified
+    useEffect(() => {
+        const shouldAutoResend = searchParams.get("resend") === "true" &&
+            resendTimer === 0 &&
+            !success &&
+            !isResending &&
+            !autoResendTriggered.current &&
+            (session?.user ? !session.user.emailVerified : !!emailParam)
+
+        if (shouldAutoResend) {
+            autoResendTriggered.current = true
+            handleResend()
+        }
+    }, [searchParams, session, success, resendTimer, isResending, handleResend, emailParam])
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2 overflow-hidden">
-                <CardHeader className="text-center pt-0 md:pt-6 px-0 md:px-6 space-y-2">
-                    <div className="flex justify-center mb-2">
-                        <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-                            <HugeiconsIcon icon={Mail01Icon} className="w-8 h-8" />
-                        </div>
+        <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">
+            <CardHeader className="text-center pt-0 md:pt-6 px-0 md:px-6 space-y-2">
+                <div className="flex justify-center mb-2">
+                    <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                        <HugeiconsIcon icon={Mail01Icon} className="w-8 h-8" />
                     </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight text-foreground">Verify your email</CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                        We've sent a 6-digit verification code to
-                    </CardDescription>
-                    <div className="flex items-center justify-center gap-2 mt-2 bg-muted/50 py-1.5 px-3 rounded-md w-fit mx-auto border border-border/50">
-                        <span className="font-medium text-foreground text-sm">{displayEmail}</span>
-                        <Link 
+                </div>
+                <CardTitle className="text-2xl font-bold tracking-tight text-foreground">Verify your email</CardTitle>
+                <CardDescription>
+                    We've sent a 6-digit verification code to
+                </CardDescription>
+
+                <div className="flex justify-center">
+                    <Badge variant="outline" className="rounded-full py-1.5 px-3 h-auto text-sm font-medium border-border/50 bg-muted/50">
+                        <span className="leading-none">{displayEmail}</span>
+                        <Link
                             href={`/auth/signup${displayEmail ? `?email=${encodeURIComponent(displayEmail)}` : ''}`}
-                            className="text-muted-foreground hover:text-primary transition-colors hover:bg-background rounded-sm p-0.5"
+                            className="ml-1 text-muted-foreground hover:text-primary transition-colors hover:bg-background rounded-sm p-0.5"
                             title="Edit email address"
                         >
                             <HugeiconsIcon icon={PencilEdit02Icon} className="w-3.5 h-3.5" />
                         </Link>
-                    </div>
-                </CardHeader>
+                    </Badge>
+                </div>
+            </CardHeader>
 
-                <CardContent className="px-0 md:px-6 pb-2 flex flex-col items-center">
-                    <AnimatePresence mode="wait">
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="w-full"
-                            >
-                                <Alert variant="destructive" className="border-destructive/20 bg-destructive/10">
-                                    <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4" />
-                                    <AlertDescription>{error}</AlertDescription>
-                                </Alert>
-                            </motion.div>
-                        )}
-                        {success && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="w-full"
-                            >
-                                <Alert className="bg-primary/10 border-primary/20">
-                                    <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-primary" />
-                                    <AlertTitle className="text-primary font-semibold">Verified!</AlertTitle>
-                                    <AlertDescription className="text-primary/80">
-                                        Your email has been successfully verified. Redirecting...
-                                    </AlertDescription>
-                                </Alert>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+            <CardContent className="px-0 md:px-6 pb-2">
+                <div className="max-w-sm mx-auto space-y-6 flex flex-col items-center w-full">
+                    {error && (
+                        <Alert variant="destructive" className="flex items-center text-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl w-full">
+                            <HugeiconsIcon icon={Alert01Icon} className="w-5 h-5 text-destructive mb-1" />
+                            <AlertDescription className="text-destructive">
+                                {error}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {success && (
+                        <Alert className="bg-primary/10 border-primary/20 flex items-center text-center py-3 rounded-2xl w-full mb-2">
+                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-5 h-5 mb-1 text-green-600 dark:text-green-400" />
+                            <AlertDescription className="text-green-600 dark:text-green-400">
+                                Email verified successfully! Redirecting...
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     {!success && (
-                        <div className="flex flex-col items-center space-y-4 w-full mt-4">
+                        <div className="flex flex-col items-center space-y-8 w-full">
                             <InputOTP
                                 maxLength={6}
                                 value={otp}
                                 onChange={setOtp}
+                                pattern={REGEXP_ONLY_DIGITS}
                                 onComplete={handleVerify}
                                 disabled={isPending}
                                 autoFocus
                             >
                                 <InputOTPGroup>
-                                    <InputOTPSlot index={0} className="size-12 sm:size-14 text-lg" />
-                                    <InputOTPSlot index={1} className="size-12 sm:size-14 text-lg" />
-                                    <InputOTPSlot index={2} className="size-12 sm:size-14 text-lg" />
-                                    <InputOTPSlot index={3} className="size-12 sm:size-14 text-lg" />
-                                    <InputOTPSlot index={4} className="size-12 sm:size-14 text-lg" />
-                                    <InputOTPSlot index={5} className="size-12 sm:size-14 text-lg" />
+                                    <InputOTPSlot index={0} className="size-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={1} className="size-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={2} className="size-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={3} className="size-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={4} className="size-12 text-lg" />
+                                </InputOTPGroup>
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={5} className="size-12 text-lg" />
                                 </InputOTPGroup>
                             </InputOTP>
 
-                            <Button 
+                            <Button
                                 onClick={() => handleVerify(otp)}
-                                className="w-full mt-2"
+                                className="w-full"
                                 disabled={otp.length !== 6 || isPending}
                             >
-                                {isPending && <Spinner className="w-4 h-4 mr-2" />}
+                                {isPending && <Spinner className="w-4 h-4 mr-2 text-white" />}
                                 Verify Account
                             </Button>
                         </div>
                     )}
-                </CardContent>
+                </div>
+            </CardContent>
 
-                {!success && (
-                    <CardFooter className="flex justify-center pt-2 pb-4 px-0 md:px-6">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="opacity-80">Didn't receive the code?</span>
-                            <button 
-                                onClick={handleResend}
-                                disabled={resendTimer > 0 || isResending}
-                                className="text-primary font-medium hover:text-primary/80 disabled:opacity-50 transition-colors flex items-center justify-center min-w-[100px]"
-                            >
-                                {isResending ? (
-                                    <Spinner className="w-3 h-3" />
-                                ) : resendTimer > 0 ? (
-                                    <span>Wait {resendTimer}s</span>
-                                ) : (
-                                    "Resend code"
-                                )}
-                            </button>
-                        </div>
-                    </CardFooter>
-                )}
-            </Card>
-        </motion.div>
+            {!success && (
+                <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
+                        <span className="opacity-80">Didn't receive the code?</span>
+                        <Button
+                            onClick={handleResend}
+                            variant={"link"}
+                            disabled={resendTimer > 0 || isResending}
+                            className="text-primary font-semibold hover:underline disabled:no-underline disabled:opacity-50 transition-colors -ml-2"
+                        >
+                            {isResending ? (
+                                <Spinner className="w-3 h-3" />
+                            ) : resendTimer > 0 ? (
+                                <span>Try again in {resendTimer}s</span>
+                            ) : (
+                                "Resend code"
+                            )}
+                        </Button>
+                    </div>
+                </CardFooter>
+            )}
+        </Card>
     )
 }

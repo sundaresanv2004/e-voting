@@ -1,7 +1,4 @@
-import NextAuth from "next-auth"
-import authConfig from "./auth.config"
-
-const { auth } = NextAuth(authConfig)
+import { auth } from "./auth"
 
 export default auth((req: any) => {
   const { nextUrl } = req
@@ -19,11 +16,6 @@ export default auth((req: any) => {
 
   if (isAuthRoute) {
     if (isLoggedIn) {
-      if (!isEmailVerified) {
-        if (isVerifyRoute) return undefined
-        return Response.redirect(new URL('/auth/verify-email', nextUrl))
-      }
-      
       const redirectUrl = hasOrganization ? '/dashboard' : '/setup/organization'
       return Response.redirect(new URL(redirectUrl, nextUrl))
     }
@@ -32,10 +24,6 @@ export default auth((req: any) => {
 
   if (!isLoggedIn && !isPublicRoute && !isAuthRoute) {
     return Response.redirect(new URL('/auth/login', nextUrl))
-  }
-
-  if (isLoggedIn && !isEmailVerified && !isVerifyRoute && !isPublicRoute) {
-    return Response.redirect(new URL('/auth/verify-email', nextUrl))
   }
 
   if (isLoggedIn && isEmailVerified && !hasOrganization && !isSetupRoute && !isPublicRoute) {

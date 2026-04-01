@@ -26,7 +26,7 @@ function LoginForm() {
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setError(null)
-        
+
         const formData = new FormData(e.currentTarget)
         const email = formData.get("email") as string
         const password = formData.get("password") as string
@@ -82,8 +82,8 @@ function LoginForm() {
 
                 <form onSubmit={onSubmit} className="space-y-4">
                     {error && (
-                        <Alert variant="destructive">
-                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive" />
+                        <Alert variant="destructive" className="flex items-center text-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
                                 {error}
                             </AlertDescription>
@@ -92,8 +92,8 @@ function LoginForm() {
 
                     {searchParams.get("verified") === "true" && (
                         <Alert className="bg-primary/10 border-primary/20">
-                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-primary" />
-                            <AlertDescription className="text-primary font-medium">
+                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <AlertDescription className="text-green-600 dark:text-green-400">
                                 Email verified successfully! You can now log in.
                             </AlertDescription>
                         </Alert>
