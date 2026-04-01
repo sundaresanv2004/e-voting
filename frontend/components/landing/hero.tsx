@@ -158,6 +158,7 @@ export default function Hero() {
                                     height={600}
                                     className="w-full h-auto object-contain drop-shadow-2xl dark:drop-shadow-lg dark:brightness-110"
                                     priority
+                                    unoptimized={true}
                                 />
                             </div>
                         </div>

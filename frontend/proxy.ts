@@ -13,6 +13,7 @@ export default auth((req: any) => {
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
   const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
+  const isAdminRoute = nextUrl.pathname.startsWith('/admin')
 
   // 1. Allow API Auth routes
   if (isApiAuthRoute) return undefined
@@ -32,7 +33,7 @@ export default auth((req: any) => {
       }
       
       // If verified, they shouldn't be on any auth page (login, signup, verify-email)
-      const redirectUrl = hasOrganization ? '/dashboard' : '/setup/organization'
+      const redirectUrl = hasOrganization ? '/admin/organization' : '/setup/organization'
       return Response.redirect(new URL(redirectUrl, nextUrl))
     }
     return undefined // Guest can access auth routes
@@ -60,10 +61,10 @@ export default auth((req: any) => {
     return Response.redirect(new URL('/setup/organization', nextUrl))
   }
 
-  // Final Priority: Dashboard/App Access
+  // Final Priority: App Access
   // If they have an org but are still on a setup page, nudge them into the app
   if (hasOrganization && isSetupRoute) {
-    return Response.redirect(new URL('/dashboard', nextUrl))
+    return Response.redirect(new URL('/admin/organization', nextUrl))
   }
 
   return undefined

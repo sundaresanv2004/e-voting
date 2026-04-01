@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                 {session?.user ? (
                     <>
-                        <Link href="/dashboard">
+                        <Link href="/admin/organization">
                             <Button variant="default" size="sm">
                                 <HugeiconsIcon icon={Layout01Icon} className="w-4 h-4" />
                                 Dashboard

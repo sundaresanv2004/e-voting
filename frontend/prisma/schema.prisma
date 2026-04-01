@@ -24,6 +24,8 @@ model User {
   updatedSettings      OrganizationSettings[] @relation("UpdatedBy")
   sessions             Session[]
   organization         Organization?          @relation(fields: [organizationId], references: [id])
+  createdElections     Election[]             @relation("ElectionCreator")
+  approvedSystems      AuthorizedSystem[]     @relation("SystemApprover")
 }
 
 model Organization {
@@ -38,6 +40,8 @@ model Organization {
   creator         User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
   settings        OrganizationSettings?
   members         User[]
+  elections       Election[]
+  systems         AuthorizedSystem[]
 
   @@index([code])
 }
@@ -116,4 +120,48 @@ enum OrganizationType {
   SCHOOL
   COLLEGE
   OTHER
+}
+
+enum ElectionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum SystemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+model Election {
+  id              String         @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String         @unique
+  startTime       DateTime
+  endTime         DateTime
+  status          ElectionStatus @default(DRAFT)
+  createdByUserId String
+  createdAt       DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("ElectionCreator", fields: [createdByUserId], references: [id])
+}
+
+model AuthorizedSystem {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String?
+  hostName         String?
+  ipAddress        String?
+  macAddress       String?
+  status           SystemStatus @default(PENDING)
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approvedBy   User?        @relation("SystemApprover", fields: [approvedByUserId], references: [id])
 }
