@@ -63,13 +63,18 @@ export const resendVerificationCode = async (emailToken?: string) => {
     const session = await auth()
     const email = session?.user?.email || emailToken
 
+    console.log("Resend Action - Session Email:", session?.user?.email, "Param Email:", emailToken);
+
     if (!email) {
+        console.error("Resend Action - No email found");
         return { success: false, error: "Unauthorized or missing email" }
     }
 
     try {
         const verificationToken = await generateVerificationToken(email)
+        console.log("Resend Action - Generated token for:", email);
         await sendVerificationEmail(verificationToken.identifier, verificationToken.token)
+        console.log("Resend Action - Email sent successfully");
 
         return { success: true }
     } catch (error) {

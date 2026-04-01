@@ -26,7 +26,7 @@ import {
 import { verifyEmail, resendVerificationCode } from "@/lib/actions/auth-actions"
 import { signOut } from "next-auth/react"
 
-const RESEND_COOLDOWN = 60 // seconds
+const RESEND_COOLDOWN = 30 // seconds
 
 export default function VerifyEmailPage() {
     const { data: session, update } = useSession()
@@ -217,7 +217,7 @@ export default function VerifyEmailPage() {
 
             {!success && (
                 <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="opacity-80">Didn't receive the code?</span>
                         <Button
                             onClick={handleResend}

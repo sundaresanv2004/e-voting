@@ -19,13 +19,13 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectLabel } from "@/components/ui/select"
+import { toast } from "sonner"
 import { createOrganization } from "@/lib/actions/org-actions"
 
 export default function OrganizationSetupPage() {
     const { update } = useSession()
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState(false)
     const router = useRouter()
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,15 +43,15 @@ export default function OrganizationSetupPage() {
                     return
                 }
 
-                setSuccess(true)
+                // Show a sleek success notification
+                toast.success("Organization created successfully!")
+
                 // Update the session to include the new organizationId and role
                 await update()
 
-                // Small delay to show success state
-                setTimeout(() => {
-                    router.push('/dashboard')
-                    router.refresh()
-                }, 1500)
+                // Immediate redirect to dashboard
+                router.push('/dashboard')
+                router.refresh()
             } catch (err) {
                 console.error("Setup error:", err)
                 setError('An unexpected error occurred. Please try again.')
@@ -80,63 +80,53 @@ export default function OrganizationSetupPage() {
                     </TabsList>
 
                     <TabsContent value="create" className="space-y-4">
-                        {success ? (
-                            <Alert className="bg-primary/10 border-primary/20">
-                                <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-primary" />
-                                <AlertTitle className="text-primary font-semibold">Success!</AlertTitle>
-                                <AlertDescription className="text-primary/80">
-                                    Your organization has been created. Redirecting to dashboard...
-                                </AlertDescription>
-                            </Alert>
-                        ) : (
-                            <form onSubmit={onSubmit} className="space-y-4">
-                                {error && (
-                                    <Alert variant="destructive">
-                                        <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive" />
-                                        <AlertDescription className="text-destructive">
-                                            {error}
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
+                        <form onSubmit={onSubmit} className="space-y-4">
+                            {error && (
+                                <Alert variant="destructive">
+                                    <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive" />
+                                    <AlertDescription className="text-destructive">
+                                        {error}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
 
-                                <Field>
-                                    <FieldLabel htmlFor="name">Organization Name</FieldLabel>
-                                    <InputGroup>
-                                        <InputGroupAddon>
-                                            <HugeiconsIcon icon={Building01Icon} className="w-4 h-4" />
-                                        </InputGroupAddon>
-                                        <InputGroupInput
-                                            id="name"
-                                            name="name"
-                                            required
-                                            placeholder="e.g. Stanford University"
-                                        />
-                                    </InputGroup>
-                                </Field>
+                            <Field>
+                                <FieldLabel htmlFor="name">Organization Name</FieldLabel>
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <HugeiconsIcon icon={Building01Icon} className="w-4 h-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        id="name"
+                                        name="name"
+                                        required
+                                        placeholder="e.g. Stanford University"
+                                    />
+                                </InputGroup>
+                            </Field>
 
-                                <Field>
-                                    <FieldLabel htmlFor="type">Organization Type</FieldLabel>
-                                    <Select name="type" required>
-                                        <SelectTrigger id="type">
-                                            <SelectValue placeholder="Select type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <SelectLabel>Organization Type</SelectLabel>
-                                                <SelectItem value="SCHOOL">School</SelectItem>
-                                                <SelectItem value="COLLEGE">College</SelectItem>
-                                                <SelectItem value="OTHER">Other</SelectItem>
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
+                            <Field>
+                                <FieldLabel htmlFor="type">Organization Type</FieldLabel>
+                                <Select name="type" required>
+                                    <SelectTrigger id="type">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Organization Type</SelectLabel>
+                                            <SelectItem value="SCHOOL">School</SelectItem>
+                                            <SelectItem value="COLLEGE">College</SelectItem>
+                                            <SelectItem value="OTHER">Other</SelectItem>
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
 
-                                <Button type="submit" className="w-full mb-4" disabled={isPending}>
-                                    {isPending && <Spinner className="h-4 w-4" />}
-                                    Create Organization
-                                </Button>
-                            </form>
-                        )}
+                            <Button type="submit" className="w-full mb-4" disabled={isPending}>
+                                {isPending && <Spinner className="h-4 w-4" />}
+                                Create Organization
+                            </Button>
+                        </form>
                     </TabsContent>
 
                     <TabsContent value="join" className="py-8 text-center space-y-6">

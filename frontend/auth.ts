@@ -59,9 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async signIn({ user, account }: any) {
       if (account?.provider === "credentials") {
-        if (!user.emailVerified) {
-          return `/auth/verify-email?email=${encodeURIComponent(user.email)}&resend=true`
-        }
+        return true
       }
       return true
     },
