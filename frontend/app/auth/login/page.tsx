@@ -15,6 +15,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+import { toast } from "sonner"
+
 function LoginForm() {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
@@ -86,15 +88,6 @@ function LoginForm() {
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
                                 {error}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-
-                    {searchParams.get("verified") === "true" && (
-                        <Alert className="bg-primary/10 border-primary/20">
-                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <AlertDescription className="text-green-600 dark:text-green-400">
-                                Email verified successfully! You can now log in.
                             </AlertDescription>
                         </Alert>
                     )}

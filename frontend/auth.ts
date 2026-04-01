@@ -20,6 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role
         token.organizationId = user.organizationId
         token.emailVerified = user.emailVerified
+        console.log("JWT Callback (Initial) - User ID:", user.id, "Org ID:", user.organizationId);
       }
       
       if (trigger === "update") {
@@ -28,6 +29,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { id: token.sub },
             select: { role: true, organizationId: true, emailVerified: true }
           })
+          
+          console.log("JWT Callback (Update) - Fresh User Org ID:", freshUser?.organizationId);
+          
           if (freshUser) {
             token.role = freshUser.role
             token.organizationId = freshUser.organizationId

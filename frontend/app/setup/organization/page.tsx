@@ -6,7 +6,6 @@ import {
     Building01Icon,
     UserGroupIcon,
     Alert01Icon,
-    CheckmarkCircle01Icon
 } from '@hugeicons/core-free-icons'
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -44,7 +43,7 @@ export default function OrganizationSetupPage() {
                 }
 
                 // Show a sleek success notification
-                toast.success("Organization created successfully!")
+                toast.success("Organization created!")
 
                 // Update the session to include the new organizationId and role
                 await update()
@@ -122,10 +121,12 @@ export default function OrganizationSetupPage() {
                                 </Select>
                             </Field>
 
-                            <Button type="submit" className="w-full mb-4" disabled={isPending}>
-                                {isPending && <Spinner className="h-4 w-4" />}
-                                Create Organization
-                            </Button>
+                            <div className="flex justify-center py-2 mb-4">
+                                <Button type="submit" className="w-full" disabled={isPending}>
+                                    {isPending && <Spinner className="h-4 w-4" />}
+                                    Create Organization
+                                </Button>
+                            </div>
                         </form>
                     </TabsContent>
 

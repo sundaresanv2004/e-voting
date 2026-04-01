@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
 import {
     InputOTP,
@@ -40,7 +41,6 @@ export default function VerifyEmailPage() {
     const [isPending, startTransition] = useTransition()
     const [isResending, setIsResending] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState(false)
     const [resendTimer, setResendTimer] = useState(searchParams.get("resend") === "true" ? 0 : RESEND_COOLDOWN)
     const router = useRouter()
     const autoResendTriggered = useRef(false)
@@ -70,8 +70,7 @@ export default function VerifyEmailPage() {
                     return
                 }
 
-                setSuccess(true)
-
+                // Instead of showing a local success alert, we redirect to login immediately
                 if (session) {
                     await update()
                     await signOut({ redirect: false })
@@ -81,10 +80,12 @@ export default function VerifyEmailPage() {
                     ? `/auth/login?next=${encodeURIComponent(nextParam)}&verified=true`
                     : '/auth/login?verified=true'
 
-                setTimeout(() => {
-                    router.push(loginUrl)
-                    router.refresh()
-                }, 2000)
+                // Show the toast here so it's guaranteed to show during transition
+                toast.success("Account verified! Please log in.")
+
+                // Immediate redirect
+                router.push(loginUrl)
+                router.refresh()
             } catch (err) {
                 setError("An unexpected error occurred. Please try again.")
             }
@@ -114,7 +115,6 @@ export default function VerifyEmailPage() {
     useEffect(() => {
         const shouldAutoResend = searchParams.get("resend") === "true" &&
             resendTimer === 0 &&
-            !success &&
             !isResending &&
             !autoResendTriggered.current &&
             (session?.user ? !session.user.emailVerified : !!emailParam)
@@ -123,7 +123,7 @@ export default function VerifyEmailPage() {
             autoResendTriggered.current = true
             handleResend()
         }
-    }, [searchParams, session, success, resendTimer, isResending, handleResend, emailParam])
+    }, [searchParams, session, resendTimer, isResending, handleResend, emailParam])
 
     return (
         <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">
@@ -162,60 +162,49 @@ export default function VerifyEmailPage() {
                             </AlertDescription>
                         </Alert>
                     )}
-                    {success && (
-                        <Alert className="bg-primary/10 border-primary/20 flex items-center text-center py-3 rounded-2xl w-full mb-2">
-                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-5 h-5 mb-1 text-green-600 dark:text-green-400" />
-                            <AlertDescription className="text-green-600 dark:text-green-400">
-                                Email verified successfully! Redirecting...
-                            </AlertDescription>
-                        </Alert>
-                    )}
 
-                    {!success && (
-                        <div className="flex flex-col items-center space-y-8 w-full">
-                            <InputOTP
-                                maxLength={6}
-                                value={otp}
-                                onChange={setOtp}
-                                pattern={REGEXP_ONLY_DIGITS}
-                                onComplete={handleVerify}
-                                disabled={isPending}
-                                autoFocus
-                            >
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={0} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={1} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={2} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={3} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={4} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={5} className="size-12 text-lg" />
-                                </InputOTPGroup>
-                            </InputOTP>
+                    <div className="flex flex-col items-center space-y-8 w-full">
+                        <InputOTP
+                            maxLength={6}
+                            value={otp}
+                            onChange={setOtp}
+                            pattern={REGEXP_ONLY_DIGITS}
+                            onComplete={handleVerify}
+                            disabled={isPending}
+                            autoFocus
+                        >
+                            <InputOTPGroup>
+                                <InputOTPSlot index={0} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={1} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={2} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={3} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={4} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={5} className="size-12 text-lg" />
+                            </InputOTPGroup>
+                        </InputOTP>
 
-                            <Button
-                                onClick={() => handleVerify(otp)}
-                                className="w-full"
-                                disabled={otp.length !== 6 || isPending}
-                            >
-                                {isPending && <Spinner className="w-4 h-4 mr-2 text-white" />}
-                                Verify Account
-                            </Button>
-                        </div>
-                    )}
+                        <Button
+                            onClick={() => handleVerify(otp)}
+                            className="w-full"
+                            disabled={otp.length !== 6 || isPending}
+                        >
+                            {isPending && <Spinner className="w-4 h-4 mr-2 text-white" />}
+                            Verify Account
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
 
-            {!success && (
                 <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="opacity-80">Didn't receive the code?</span>
@@ -235,7 +224,6 @@ export default function VerifyEmailPage() {
                         </Button>
                     </div>
                 </CardFooter>
-            )}
         </Card>
     )
 }
