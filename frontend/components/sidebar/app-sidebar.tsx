@@ -14,18 +14,24 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { LayoutBottomIcon, AudioWave01Icon, CommandIcon, ComputerTerminalIcon, RoboticIcon, BookOpen02Icon, Settings05Icon, CropIcon, PieChartIcon, MapsIcon } from "@hugeicons/core-free-icons"
+import {
+  LayoutBottomIcon,
+  AudioWave01Icon,
+  CommandIcon,
+  ComputerTerminalIcon,
+  RoboticIcon,
+  Settings05Icon,
+  PieChartIcon,
+  MapsIcon,
+  UserGroupIcon,
+  ShieldKeyIcon,
+} from "@hugeicons/core-free-icons"
 
 // This is sample data targeting our generic route structure.
 // Later, this will be fetched dynamically or built via a context provider.
 const activeElectionId = "placeholder-election-id"
 
 const data = {
-  user: {
-    name: "System Admin",
-    email: "admin@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   elections: [
     {
       name: "Student Council 2026",
@@ -44,29 +50,26 @@ const data = {
   ],
   navMain: [
     {
-      title: "Election Overview",
+      title: "Dashboard",
       url: `/admin/election/${activeElectionId}`,
       icon: (
         <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
       ),
       isActive: true,
-      items: [],
     },
     {
       title: "Candidates",
       url: `/admin/election/${activeElectionId}/candidates`,
       icon: (
-        <HugeiconsIcon icon={CropIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
       ),
-      items: [], // Expandable if we want sub-menus later
     },
     {
-      title: "Voters",
-      url: `/admin/election/${activeElectionId}/voters`,
+      title: "Roles",
+      url: `/admin/election/${activeElectionId}/roles`,
       icon: (
-        <HugeiconsIcon icon={BookOpen02Icon} strokeWidth={2} />
+        <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
       ),
-      items: [],
     },
     {
       title: "Results",
@@ -74,27 +77,25 @@ const data = {
       icon: (
         <HugeiconsIcon icon={PieChartIcon} strokeWidth={2} />
       ),
-      items: [],
     },
     {
-      title: "Election Settings",
+      title: "Settings",
       url: `/admin/election/${activeElectionId}/settings`,
       icon: (
         <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
       ),
-      items: [],
     },
   ],
   organizationNav: [
     {
-      name: "Org Dashboard",
+      name: "Dashboard",
       url: "/admin/organization",
       icon: (
         <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
       ),
     },
     {
-      name: "All Elections",
+      name: "Elections",
       url: "/admin/organization/elections",
       icon: (
         <HugeiconsIcon icon={MapsIcon} strokeWidth={2} />
@@ -104,18 +105,18 @@ const data = {
       name: "Members",
       url: "/admin/organization/members",
       icon: (
-        <HugeiconsIcon icon={ComputerTerminalIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
       ),
     },
     {
-      name: "Authorized Systems",
+      name: "Systems",
       url: "/admin/organization/systems",
       icon: (
         <HugeiconsIcon icon={RoboticIcon} strokeWidth={2} />
       ),
     },
     {
-      name: "Org Settings",
+      name: "Settings",
       url: "/admin/organization/settings",
       icon: (
         <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
@@ -126,7 +127,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <ElectionSwitcher elections={data.elections} />
       </SidebarHeader>
@@ -135,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavOrganization organizationNav={data.organizationNav} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

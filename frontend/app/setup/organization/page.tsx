@@ -49,7 +49,7 @@ export default function OrganizationSetupPage() {
                 await update()
 
                 // Hard reload to ensure the middleware picks up the new session cookie
-                window.location.href = '/dashboard'
+                window.location.href = '/admin/organization'
             } catch (err) {
                 console.error("Setup error:", err)
                 setError('An unexpected error occurred. Please try again.')

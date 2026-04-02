@@ -85,7 +85,7 @@ export default function Hero() {
                                 size="lg"
                                 className="group"
                             >
-                                <Link href="/dashboard">
+                                <Link href="/admin/organization">
                                     <HugeiconsIcon icon={Layout01Icon} className="w-5 h-5" strokeWidth={2} />
                                     Dashboard
                                     <HugeiconsIcon icon={ArrowRight01Icon}
@@ -157,8 +157,7 @@ export default function Hero() {
                                     width={600}
                                     height={600}
                                     className="w-full h-auto object-contain drop-shadow-2xl dark:drop-shadow-lg dark:brightness-110"
-                                    priority
-                                    unoptimized={true}
+                                    unoptimized
                                 />
                             </div>
                         </div>
