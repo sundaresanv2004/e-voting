@@ -153,7 +153,7 @@ export function RoleDetailsSheet({
             className="w-1/2"
             onClick={() => {
               onOpenChange(false)
-              setTimeout(() => onDelete(role), 150)
+              setTimeout(() => onDelete(role), 300)
             }}
           >
             <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function RoleDetailsSheet({
             className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
             onClick={() => {
               onOpenChange(false)
-              setTimeout(() => onEdit(role), 150)
+              setTimeout(() => onEdit(role), 300)
             }}
           >
             <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />

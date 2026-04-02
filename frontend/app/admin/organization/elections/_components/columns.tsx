@@ -88,7 +88,7 @@ export const columns = (
         const election = row.original
 
         return (
-          <div className="flex justify-end">
+          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted group">

@@ -107,7 +107,16 @@ export function RolesList({ roles, electionId, availableSystems }: RolesListProp
       </AlertDialog>
 
       <RoleDataTable 
-        columns={columns(electionId, availableSystems, handleView)} 
+        columns={columns(
+          electionId, 
+          availableSystems, 
+          handleView,
+          handleEdit,
+          (role) => {
+            setRoleToDelete(role)
+            setIsDeleteDialogOpen(true)
+          }
+        )} 
         data={roles} 
         onRowClick={handleView}
       />

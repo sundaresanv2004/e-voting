@@ -159,7 +159,7 @@ export function ElectionDetailsSheet({
             <div className="grid gap-3">
               <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-sm ring-1 ring-blue-500/20">
-                  <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2.5} className="h-5 w-5" color="currentColor" />
+                  <HugeiconsIcon icon={Calendar01Icon} className="h-5 w-5" color="currentColor" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground">Starts</p>
@@ -176,7 +176,7 @@ export function ElectionDetailsSheet({
 
               <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 shadow-sm ring-1 ring-orange-500/20">
-                  <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2.5} className="h-5 w-5" color="currentColor" />
+                  <HugeiconsIcon icon={Calendar01Icon} className="h-5 w-5" color="currentColor" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground">Ends</p>
@@ -223,10 +223,10 @@ export function ElectionDetailsSheet({
             className="w-1/2"
             onClick={() => {
               onOpenChange(false)
-              setTimeout(onDelete, 150)
+              setTimeout(onDelete, 300)
             }}
           >
-            <HugeiconsIcon icon={Delete02Icon} strokeWidth={2.5} className="mr-2 h-4 w-4" color="currentColor" />
+            <HugeiconsIcon icon={Delete02Icon} className="mr-2 h-4 w-4" color="currentColor" />
             Delete Election
           </Button>
           <Button
@@ -234,10 +234,10 @@ export function ElectionDetailsSheet({
             className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
             onClick={() => {
               onOpenChange(false)
-              setTimeout(onEdit, 150)
+              setTimeout(onEdit, 300)
             }}
           >
-            <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2.5} className="mr-2 h-4 w-4" color="currentColor" />
+            <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 h-4 w-4" color="currentColor" />
             Edit Election
           </Button>
         </SheetFooter>
