@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
 import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
@@ -24,10 +25,10 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void
 }
 
-export function ElectionDataTable<TData, TValue>({
+export function RoleDataTable<TData, TValue>({
   columns,
   data,
-  emptyMessage = "No elections found.",
+  emptyMessage = "No roles found.",
   onRowClick
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
@@ -68,7 +69,7 @@ export function ElectionDataTable<TData, TValue>({
                 onClick={() => onRowClick?.(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-4 px-6">
+                  <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

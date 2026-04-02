@@ -6,8 +6,7 @@ import { MapsIcon } from "@hugeicons/core-free-icons"
 
 import ElectionHero from "./_components/electionHero"
 import { CreateElectionTrigger } from "./_components/create-election-trigger"
-import { DataTable } from "./_components/data-table"
-import { columns } from "./_components/columns"
+import { ElectionsList } from "./_components/ElectionsList"
 
 export default async function OrganizationElectionsPage() {
   const session = await auth()
@@ -42,7 +41,7 @@ export default async function OrganizationElectionsPage() {
             <CreateElectionTrigger />
           </div>
         ) : (
-          <DataTable columns={columns} data={elections} />
+          <ElectionsList elections={elections} />
         )}
       </div>
     </div>

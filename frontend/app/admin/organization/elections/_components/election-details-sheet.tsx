@@ -124,7 +124,7 @@ export function ElectionDetailsSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 space-y-8 py-4">
+        <div className="flex-1 overflow-y-auto px-6 space-y-6 py-4">
           {/* Election Code Hero Card */}
           <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-muted/50 to-muted/80 p-6 shadow-sm">
             <div className="relative z-10 flex items-center justify-between">
@@ -217,10 +217,10 @@ export function ElectionDetailsSheet({
           </div>
         </div>
 
-        <SheetFooter className="mt-auto border-t p-6 gap-3 sm:flex-row flex-col bg-muted/20">
+        <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 sm:flex-row flex-col bg-muted/5 lg:backdrop-blur-sm">
           <Button
             variant="destructive"
-            className="flex-1 rounded-xl h-11"
+            className="w-1/2"
             onClick={() => {
               onOpenChange(false)
               setTimeout(onDelete, 150)
@@ -231,7 +231,7 @@ export function ElectionDetailsSheet({
           </Button>
           <Button
             variant="outline"
-            className="flex-1 rounded-xl h-11 bg-background border hover:bg-muted"
+            className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
             onClick={() => {
               onOpenChange(false)
               setTimeout(onEdit, 150)

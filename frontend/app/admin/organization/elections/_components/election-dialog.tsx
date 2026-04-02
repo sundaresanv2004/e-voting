@@ -122,7 +122,7 @@ export function ElectionDialog({
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-semibold">
             {isEdit ? "Edit Election" : "Create New Election"}
           </DialogTitle>
           <DialogDescription>
@@ -175,14 +175,12 @@ export function ElectionDialog({
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isPending}
-              className="rounded-full"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isPending || !!dateTimeError}
-              className="rounded-full px-8"
             >
               {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Election")}
             </Button>

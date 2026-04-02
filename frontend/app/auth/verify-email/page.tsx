@@ -22,14 +22,15 @@ import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
-    InputOTPSeparator
 } from "@/components/ui/input-otp"
 import { verifyEmail, resendVerificationCode } from "@/lib/actions/auth-actions"
 import { signOut } from "next-auth/react"
 
+import { Suspense } from "react"
+
 const RESEND_COOLDOWN = 30 // seconds
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
     const { data: session, update } = useSession()
     const searchParams = useSearchParams()
     const emailParam = searchParams.get("email")
@@ -121,7 +122,7 @@ export default function VerifyEmailPage() {
             autoResendTriggered.current = true
             handleResend()
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []) // Run once on mount only
 
     return (
@@ -204,25 +205,33 @@ export default function VerifyEmailPage() {
                 </div>
             </CardContent>
 
-                <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="opacity-80">Didn't receive the code?</span>
-                        <Button
-                            onClick={handleResend}
-                            variant={"link"}
-                            disabled={resendTimer > 0 || isResending}
-                            className="text-primary font-semibold hover:underline disabled:no-underline disabled:opacity-50 transition-colors -ml-2"
-                        >
-                            {isResending ? (
-                                <Spinner className="w-3 h-3" />
-                            ) : resendTimer > 0 ? (
-                                <span>Try again in {resendTimer}s</span>
-                            ) : (
-                                "Resend code"
-                            )}
-                        </Button>
-                    </div>
-                </CardFooter>
+            <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="opacity-80">Didn't receive the code?</span>
+                    <Button
+                        onClick={handleResend}
+                        variant={"link"}
+                        disabled={resendTimer > 0 || isResending}
+                        className="text-primary font-semibold hover:underline disabled:no-underline disabled:opacity-50 transition-colors -ml-2"
+                    >
+                        {isResending ? (
+                            <Spinner className="w-3 h-3" />
+                        ) : resendTimer > 0 ? (
+                            <span>Try again in {resendTimer}s</span>
+                        ) : (
+                            "Resend code"
+                        )}
+                    </Button>
+                </div>
+            </CardFooter>
         </Card>
+    )
+}
+
+export default function VerifyEmailPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center p-8"><Spinner /></div>}>
+            <VerifyEmailForm />
+        </Suspense>
     )
 }
