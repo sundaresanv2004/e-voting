@@ -118,7 +118,7 @@ export function ElectionDetailsSheet({
               {election.status}
             </Badge>
           </div>
-          <SheetTitle>{election.name}</SheetTitle>
+          <SheetTitle className="font-semibold text-xl">{election.name}</SheetTitle>
           <SheetDescription>
             Detailed overview of this election campaign.
           </SheetDescription>

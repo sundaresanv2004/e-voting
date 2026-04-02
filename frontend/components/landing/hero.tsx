@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
+import HeroImage from "@/public/images/hero_image_optimized.png"
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
     ArrowRight01Icon,
@@ -149,14 +150,13 @@ export default function Hero() {
                             <div
                                 className="absolute -inset-12 bg-linear-to-tl from-accent/20 via-transparent to-primary/15 dark:from-cyan-500/30 dark:via-transparent dark:to-blue-500/25 rounded-full blur-2xl opacity-60 animate-pulse [animation-delay:1s]" />
 
-                            {/* Image */}
                             <div className="relative">
                                 <Image
-                                    src="/images/hero_image_optimized.png"
+                                    src={HeroImage}
+                                    placeholder="blur"
                                     alt="Digital voting illustration"
-                                    width={600}
-                                    height={600}
                                     className="w-full h-auto object-contain drop-shadow-2xl dark:drop-shadow-lg dark:brightness-110"
+                                    priority
                                     unoptimized
                                 />
                             </div>

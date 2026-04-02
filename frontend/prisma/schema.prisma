@@ -169,7 +169,7 @@ model ElectionSettings {
 model ElectionRole {
   id         String @id @default(cuid())
   electionId String
-  name       String // e.g., "Head Boy"
+  name       String
   order      Int    @default(0)
 
   election       Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)

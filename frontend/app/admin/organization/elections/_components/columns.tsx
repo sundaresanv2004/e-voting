@@ -60,7 +60,7 @@ export const columns: ColumnDef<Election>[] = [
     accessorKey: "code",
     header: "Code",
     cell: ({ row }) => (
-      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+      <code className="text-xs bg-muted px-1.5 py-0.5 rounded-full px-2 font-mono">
         {row.getValue("code")}
       </code>
     ),
@@ -137,18 +137,18 @@ export const columns: ColumnDef<Election>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} className="gap-2">
                 <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
-                Edit Election
+                Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive focus:bg-destructive/10 gap-2"
+                className="text-destructive focus:text-destructive focus:bg-destructive/10 gap-2 group"
                 onSelect={() => setIsDeleteDialogOpen(true)}
               >
                 <HugeiconsIcon
                   icon={Delete02Icon}
-                  className="h-4 w-4 text-destructive focus:text-destructive"
+                  className="h-4 w-4 text-destructive/60 group-data-[highlighted]:text-destructive"
                 />
-                Delete Election
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -182,7 +182,7 @@ export const columns: ColumnDef<Election>[] = [
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={isDeleting}
                 >
-                  {isDeleting ? "Erasing..." : "Confirm Deletion"}
+                  {isDeleting ? "Deleting..." : "Confirm Deletion"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

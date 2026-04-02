@@ -18,9 +18,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LayoutBottomIcon,
-  AudioWave01Icon,
-  CommandIcon,
-  ComputerTerminalIcon,
+  Archive01Icon,
   RoboticIcon,
   Settings05Icon,
   PieChartIcon,
@@ -31,9 +29,9 @@ import {
 
 const ELECTION_COOKIE_KEY = "last_election_id"
 
-export function AppSidebar({ 
+export function AppSidebar({
   elections: _elections,
-  ...props 
+  ...props
 }: React.ComponentProps<typeof Sidebar> & {
   elections: {
     id: string
@@ -49,21 +47,21 @@ export function AppSidebar({
   React.useEffect(() => {
     setMounted(true)
   }, [])
-  
+
   // 1. Determine active election ID from URL, then Cookie, then latest fetch
   const urlElectionId = params.electionId as string
   const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
-  
-  const activeElectionId = 
-    urlElectionId ?? 
-    cookieElectionId ?? 
+
+  const activeElectionId =
+    urlElectionId ??
+    cookieElectionId ??
     _elections[0]?.id
 
   // 2. Format elections for switcher
   const elections = _elections.map((election) => ({
     id: election.id,
     name: election.name,
-    logo: <HugeiconsIcon icon={AudioWave01Icon} strokeWidth={2} />,
+    logo: <HugeiconsIcon icon={Archive01Icon} strokeWidth={2} />,
     plan: election.status,
   }))
 
@@ -117,7 +115,7 @@ export function AppSidebar({
       name: "Elections",
       url: "/admin/organization/elections",
       icon: (
-        <HugeiconsIcon icon={MapsIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={Archive01Icon} strokeWidth={2} />
       ),
     },
     {
@@ -149,8 +147,8 @@ export function AppSidebar({
         <ElectionSwitcher elections={elections} />
       </SidebarHeader>
       <SidebarContent>
-        <NavElection 
-          items={navMain} 
+        <NavElection
+          items={navMain}
           isEmpty={elections.length === 0}
         />
         <NavOrganization organizationNav={organizationNav} />

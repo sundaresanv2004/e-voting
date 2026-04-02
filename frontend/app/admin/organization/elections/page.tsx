@@ -26,7 +26,7 @@ export default async function OrganizationElectionsPage() {
   return (
     <div className="flex flex-col w-full min-h-full">
       <ElectionHero>
-        <CreateElectionTrigger />
+        <CreateElectionTrigger listenToParams />
       </ElectionHero>
 
       <div className="flex-1 py-6 px-4 md:px-8 w-full">
