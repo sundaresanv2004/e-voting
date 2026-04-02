@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import Cookies from "js-cookie"
 
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
@@ -28,6 +29,8 @@ import {
   ShieldKeyIcon,
 } from "@hugeicons/core-free-icons"
 
+const ELECTION_COOKIE_KEY = "last_election_id"
+
 export function AppSidebar({ 
   elections: _elections,
   ...props 
@@ -40,9 +43,23 @@ export function AppSidebar({
   }[]
 }) {
   const params = useParams()
-  const activeElectionId = params.electionId as string
+  const router = useRouter()
+  const [mounted, setMounted] = React.useState(false)
 
-  // Use real icons for the switcher
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // 1. Determine active election ID from URL, then Cookie, then latest fetch
+  const urlElectionId = params.electionId as string
+  const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
+  
+  const activeElectionId = 
+    urlElectionId ?? 
+    cookieElectionId ?? 
+    _elections[0]?.id
+
+  // 2. Format elections for switcher
   const elections = _elections.map((election) => ({
     id: election.id,
     name: election.name,
@@ -132,7 +149,10 @@ export function AppSidebar({
         <ElectionSwitcher elections={elections} />
       </SidebarHeader>
       <SidebarContent>
-        {activeElectionId && <NavElection items={navMain} />}
+        <NavElection 
+          items={navMain} 
+          isEmpty={elections.length === 0}
+        />
         <NavOrganization organizationNav={organizationNav} />
       </SidebarContent>
       <SidebarFooter>

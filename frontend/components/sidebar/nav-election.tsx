@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "react-router-dom" // Wait, this is Next.js. I should use next/link.
+
 import { usePathname, useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { PlusSignIcon, MapsIcon } from "@hugeicons/core-free-icons"
@@ -40,7 +40,7 @@ export function NavElection({
                 No active election found
               </p>
             </div>
-            <SidebarMenuButton 
+            <SidebarMenuButton
               className="w-full justify-start gap-2 text-primary hover:text-primary transition-colors"
               onClick={() => router.push("/admin/organization/elections?new=true")}
             >
@@ -59,11 +59,11 @@ export function NavElection({
       <SidebarMenu>
         {items.map((item) => {
           const isActive = pathname === item.url
-          
+
           return (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
-                asChild 
+              <SidebarMenuButton
+                asChild
                 tooltip={item.title}
                 isActive={isActive}
               >

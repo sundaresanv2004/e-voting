@@ -42,9 +42,64 @@ export async function createElection(formData: {
     return { success: true, election }
   } catch (error: any) {
     console.error("[CREATE_ELECTION_ACTION]", error)
-    if (error.code === 'P2002') {
-      return { success: false, error: "An election with this code already exists." }
-    }
     return { success: false, error: "Failed to create election. Please try again." }
+  }
+}
+
+export async function updateElection(
+  id: string,
+  formData: {
+    name: string
+    startTime: Date
+    endTime: Date
+  }
+) {
+  const session = await auth()
+
+  if (!session?.user?.organizationId) {
+    throw new Error("Unauthorized - Organization not found")
+  }
+
+  try {
+    const election = await db.election.update({
+      where: { 
+        id,
+        organizationId: session.user.organizationId 
+      },
+      data: {
+        name: formData.name,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      },
+    })
+
+    revalidatePath("/admin/organization/elections")
+    return { success: true, election }
+  } catch (error: any) {
+    console.error("[UPDATE_ELECTION_ACTION]", error)
+    return { success: false, error: "Failed to update election. Please try again." }
+  }
+}
+
+export async function deleteElection(id: string) {
+  const session = await auth()
+
+  if (!session?.user?.organizationId) {
+    throw new Error("Unauthorized - Organization not found")
+  }
+
+  try {
+    await db.election.delete({
+      where: { 
+        id,
+        organizationId: session.user.organizationId 
+      },
+    })
+
+    revalidatePath("/admin/organization/elections")
+    return { success: true }
+  } catch (error: any) {
+    console.error("[DELETE_ELECTION_ACTION]", error)
+    return { success: false, error: "Failed to delete election. Please try again." }
   }
 }
