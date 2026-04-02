@@ -55,7 +55,7 @@ function LoginForm() {
                 if (redirectTo) {
                     router.push(redirectTo)
                 } else {
-                    router.push('/dashboard')
+                    router.push('/admin/organization')
                 }
                 router.refresh()
             } catch (err) {

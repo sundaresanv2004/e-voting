@@ -152,7 +152,7 @@ export default function Hero() {
                             {/* Image */}
                             <div className="relative">
                                 <Image
-                                    src="/images/hero_image.png"
+                                    src="/images/hero_image_optimized.png"
                                     alt="Digital voting illustration"
                                     width={600}
                                     height={600}

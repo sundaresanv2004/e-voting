@@ -39,7 +39,7 @@ export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
     const handleGoogleLogin = () => {
         startTransition(async () => {
             try {
-                await signIn("google", { redirectTo: "/dashboard" })
+                await signIn("google", { redirectTo: "/admin/organization" })
             } catch (err) {
                 toast.error("Failed to sign in with Google.")
             }
