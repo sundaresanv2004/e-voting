@@ -1,51 +1,48 @@
+import { auth } from "@/auth"
+import { db } from "@/lib/db"
+import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+import { AdminHeader } from "@/app/admin/_components/admin-header"
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar"
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children
 }: {
   children: React.ReactNode
 }) {
+  const session = await auth()
+
+  if (!session?.user?.organizationId) {
+    redirect("/setup/organization")
+  }
+
+  // Fetch real elections for this organization
+  const elections = await db.election.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
+
+  // Format elections for the switcher (adding default logos/plans for now)
+  const formattedElections = elections.map((election) => ({
+    id: election.id,
+    name: election.name,
+    status: election.status,
+    code: election.code,
+  }))
+
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar elections={formattedElections} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/admin">
-                    Admin
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col p-4 pt-6">
+        <AdminHeader />
+        <div className="flex flex-1 flex-col">
           {children}
         </div>
       </SidebarInset>

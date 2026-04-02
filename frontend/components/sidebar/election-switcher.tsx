@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter, useParams } from "next/navigation"
 
 import {
   DropdownMenu,
@@ -18,22 +19,27 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { UnfoldMoreIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
+import { UnfoldMoreIcon, PlusSignIcon, MapsIcon } from "@hugeicons/core-free-icons"
 
 export function ElectionSwitcher({
   elections,
 }: {
   elections: {
+    id: string
     name: string
     logo: React.ReactNode
     plan: string
   }[]
 }) {
   const { isMobile } = useSidebar()
-  const [activeElection, setActiveElection] = React.useState(elections[0])
+  const router = useRouter()
+  const params = useParams()
+  
+  // Find the active election based on the URL parameter
+  const activeElection = elections.find(e => e.id === params.electionId) || elections[0]
 
-  if (!activeElection) {
-    return null
+  const onSelect = (electionId: string) => {
+    router.push(`/admin/election/${electionId}`)
   }
 
   return (
@@ -46,11 +52,15 @@ export function ElectionSwitcher({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                {activeElection.logo}
+                {activeElection ? activeElection.logo : <HugeiconsIcon icon={MapsIcon} strokeWidth={2} className="size-4" />}
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{activeElection.name}</span>
-                <span className="truncate text-xs">{activeElection.plan}</span>
+                <span className="truncate font-medium">
+                  {activeElection ? activeElection.name : "No Election"}
+                </span>
+                <span className="truncate text-xs">
+                  {activeElection ? activeElection.plan : "Select or create one"}
+                </span>
               </div>
               <HugeiconsIcon icon={UnfoldMoreIcon} strokeWidth={2} className="ml-auto" />
             </SidebarMenuButton>
@@ -64,21 +74,29 @@ export function ElectionSwitcher({
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               Elections
             </DropdownMenuLabel>
+            {elections.length === 0 && (
+              <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                No elections found
+              </div>
+            )}
             {elections.map((election, index) => (
               <DropdownMenuItem
-                key={election.name}
-                onClick={() => setActiveElection(election)}
+                key={election.id}
+                onClick={() => onSelect(election.id)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
                   {election.logo}
                 </div>
-                {election.name}
+                <span className="flex-1 truncate">{election.name}</span>
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
+            <DropdownMenuItem 
+              className="gap-2 p-2 cursor-pointer"
+              onClick={() => router.push("/admin/organization/elections")}
+            >
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
               </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useParams } from "next/navigation"
 
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
@@ -27,35 +28,35 @@ import {
   ShieldKeyIcon,
 } from "@hugeicons/core-free-icons"
 
-// This is sample data targeting our generic route structure.
-// Later, this will be fetched dynamically or built via a context provider.
-const activeElectionId = "placeholder-election-id"
+export function AppSidebar({ 
+  elections: _elections,
+  ...props 
+}: React.ComponentProps<typeof Sidebar> & {
+  elections: {
+    id: string
+    name: string
+    status: string
+    code: string
+  }[]
+}) {
+  const params = useParams()
+  const activeElectionId = params.electionId as string
 
-const data = {
-  elections: [
-    {
-      name: "Student Council 2026",
-      logo: (
-        <HugeiconsIcon icon={AudioWave01Icon} strokeWidth={2} />
-      ),
-      plan: "Active",
-    },
-    {
-      name: "Board Member Election",
-      logo: (
-        <HugeiconsIcon icon={CommandIcon} strokeWidth={2} />
-      ),
-      plan: "Draft",
-    },
-  ],
-  navMain: [
+  // Use real icons for the switcher
+  const elections = _elections.map((election) => ({
+    id: election.id,
+    name: election.name,
+    logo: <HugeiconsIcon icon={AudioWave01Icon} strokeWidth={2} />,
+    plan: election.status,
+  }))
+
+  const navMain = [
     {
       title: "Dashboard",
       url: `/admin/election/${activeElectionId}`,
       icon: (
         <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
       ),
-      isActive: true,
     },
     {
       title: "Candidates",
@@ -85,8 +86,9 @@ const data = {
         <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
       ),
     },
-  ],
-  organizationNav: [
+  ]
+
+  const organizationNav = [
     {
       name: "Dashboard",
       url: "/admin/organization",
@@ -122,18 +124,16 @@ const data = {
         <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
       ),
     },
-  ],
-}
+  ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
-        <ElectionSwitcher elections={data.elections} />
+        <ElectionSwitcher elections={elections} />
       </SidebarHeader>
       <SidebarContent>
-        <NavElection items={data.navMain} />
-        <NavOrganization organizationNav={data.organizationNav} />
+        {activeElectionId && <NavElection items={navMain} />}
+        <NavOrganization organizationNav={organizationNav} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

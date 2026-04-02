@@ -123,9 +123,9 @@ enum OrganizationType {
 }
 
 enum ElectionStatus {
-  DRAFT
-  OPEN
-  CLOSED
+  UPCOMING
+  ACTIVE
+  COMPLETED
 }
 
 enum SystemStatus {
@@ -142,7 +142,7 @@ model Election {
   code            String         @unique
   startTime       DateTime
   endTime         DateTime
-  status          ElectionStatus @default(DRAFT)
+  status          ElectionStatus @default(UPCOMING)
   createdByUserId String
   createdAt       DateTime       @default(now())
 
