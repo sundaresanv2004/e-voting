@@ -9,11 +9,27 @@ export default async function OrganizationLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  const userId = session?.user?.id;
 
-  // Protect the entire /admin/organization namespace
-  if (session?.user?.role !== "ORG_ADMIN") {
-    const userId = session?.user?.id;
-    const organizationId = session?.user?.organizationId;
+  if (!userId) {
+    redirect("/auth/login");
+  }
+
+  // 🔥 IMPORTANT: Always check the database for the ACTUAL organization status.
+  // This prevents the "stale JWT" loop where the token thinks you have an org 
+  // but the database knows it was deleted.
+  const userInDb = await db.user.findUnique({
+    where: { id: userId },
+    select: { organizationId: true, role: true }
+  });
+
+  if (!userInDb?.organizationId) {
+    redirect("/setup/organization");
+  }
+
+  // Protect the entire /admin/organization namespace for non-admins
+  if (userInDb.role !== "ORG_ADMIN") {
+    const organizationId = userInDb.organizationId;
 
     if (!userId || !organizationId) {
       redirect("/auth/login");

@@ -20,7 +20,7 @@ export default auth((req: any) => {
 
   // 2. Public and Auth-page handling
   if (isPublicRoute) return undefined
-  
+
   if (isAuthRoute) {
     if (isLoggedIn) {
       // If unverified, they MUST be on verify-email. If they already are, don't redirect.
@@ -31,7 +31,7 @@ export default auth((req: any) => {
         verifyUrl.searchParams.set('resend', 'true')
         return Response.redirect(verifyUrl)
       }
-      
+
       // If verified, they shouldn't be on any auth page (login, signup, verify-email)
       const redirectUrl = hasOrganization ? '/admin/organization' : '/setup/organization'
       return Response.redirect(new URL(redirectUrl, nextUrl))
@@ -45,7 +45,7 @@ export default auth((req: any) => {
   }
 
   // 4. Authenticated-but-needs-action handling
-  
+
   // High Priority: Email Verification
   if (!isEmailVerified) {
     if (isVerifyRoute) return undefined // Already handled above in isAuthRoute, but here for safety

@@ -51,26 +51,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, trigger }: any) {
-      if (user) {
-        token.role = user.role
-        token.organizationId = user.organizationId
-        token.emailVerified = user.emailVerified
-      }
-      
-      // Re-fetch from DB on explicit update, or whenever key fields are missing.
-      // This ensures the middleware always has fresh data (no race conditions).
-      if (trigger === "update" || !token.organizationId || token.emailVerified === undefined) {
-        if (token.sub) {
-          const freshUser = await db.user.findUnique({
-            where: { id: token.sub },
-            select: { role: true, organizationId: true, emailVerified: true }
-          })
-          if (freshUser) {
-            token.role = freshUser.role
-            token.organizationId = freshUser.organizationId
-            token.emailVerified = freshUser.emailVerified
-          }
+    async jwt({ token }: any) {
+      // 🚀 IMPORTANT: Always re-fetch from the database to ensure the Middleware (Proxy) 
+      // has the absolute latest Organization and Role data. 
+      // This prevents redirect loops caused by stale JWT tokens (Create/Delete cases).
+      if (token.sub) {
+        const freshUser = await db.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true, organizationId: true, emailVerified: true }
+        })
+        
+        if (freshUser) {
+          token.role = freshUser.role
+          token.organizationId = freshUser.organizationId
+          token.emailVerified = freshUser.emailVerified
         }
       }
       
@@ -96,10 +90,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
     async signIn({ user, account }: any) {
-      // For Google OAuth: always allow sign-in.
-      // We use updateMany (not update) so it doesn't throw if the user
-      // doesn't exist yet when signIn callback fires for brand-new users.
-      // The Prisma adapter creates the user record just after this callback.
       if (account?.provider === "google") {
         if (user?.email) {
           await db.user.updateMany({
@@ -112,8 +102,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true
     },
   },
-  // Use the linkAccount event to catch brand-new Google users
-  // (fires AFTER the adapter creates the user and account records).
   events: {
     async linkAccount({ user, account }) {
       if (account.provider === "google" && user.email) {
@@ -125,8 +113,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async createUser({ user }) {
       if (user.email) {
-        // Ensure we only send this for OAuth registrations (password is null)
-        // Credentials registration handles its own welcome email to prevent duplicates.
         const dbUser = await db.user.findUnique({ where: { email: user.email } })
         if (dbUser && !dbUser.password) {
           await sendWelcomeEmail(user.email, user.name || "User")

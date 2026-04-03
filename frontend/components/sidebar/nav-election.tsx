@@ -17,6 +17,7 @@ import Link from "next/link"
 export function NavElection({
   items,
   isEmpty,
+  userRole,
 }: {
   items: {
     title: string
@@ -25,6 +26,7 @@ export function NavElection({
     isActive?: boolean
   }[]
   isEmpty?: boolean
+  userRole?: string
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -47,24 +49,26 @@ export function NavElection({
                 </p>
               </div>
             )}
-            <SidebarMenuButton
-              className="w-full justify-start gap-2 text-primary hover:cursor-pointer hover:text-primary transition-colors data-[state=collapsed]:justify-center"
-              onClick={() =>
-                router.push("/admin/organization/elections?new=true")
-              }
-              tooltip="Create New Election"
-            >
-              <HugeiconsIcon
-                icon={PlusSignIcon}
-                strokeWidth={2.5}
-                className="h-4 w-4"
-              />
-              {state === "expanded" && (
-                <span className="font-semibold text-xs">
-                  Create New Election
-                </span>
-              )}
-            </SidebarMenuButton>
+            {userRole === "ORG_ADMIN" && (
+              <SidebarMenuButton
+                className="w-full justify-start gap-2 text-primary hover:cursor-pointer hover:text-primary transition-colors data-[state=collapsed]:justify-center"
+                onClick={() =>
+                  router.push("/admin/organization/elections?new=true")
+                }
+                tooltip="Create New Election"
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  strokeWidth={2.5}
+                  className="h-4 w-4"
+                />
+                {state === "expanded" && (
+                  <span className="font-semibold text-xs">
+                    Create New Election
+                  </span>
+                )}
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>

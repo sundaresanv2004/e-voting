@@ -35,8 +35,7 @@ model User {
   createdCandidates       Candidate[]            @relation("CandidateCreatedBy")
   updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
   approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
-  createdSystems          AuthorizedSystem[]     @relation("SystemCreatedBy")
-  updatedSystems          AuthorizedSystem[]     @relation("SystemUpdatedBy")
+
 
   hasAllElectionsAccess Boolean              @default(false)
   electionAccess        UserElectionAccess[] @relation("UserElections")
@@ -266,19 +265,16 @@ model AuthorizedSystem {
   name             String?
   hostName         String?
   ipAddress        String?
-  macAddress       String?
+  macAddress       String?      @unique
   status           SystemStatus @default(PENDING)
   approvedByUserId String?
   approvedAt       DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
-  createdByUserId  String
-  updatedByUserId  String
+
 
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   approvedBy   User?          @relation("SystemApprover", fields: [approvedByUserId], references: [id])
-  createdBy    User           @relation("SystemCreatedBy", fields: [createdByUserId], references: [id])
-  updatedBy    User           @relation("SystemUpdatedBy", fields: [updatedByUserId], references: [id])
   elections    Election[]     @relation("ElectionSystems")
   roles        ElectionRole[] @relation("RoleSystems")
   ballots      Ballot[]

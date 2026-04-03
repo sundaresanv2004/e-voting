@@ -19,10 +19,33 @@ export async function createOrganization(formData: FormData) {
     throw new Error("Missing required fields")
   }
 
-  // Generate a unique 6-character code based on the org name + random string
-  const prefix = name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase()
-  const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase()
-  const code = `${prefix.padEnd(3, 'X')}-${randomStr}`
+  // Generate a professional organization code
+  // Format: [INITIALS]-[6 RANDOM CHARACTERS] (e.g., VV-A1B2C3)
+  const prefix = name
+    .split(/\s+/)
+    .filter(word => word.length > 0)
+    .map(word => word[0].toUpperCase())
+    .join("")
+    .replace(/[^A-Z]/g, '') // Keep only letters
+  
+  let code: string = ""
+  let isUnique = false
+
+  // Guarantee uniqueness (highly likely on first try, but safely handles collisions)
+  while (!isUnique) {
+    const randomSuffix = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase()
+    
+    code = prefix ? `${prefix}-${randomSuffix}` : randomSuffix
+    
+    const existing = await db.organization.findUnique({
+        where: { code }
+    })
+    
+    if (!existing) isUnique = true
+  }
 
   try {
     // Create organization and update user in a transaction

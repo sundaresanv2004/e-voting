@@ -3,7 +3,6 @@
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
 import Cookies from "js-cookie"
-
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
 import { NavUser } from "@/components/sidebar/nav-user"
@@ -19,10 +18,9 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LayoutBottomIcon,
   Archive01Icon,
-  RoboticIcon,
+  LaptopIcon,
   Settings05Icon,
   PieChartIcon,
-  MapsIcon,
   UserGroupIcon,
   ShieldKeyIcon,
 } from "@hugeicons/core-free-icons"
@@ -131,7 +129,7 @@ export function AppSidebar({
       name: "Systems",
       url: "/admin/organization/systems",
       icon: (
-        <HugeiconsIcon icon={RoboticIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={LaptopIcon} strokeWidth={2} />
       ),
     },
     {
@@ -152,6 +150,7 @@ export function AppSidebar({
         <NavElection
           items={navMain}
           isEmpty={elections.length === 0}
+          userRole={userRole}
         />
         {userRole === "ORG_ADMIN" && <NavOrganization organizationNav={organizationNav} />}
       </SidebarContent>
