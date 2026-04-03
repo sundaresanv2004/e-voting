@@ -36,7 +36,6 @@ model User {
   updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
   approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
 
-
   hasAllElectionsAccess Boolean              @default(false)
   electionAccess        UserElectionAccess[] @relation("UserElections")
   createdAccess         UserElectionAccess[] @relation("AccessCreatedBy")
@@ -271,7 +270,6 @@ model AuthorizedSystem {
   approvedAt       DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
-
 
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   approvedBy   User?          @relation("SystemApprover", fields: [approvedByUserId], references: [id])
