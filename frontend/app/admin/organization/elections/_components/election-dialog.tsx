@@ -116,9 +116,9 @@ export function ElectionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-xl p-0 overflow-hidden gap-0 bg-background max-h-[95vh] flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b bg-muted/20 gap-1">
-          <DialogTitle className="font-semibold text-xl">
+      <DialogContent className="sm:max-w-xl p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b bg-card relative gap-1 overflow-hidden">
+          <DialogTitle className="font-semibold text-xl tracking-tight">
             {isEdit ? "Edit Election" : "Create New Election"}
           </DialogTitle>
           <DialogDescription className="text-sm font-medium text-muted-foreground/80">
@@ -128,7 +128,7 @@ export function ElectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden bg-card">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             <div className="space-y-5">
               <Field>
@@ -148,7 +148,7 @@ export function ElectionDialog({
                 <FieldLabel>
                   Scheduling Period
                 </FieldLabel>
-                <div className="space-y-4 bg-background p-5 rounded-2xl border">
+                <div className="space-y-4 p-5 rounded-2xl border">
                   <DateTimePicker
                     id="start"
                     label="Start"
@@ -175,7 +175,7 @@ export function ElectionDialog({
             )}
           </div>
 
-          <DialogFooter className="px-6 py-3 border-t bg-muted/20 flex flex-row items-center justify-end gap-3">
+          <DialogFooter className="px-6 py-3 border-t flex flex-row items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"

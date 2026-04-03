@@ -1,13 +1,13 @@
 import type React from "react"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Calendar02Icon, MapsIcon } from '@hugeicons/core-free-icons';
+import { Calendar02Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
 
-interface ElectionHeroProps {
+interface MembersHeroProps {
     title?: string;
     children?: React.ReactNode;
 }
 
-const ElectionHero: React.FC<ElectionHeroProps> = ({ title = "Elections", children }) => {
+const MembersHero: React.FC<MembersHeroProps> = ({ title = "Organization Members", children }) => {
     const currentDate = new Date().toLocaleDateString("en-US", {
         weekday: "long",
         year: "numeric",
@@ -17,10 +17,10 @@ const ElectionHero: React.FC<ElectionHeroProps> = ({ title = "Elections", childr
 
     return (
         <div className="border-b">
-            <div className="flex flex-col space-y-4 py-6 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 px-4 md:px-8 w-full">
+            <div className="flex flex-col space-y-4 py-6 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
                 <div className="flex items-center gap-4">
-                    <div className="rounded-lg bg-primary/10 p-3 ring-1 ring-primary/20">
-                        <HugeiconsIcon icon={MapsIcon} className="h-6 w-6 text-primary" color="currentColor" />
+                    <div className="rounded-lg bg-blue-500/10 p-3 ring-1 ring-blue-500/20">
+                        <HugeiconsIcon icon={UserGroupIcon} className="h-6 w-6 text-blue-600" color="currentColor" />
                     </div>
                     <div className="space-y-1">
                         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
@@ -32,7 +32,7 @@ const ElectionHero: React.FC<ElectionHeroProps> = ({ title = "Elections", childr
                         </div>
                     </div>
                 </div>
-                <div>
+                <div className="flex items-center gap-3">
                     {children}
                 </div>
             </div>
@@ -40,4 +40,4 @@ const ElectionHero: React.FC<ElectionHeroProps> = ({ title = "Elections", childr
     )
 }
 
-export default ElectionHero
+export default MembersHero

@@ -26,6 +26,7 @@ const ELECTION_COOKIE_KEY = "last_election_id"
 
 export function ElectionSwitcher({
   elections,
+  userRole,
 }: {
   elections: {
     id: string
@@ -33,6 +34,7 @@ export function ElectionSwitcher({
     logo: React.ReactNode
     plan: string
   }[]
+  userRole?: string
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
@@ -128,22 +130,26 @@ export function ElectionSwitcher({
                 </span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
-              onClick={() =>
-                router.push("/admin/organization/elections?new=true")
-              }
-            >
-              <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">
-                <HugeiconsIcon
-                  icon={PlusSignIcon}
-                  strokeWidth={2.5}
-                  className="size-3.5"
-                />
-              </div>
-              <div className="flex-1">Create Election</div>
-            </DropdownMenuItem>
+            {userRole === "ORG_ADMIN" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
+                  onClick={() =>
+                    router.push("/admin/organization/elections?new=true")
+                  }
+                >
+                  <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">
+                    <HugeiconsIcon
+                      icon={PlusSignIcon}
+                      strokeWidth={2.5}
+                      className="size-3.5"
+                    />
+                  </div>
+                  <div className="flex-1">Create Election</div>
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

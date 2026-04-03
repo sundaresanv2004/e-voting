@@ -31,6 +31,7 @@ const ELECTION_COOKIE_KEY = "last_election_id"
 
 export function AppSidebar({
   elections: _elections,
+  userRole,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   elections: {
@@ -39,6 +40,7 @@ export function AppSidebar({
     status: string
     code: string
   }[]
+  userRole: string
 }) {
   const params = useParams()
   const router = useRouter()
@@ -144,14 +146,14 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
-        <ElectionSwitcher elections={elections} />
+        <ElectionSwitcher elections={elections} userRole={userRole} />
       </SidebarHeader>
       <SidebarContent>
         <NavElection
           items={navMain}
           isEmpty={elections.length === 0}
         />
-        <NavOrganization organizationNav={organizationNav} />
+        {userRole === "ORG_ADMIN" && <NavOrganization organizationNav={organizationNav} />}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

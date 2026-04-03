@@ -125,7 +125,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async createUser({ user }) {
       if (user.email) {
-        await sendWelcomeEmail(user.email, user.name || "User")
+        // Ensure we only send this for OAuth registrations (password is null)
+        // Credentials registration handles its own welcome email to prevent duplicates.
+        const dbUser = await db.user.findUnique({ where: { email: user.email } })
+        if (dbUser && !dbUser.password) {
+          await sendWelcomeEmail(user.email, user.name || "User")
+        }
       }
     }
   },
