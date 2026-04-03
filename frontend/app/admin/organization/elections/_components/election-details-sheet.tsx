@@ -283,8 +283,8 @@ export function ElectionDetailsSheet({
                 setTimeout(onDelete, 300)
               }}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="mr-2 h-4 w-4 shrink-0" color="currentColor" />
-              <span className="truncate">Delete</span>
+              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+              Delete
             </Button>
             <Button
               variant="outline"
@@ -294,8 +294,8 @@ export function ElectionDetailsSheet({
                 setTimeout(onEdit, 300)
               }}
             >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 h-4 w-4 shrink-0" color="currentColor" />
-              <span className="truncate">Edit Election</span>
+              <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+              Edit Election
             </Button>
           </SheetFooter>
         </SheetContent>

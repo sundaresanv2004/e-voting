@@ -197,12 +197,104 @@ export async function addMemberAction(
   }
 }
 
+export async function updateMemberAction(
+  userId: string,
+  role: UserRole,
+  hasAllAccess: boolean,
+  electionIds: string[]
+) {
+  const session = await auth()
+  const adminId = session?.user?.id
+  const orgId = session?.user?.organizationId
+
+  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
+    throw new Error("Unauthorized")
+  }
+
+  if (userId === adminId) {
+    throw new Error("Self-modification of organization role is not allowed. Please have another administrator update your role.")
+  }
+
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId, organizationId: orgId },
+      select: { name: true, email: true }
+    })
+
+    if (!user) throw new Error("Member not found in organization")
+
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { name: true }
+    })
+
+    const existingAccess = await db.userElectionAccess.findMany({
+      where: { userId },
+      select: { electionId: true }
+    })
+    const existingIds = existingAccess.map(ea => ea.electionId)
+    const newlyAddedIds = electionIds.filter(id => !existingIds.includes(id))
+
+    await db.$transaction(async (tx) => {
+      // 1. Update User Role & Access
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          role,
+          hasAllElectionsAccess: hasAllAccess
+        }
+      })
+
+      // 2. Manage Granular Access
+      // Always Clear existing access to start fresh for this member
+      await tx.userElectionAccess.deleteMany({
+        where: { userId }
+      })
+
+      if (!hasAllAccess && electionIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
+        // Add new specific access
+        await tx.userElectionAccess.createMany({
+          data: electionIds.map(id => ({
+            userId,
+            electionId: id,
+            createdByUserId: adminId!,
+            updatedByUserId: adminId!
+          }))
+        })
+      }
+    })
+
+    // 3. Send Notifications for new assignments
+    if (!hasAllAccess && newlyAddedIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
+       const elections = await db.election.findMany({
+         where: { id: { in: newlyAddedIds } },
+         select: { id: true, name: true }
+       })
+       
+       for (const election of elections) {
+         await sendElectionAssignmentEmail(user.email, user.name || "User", org?.name || "Organization", election.name, role, election.id)
+       }
+    }
+    
+    revalidatePath("/admin/organization/members")
+    return { success: true }
+  } catch (error: any) {
+    console.error("[UPDATE_MEMBER_ACTION]", error)
+    return { success: false, error: error.message || "Failed to update member permissions" }
+  }
+}
+
 export async function removeMemberAction(userId: string) {
   const session = await auth()
   const orgId = session?.user?.organizationId
 
   if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
     throw new Error("Unauthorized")
+  }
+
+  const currentUserId = session?.user?.id
+  if (userId === currentUserId) {
+    throw new Error("Self-removal from organization is not allowed. Please have another administrator remove you.")
   }
 
   try {

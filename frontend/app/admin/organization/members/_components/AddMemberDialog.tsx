@@ -296,9 +296,9 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                               )}
 
                               {user.status === 'already_in_org' && (
-                                <div className="mt-3 flex gap-2 text-[10px] text-blue-700 font-medium">
-                                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-3 w-3 shrink-0" />
-                                  <p>This professional is already part of your organization.</p>
+                                <div className="mt-3 flex gap-2 items-center text-xs text-blue-700 font-medium">
+                                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-3 w-3" />
+                                  <p>This user is already part of your organization.</p>
                                 </div>
                               )}
                             </div>

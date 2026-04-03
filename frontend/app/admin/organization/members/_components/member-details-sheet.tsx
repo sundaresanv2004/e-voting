@@ -41,6 +41,7 @@ interface MemberDetailsSheetProps {
   onEdit: (member: Member) => void
   onRemove: (member: Member) => void
   isOwner: boolean
+  isCurrentUser: boolean
 }
 
 function getRoleBadgeStyle(role: UserRole) {
@@ -96,6 +97,7 @@ export function MemberDetailsSheet({
   onEdit,
   onRemove,
   isOwner,
+  isCurrentUser,
 }: MemberDetailsSheetProps) {
   if (!member) return null
 
@@ -114,6 +116,11 @@ export function MemberDetailsSheet({
               {isOwner && (
                 <Badge variant="outline" className="bg-orange-50/50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20 font-bold uppercase tracking-widest text-[10px] py-0.5 px-2 h-5 shadow-none">
                   Owner
+                </Badge>
+              )}
+              {isCurrentUser && (
+                <Badge variant="outline" className="bg-blue-50/50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 font-bold uppercase tracking-widest text-[10px] py-0.5 px-2 h-5 shadow-none">
+                  You
                 </Badge>
               )}
             </div>
@@ -349,7 +356,7 @@ export function MemberDetailsSheet({
             })()}
           </div>
 
-          {!isOwner && (
+          {!isOwner && !isCurrentUser && (
             <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-row">
               <Button
                 variant="outline"
@@ -359,8 +366,8 @@ export function MemberDetailsSheet({
                   setTimeout(() => onRemove(member), 300)
                 }}
               >
-                <HugeiconsIcon icon={Delete02Icon} className="mr-2 h-4 w-4 shrink-0" color="currentColor" />
-                <span className="truncate">Remove</span>
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Remove
               </Button>
               <Button
                 variant="outline"
@@ -370,8 +377,8 @@ export function MemberDetailsSheet({
                   setTimeout(() => onEdit(member), 300)
                 }}
               >
-                <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 h-4 w-4 shrink-0" color="currentColor" />
-                <span className="truncate">Modify Access</span>
+                <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Edit Access
               </Button>
             </SheetFooter>
           )}

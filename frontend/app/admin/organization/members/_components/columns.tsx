@@ -75,7 +75,8 @@ export const columns = (
   onView: (member: Member) => void,
   onEdit: (member: Member) => void,
   onRemove: (member: Member) => void,
-  orgCreatorId?: string
+  orgCreatorId?: string,
+  currentUserId?: string
 ): ColumnDef<Member>[] => [
     {
       accessorKey: "user",
@@ -91,7 +92,14 @@ export const columns = (
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm truncate leading-tight">{member.name || "Anonymous Professional"}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm truncate leading-tight">{member.name || "Anonymous Professional"}</span>
+                {member.id === currentUserId && (
+                  <Badge variant="outline" className="bg-blue-50/50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 font-bold uppercase tracking-widest text-[8px] py-0 px-1.5 h-4 shadow-none">
+                    You
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center text-[11px] text-muted-foreground/80 mt-0.5">
                 <HugeiconsIcon icon={Mail01Icon} className="h-2.5 w-2.5 mr-1" />
                 <span className="truncate">{member.email}</span>
@@ -179,7 +187,7 @@ export const columns = (
                   </div>
                   <DropdownMenuSeparator className="opacity-40" />
                   <DropdownMenuItem onSelect={() => onView(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
-                    <HugeiconsIcon icon={ViewIcon} className="h-4 w-4 text-primary" color="currentColor" />
+                    <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
                     View Details
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -203,24 +211,30 @@ export const columns = (
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="opacity-40" />
                 <DropdownMenuItem onSelect={() => onView(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
-                  <HugeiconsIcon icon={ViewIcon} className="h-4 w-4 text-primary" color="currentColor" />
+                  <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onEdit(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
-                  <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 text-blue-500" color="currentColor" />
-                  Modify Permissions
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => onRemove(member)}
-                  className="gap-2 text-destructive focus:bg-destructive/10 cursor-pointer py-2.5 rounded-xl font-semibold text-sm"
-                >
-                  <HugeiconsIcon
-                    icon={Delete02Icon}
-                    className="h-4 w-4"
-                    color="currentColor"
-                  />
-                  Remove from Org
-                </DropdownMenuItem>
+                
+                {member.id !== currentUserId && (
+                  <>
+                    <DropdownMenuItem onSelect={() => onEdit(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
+                      <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
+                      Edit Access
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="opacity-40" />
+                    <DropdownMenuItem
+                      onSelect={() => onRemove(member)}
+                      className="gap-2 text-destructive focus:bg-destructive/10 cursor-pointer py-2.5 rounded-xl font-semibold text-sm"
+                    >
+                      <HugeiconsIcon
+                        icon={Delete02Icon}
+                        className="h-4 w-4"
+                        color="currentColor"
+                      />
+                      Remove
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -11,36 +11,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { deleteElection } from "../_actions"
+import { removeMemberAction } from "../_actions"
 import { toast } from "sonner"
-import { type Election } from "./election-details-sheet"
+import { type Member } from "./columns"
 import { Spinner } from "@/components/ui/spinner"
 
-interface DeleteElectionDialogProps {
-  election: Election | null
+interface DeleteMemberDialogProps {
+  member: Member | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
 }
 
-export function DeleteElectionDialog({
-  election,
+export function DeleteMemberDialog({
+  member,
   open,
   onOpenChange,
   onSuccess
-}: DeleteElectionDialogProps) {
+}: DeleteMemberDialogProps) {
   const [isPending, setIsPending] = React.useState(false)
 
   const handleDelete = async () => {
-    if (!election) return
+    if (!member) return
     setIsPending(true)
     try {
-      const result = await deleteElection(election.id)
+      const result = await removeMemberAction(member.id)
       if (result.success) {
-        toast.success("Election deleted successfully")
+        toast.success(`Removed ${member.name || member.email} from organization`)
         onSuccess?.()
       } else {
-        toast.error(result.error || "Failed to delete election")
+        toast.error(result.error || "Failed to remove member")
       }
     } catch {
       toast.error("Something went wrong")
@@ -56,7 +56,7 @@ export function DeleteElectionDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the <strong>{election?.name}</strong> election and all associated data.
+            This action cannot be undone. This will permanently remove <strong>{member?.name || member?.email}</strong> from your organization and revoke all access.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -67,7 +67,7 @@ export function DeleteElectionDialog({
             className="bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors shadow-none"
           >
             {isPending && <Spinner className="mr-2" color="currentColor" />}
-            {isPending ? "Deleting..." : "Delete Election"}
+            {isPending ? "Removing..." : "Remove Member"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -16,6 +16,7 @@ export default async function OrganizationMembersPage() {
   }
 
   const { members, orgCreatorId } = await getMembers()
+  const currentUserId = session?.user?.id
 
   return (
     <div className="flex flex-col w-full">
@@ -25,7 +26,11 @@ export default async function OrganizationMembersPage() {
 
       <div className="flex-1 py-6 px-4 md:px-8 w-full">
         <div className="grid grid-cols-1 gap-8">
-          <MembersList initialMembers={members as any} orgCreatorId={orgCreatorId} />
+          <MembersList
+            initialMembers={members as any}
+            orgCreatorId={orgCreatorId}
+            currentUserId={currentUserId}
+          />
         </div>
       </div>
     </div>
