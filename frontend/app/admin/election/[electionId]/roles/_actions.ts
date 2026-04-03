@@ -35,6 +35,8 @@ export async function createRole(electionId: string, data: { name: string; order
         electionId,
         name: data.name,
         order: data.order,
+        createdByUserId: session.user.id!,
+        updatedByUserId: session.user.id!,
         allowedSystems: {
           connect: data.systemIds.map(id => ({ id }))
         }
@@ -84,6 +86,7 @@ export async function updateRole(roleId: string, electionId: string, data: { nam
       data: {
         name: data.name,
         order: data.order,
+        updatedByUserId: session.user.id!,
         allowedSystems: {
           set: data.systemIds.map(id => ({ id }))
         }

@@ -33,6 +33,8 @@ export async function createCandidate(electionId: string, data: {
         name: data.name,
         profileImage: data.profileImage || null,
         symbolImage: data.symbolImage || null,
+        createdByUserId: session.user.id!,
+        updatedByUserId: session.user.id!,
       }
     })
 
@@ -76,6 +78,7 @@ export async function updateCandidate(candidateId: string, electionId: string, d
         electionRoleId: data.electionRoleId,
         profileImage: data.profileImage || null,
         symbolImage: data.symbolImage || null,
+        updatedByUserId: session.user.id!,
       }
     })
 

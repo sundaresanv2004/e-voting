@@ -14,7 +14,6 @@ interface CreateElectionTriggerProps {
     | "secondary"
     | "ghost"
     | "link"
-    | "destructive"
   size?: "default" | "sm" | "lg" | "icon"
   className?: string
   showText?: boolean

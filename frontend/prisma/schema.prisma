@@ -7,25 +7,41 @@ datasource db {
 }
 
 model User {
-  id                   String                 @id @default(cuid())
-  name                 String?
-  email                String                 @unique
-  emailVerified        DateTime?
-  image                String?
-  password             String?
-  role                 UserRole               @default(USER)
-  organizationId       String?
-  isActive             Boolean                @default(true)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  accounts             Account[]
-  Authenticator        Authenticator[]
-  createdOrganizations Organization[]         @relation("CreatedBy")
-  updatedSettings      OrganizationSettings[] @relation("UpdatedBy")
-  sessions             Session[]
-  organization         Organization?          @relation(fields: [organizationId], references: [id])
-  createdElections     Election[]             @relation("ElectionCreator")
-  approvedSystems      AuthorizedSystem[]     @relation("SystemApprover")
+  id                      String                 @id @default(cuid())
+  name                    String?
+  email                   String                 @unique
+  emailVerified           DateTime?
+  image                   String?
+  password                String?
+  role                    UserRole               @default(USER)
+  organizationId          String?
+  isActive                Boolean                @default(true)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  accounts                Account[]
+  Authenticator           Authenticator[]
+  createdOrganizations    Organization[]         @relation("CreatedBy")
+  updatedOrganizations    Organization[]         @relation("OrganizationUpdatedBy")
+  updatedSettings         OrganizationSettings[] @relation("UpdatedBy")
+  createdSettings         OrganizationSettings[] @relation("SettingsCreatedBy")
+  sessions                Session[]
+  organization            Organization?          @relation(fields: [organizationId], references: [id])
+  createdElections        Election[]             @relation("ElectionCreator")
+  updatedElections        Election[]             @relation("ElectionUpdatedBy")
+  createdElectionSettings ElectionSettings[]     @relation("ElectionSettingsCreatedBy")
+  updatedElectionSettings ElectionSettings[]     @relation("ElectionSettingsUpdatedBy")
+  createdElectionRoles    ElectionRole[]         @relation("ElectionRoleCreatedBy")
+  updatedElectionRoles    ElectionRole[]         @relation("ElectionRoleUpdatedBy")
+  createdCandidates       Candidate[]            @relation("CandidateCreatedBy")
+  updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
+  approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
+  createdSystems          AuthorizedSystem[]     @relation("SystemCreatedBy")
+  updatedSystems          AuthorizedSystem[]     @relation("SystemUpdatedBy")
+
+  hasAllElectionsAccess Boolean              @default(false)
+  electionAccess        UserElectionAccess[] @relation("UserElections")
+  createdAccess         UserElectionAccess[] @relation("AccessCreatedBy")
+  updatedAccess         UserElectionAccess[] @relation("AccessUpdatedBy")
 }
 
 model Organization {
@@ -35,9 +51,12 @@ model Organization {
   code            String                @unique
   logo            String?
   createdByUserId String
+  updatedByUserId String
   isActive        Boolean               @default(true)
   createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   creator         User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  updater         User                  @relation("OrganizationUpdatedBy", fields: [updatedByUserId], references: [id])
   settings        OrganizationSettings?
   members         User[]
   elections       Election[]
@@ -49,15 +68,17 @@ model Organization {
 model OrganizationSettings {
   id                       String       @id @default(cuid())
   organizationId           String       @unique
-  allowStaffAddCandidates  Boolean      @default(false)
   allowMachineSelfRegister Boolean      @default(true)
   maxMachines              Int?
   allowResultPublish       Boolean      @default(true)
   electionRequiresApproval Boolean      @default(true)
   voterImportEnabled       Boolean      @default(true)
+  createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
+  createdByUserId          String
   updatedByUserId          String
   organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy                User         @relation("SettingsCreatedBy", fields: [createdByUserId], references: [id])
   updatedBy                User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
 }
 
@@ -113,6 +134,8 @@ model Authenticator {
 
 enum UserRole {
   USER
+  STAFF
+  VIEWER
   ORG_ADMIN
 }
 
@@ -144,15 +167,19 @@ model Election {
   endTime         DateTime
   status          ElectionStatus @default(UPCOMING)
   createdByUserId String
+  updatedByUserId String
   createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy      User               @relation("ElectionCreator", fields: [createdByUserId], references: [id])
-  settings       ElectionSettings?
-  roles          ElectionRole[]
-  candidates     Candidate[]
-  ballots        Ballot[]
-  allowedSystems AuthorizedSystem[] @relation("ElectionSystems")
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User                 @relation("ElectionCreator", fields: [createdByUserId], references: [id])
+  updatedBy         User                 @relation("ElectionUpdatedBy", fields: [updatedByUserId], references: [id])
+  settings          ElectionSettings?
+  roles             ElectionRole[]
+  candidates        Candidate[]
+  ballots           Ballot[]
+  allowedSystems    AuthorizedSystem[]   @relation("ElectionSystems")
+  accessibleByUsers UserElectionAccess[] @relation("ElectionUsers")
 }
 
 model ElectionSettings {
@@ -162,17 +189,27 @@ model ElectionSettings {
   allSystemsAllowed Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  createdByUserId   String
+  updatedByUserId   String
 
-  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  election  Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("ElectionSettingsCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User     @relation("ElectionSettingsUpdatedBy", fields: [updatedByUserId], references: [id])
 }
 
 model ElectionRole {
-  id         String @id @default(cuid())
-  electionId String
-  name       String
-  order      Int    @default(0)
+  id              String   @id @default(cuid())
+  electionId      String
+  name            String
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
 
   election       Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy      User               @relation("ElectionRoleCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy      User               @relation("ElectionRoleUpdatedBy", fields: [updatedByUserId], references: [id])
   candidates     Candidate[]
   votes          Vote[]
   allowedSystems AuthorizedSystem[] @relation("RoleSystems")
@@ -181,17 +218,23 @@ model ElectionRole {
 }
 
 model Candidate {
-  id             String  @id @default(cuid())
-  electionId     String
-  electionRoleId String
-  name           String
-  profileImage   String?
-  symbolImage    String?
-  biography      String?
+  id              String   @id @default(cuid())
+  electionId      String
+  electionRoleId  String
+  name            String
+  profileImage    String?
+  symbolImage     String?
+  biography       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
 
-  election Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  role     ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
-  votes    Vote[]
+  election  Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
+  createdBy User         @relation("CandidateCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User         @relation("CandidateUpdatedBy", fields: [updatedByUserId], references: [id])
+  votes     Vote[]
 }
 
 model Ballot {
@@ -228,10 +271,33 @@ model AuthorizedSystem {
   approvedByUserId String?
   approvedAt       DateTime?
   createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdByUserId  String
+  updatedByUserId  String
 
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   approvedBy   User?          @relation("SystemApprover", fields: [approvedByUserId], references: [id])
+  createdBy    User           @relation("SystemCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy    User           @relation("SystemUpdatedBy", fields: [updatedByUserId], references: [id])
   elections    Election[]     @relation("ElectionSystems")
   roles        ElectionRole[] @relation("RoleSystems")
   ballots      Ballot[]
+}
+
+model UserElectionAccess {
+  id         String @id @default(cuid())
+  userId     String
+  electionId String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  user      User     @relation("UserElections", fields: [userId], references: [id], onDelete: Cascade)
+  election  Election @relation("ElectionUsers", fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("AccessCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User     @relation("AccessUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@unique([userId, electionId])
 }

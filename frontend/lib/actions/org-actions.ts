@@ -34,6 +34,7 @@ export async function createOrganization(formData: FormData) {
           type,
           code,
           createdByUserId: session.user.id!,
+          updatedByUserId: session.user.id!,
         },
       })
 
@@ -41,6 +42,7 @@ export async function createOrganization(formData: FormData) {
       await tx.organizationSettings.create({
         data: {
           organizationId: organization.id,
+          createdByUserId: session.user.id!,
           updatedByUserId: session.user.id!,
         },
       })
@@ -58,8 +60,8 @@ export async function createOrganization(formData: FormData) {
     })
 
     revalidatePath("/")
-    revalidatePath("/dashboard")
-    
+    revalidatePath("/admin/organization")
+
     return { success: true, data: result }
   } catch (error: any) {
     console.error("Failed to create organization:", error)

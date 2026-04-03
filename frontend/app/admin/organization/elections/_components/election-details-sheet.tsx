@@ -6,7 +6,6 @@ import {
   PencilEdit01Icon,
   Delete02Icon,
   Calendar01Icon,
-  Clock01Icon,
   UserIcon,
   FingerPrintIcon,
   Copy01Icon,
@@ -35,10 +34,18 @@ export type Election = {
   endTime: Date
   organizationId: string
   createdAt: Date
+  updatedAt: Date
   createdBy: {
     id: string
     name: string | null
     email: string
+    image: string | null
+  }
+  updatedBy: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
   }
 }
 
@@ -195,24 +202,55 @@ export function ElectionDetailsSheet({
 
           <Separator className="bg-border/60" />
 
-          {/* Detailed Metadata Grid */}
+          {/* Integrity Logs & Metadata */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium px-1">Metadata</h4>
-            <div className="grid grid-cols-1 gap-2">
-              <MetadataRow
-                label="Initiated By"
-                value={
-                  election.createdBy?.name
-                    ? `${election.createdBy.name} · ${election.createdBy.email}`
-                    : election.createdBy?.email
-                }
-                icon={UserIcon}
-              />
-              <MetadataRow
-                label="Timestamp Created"
-                value={format(new Date(election.createdAt), "PPP · h:mm a")}
-                icon={Clock01Icon}
-              />
+            <h4 className="text-sm font-medium px-1">Integrity Logs & Metadata</h4>
+            <div className="grid gap-3">
+              {/* Creator Card */}
+              <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/10 text-green-600 shadow-sm ring-1 ring-green-500/20">
+                  <HugeiconsIcon icon={UserIcon} className="h-5 w-5" color="currentColor" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-xs text-muted-foreground">Created By</p>
+                  <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                    {election.createdBy?.name || "Unknown User"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate">{election.createdBy?.email}</p>
+                </div>
+                <div className="text-right flex flex-col items-end gap-1">
+                  <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                    Creator
+                  </Badge>
+                  <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                    {format(new Date(election.createdAt), "MMM d, h:mm a")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Updater Card (if exists) */}
+              {election.updatedBy && (
+                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 shadow-sm ring-1 ring-purple-500/20">
+                    <HugeiconsIcon icon={UserIcon} className="h-5 w-5" color="currentColor" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-xs text-muted-foreground">Last Modified By</p>
+                    <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                      {election.updatedBy?.name || "Unknown User"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">{election.updatedBy?.email}</p>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                      Modified
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                      {format(new Date(election.updatedAt), "MMM d, h:mm a")}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -246,27 +284,3 @@ export function ElectionDetailsSheet({
   )
 }
 
-function MetadataRow({
-  label,
-  value,
-  icon: Icon,
-  isCopyable = false
-}: {
-  label: string;
-  value: string;
-  icon: any;
-  isCopyable?: boolean
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-transparent px-2 py-1.5 transition-colors hover:bg-muted/30">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground ring-1 ring-border/40">
-        <HugeiconsIcon icon={Icon} strokeWidth={2} className="h-4 w-4" color="currentColor" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm truncate">{value}</p>
-      </div>
-      {isCopyable && <CopyButton text={value} />}
-    </div>
-  )
-}

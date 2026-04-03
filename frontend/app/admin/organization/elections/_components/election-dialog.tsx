@@ -4,9 +4,7 @@ import * as React from "react"
 import { toast } from "sonner"
 import { isBefore, addHours, addMinutes } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { InformationCircleIcon, Tick02Icon } from "@hugeicons/core-free-icons"
-
-import { cn } from "@/lib/utils"
+import { InformationCircleIcon } from "@hugeicons/core-free-icons"
 
 import {
   Dialog,
@@ -19,9 +17,9 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { createElection, updateElection } from "../_actions"
 import { DateTimePicker } from "./date-time-picker"
+import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field"
 
 interface ElectionDialogProps {
   children?: React.ReactNode
@@ -39,7 +37,7 @@ export function ElectionDialog({
   children,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
-  initialData
+  initialData,
 }: ElectionDialogProps) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = controlledOpen !== undefined
@@ -95,9 +93,7 @@ export function ElectionDialog({
         : await createElection({ name, startTime, endTime })
 
       if (result.success) {
-        toast.success(`Election ${initialData ? "updated" : "created"} successfully!`, {
-          icon: <HugeiconsIcon icon={Tick02Icon} className="w-5 h-5 text-green-500" />
-        })
+        toast.success(`Election ${initialData ? "updated" : "created"} successfully!`)
         setOpen(false)
         if (!initialData) {
           setName("")
@@ -120,56 +116,66 @@ export function ElectionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-semibold">
+      <DialogContent className="sm:max-w-xl p-0 overflow-hidden gap-0 bg-background max-h-[95vh] flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b bg-muted/20 gap-1">
+          <DialogTitle className="font-semibold text-xl">
             {isEdit ? "Edit Election" : "Create New Election"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-medium text-muted-foreground/80">
             {isEdit
-              ? "Update the details of your election. Ensure the voting period is logically scheduled."
+              ? "Update the details of your election campaign."
               : "Set up the name and timing for your new election."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
-          <div className="space-y-2">
-            <Label htmlFor="name">Election Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Student Council 2026"
-              required
-              disabled={isPending}
-            />
-          </div>
 
-          <div className="space-y-6 rounded-2xl border p-5 bg-muted/5">
-            <DateTimePicker
-              id="start"
-              label="Start"
-              date={startTime}
-              onChange={setStartTime}
-            />
-            <div className="h-px bg-border -mx-5" />
-            <DateTimePicker
-              id="end"
-              label="End"
-              date={endTime}
-              onChange={setEndTime}
-              minDate={startTime}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="space-y-5">
+              <Field>
+                <FieldLabel htmlFor="name">Election Name</FieldLabel>
+                <Input
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Student Council 2026"
+                  required
+                  disabled={isPending}
+                />
+              </Field>
 
-          {(error || dateTimeError) && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm animate-in fade-in slide-in-from-top-1 duration-200">
-              <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error || dateTimeError}</span>
+              <Field>
+                <FieldLabel>
+                  Scheduling Period
+                </FieldLabel>
+                <div className="space-y-4 bg-background p-5 rounded-2xl border">
+                  <DateTimePicker
+                    id="start"
+                    label="Start"
+                    date={startTime}
+                    onChange={setStartTime}
+                  />
+                  <div className="h-px bg-border -mx-5 opacity-40" />
+                  <DateTimePicker
+                    id="end"
+                    label="End"
+                    date={endTime}
+                    onChange={setEndTime}
+                    minDate={startTime}
+                  />
+                </div>
+              </Field>
             </div>
-          )}
 
-          <DialogFooter className="gap-2">
+            {(error || dateTimeError) && (
+              <FieldError className="flex items-start gap-3 p-4 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in slide-in-from-top-1 duration-200">
+                <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 mt-0.5 shrink-0" />
+                <span className="font-medium">{error || dateTimeError}</span>
+              </FieldError>
+            )}
+          </div>
+
+          <DialogFooter className="px-6 py-3 border-t bg-muted/20 flex flex-row items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -180,7 +186,7 @@ export function ElectionDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isPending || !!dateTimeError}
+              disabled={isPending || !!dateTimeError || !name.trim()}
             >
               {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Election")}
             </Button>

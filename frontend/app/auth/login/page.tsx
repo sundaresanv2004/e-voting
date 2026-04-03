@@ -15,8 +15,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-import { toast } from "sonner"
-
 function LoginForm() {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)

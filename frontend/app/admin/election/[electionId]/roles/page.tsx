@@ -43,6 +43,9 @@ export default async function RolesPage({
       },
       _count: {
         select: { candidates: true }
+      },
+      candidates: {
+        select: { id: true, name: true, profileImage: true }
       }
     }
   })

@@ -39,6 +39,7 @@ export type RoleColumn = {
   _count?: {
     candidates: number
   }
+  candidates?: { id: string; name: string; profileImage: string | null }[]
 }
 
 export const columns = (

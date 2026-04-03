@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { generateVerificationToken } from "@/lib/tokens"
-import { sendVerificationEmail } from "@/lib/mail"
+import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/mail"
 
 export async function POST(req: Request) {
   try {
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
 
     const verificationToken = await generateVerificationToken(email)
     await sendVerificationEmail(verificationToken.identifier, verificationToken.token)
+    await sendWelcomeEmail(email, name || "User")
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name } })
   } catch (error: any) {

@@ -17,7 +17,10 @@ export default async function OrganizationElectionsPage() {
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, image: true },
+      },
+      updatedBy: {
+        select: { id: true, name: true, email: true, image: true },
       },
     },
   })
@@ -41,7 +44,7 @@ export default async function OrganizationElectionsPage() {
             <CreateElectionTrigger />
           </div>
         ) : (
-          <ElectionsList elections={elections} />
+          <ElectionsList elections={elections as any} />
         )}
       </div>
     </div>
