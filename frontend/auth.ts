@@ -58,13 +58,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.sub) {
         const freshUser = await db.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, organizationId: true, emailVerified: true }
+          select: { role: true, organizationId: true, emailVerified: true, image: true }
         })
         
         if (freshUser) {
           token.role = freshUser.role
           token.organizationId = freshUser.organizationId
           token.emailVerified = freshUser.emailVerified
+          token.image = freshUser.image
         }
       }
       
@@ -85,19 +86,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (session.user) {
         session.user.emailVerified = token.emailVerified as Date | null
+        session.user.image = token.image as string | null
       }
 
       return session
     },
-    async signIn({ user, account }: any) {
+    async signIn({ user, account, profile }: any) {
       if (account?.provider === "google") {
-        if (user?.email) {
-          await db.user.updateMany({
-            where: { email: user.email },
-            data: { emailVerified: new Date() }
-          })
+        const email = user?.email || profile?.email;
+        
+        if (email) {
+          try {
+            // 1. Always ensure email is verified when logging in via Google
+            await db.user.updateMany({
+              where: { email },
+              data: { emailVerified: new Date() }
+            });
+
+            // 2. Only sync profile picture if the current database record has NO image
+            // This satisfies the user's "if profile is null" requirement precisely.
+            if (profile?.picture) {
+              await db.user.updateMany({
+                where: { 
+                  email,
+                  OR: [
+                    { image: null },
+                    { image: "" }
+                  ]
+                },
+                data: { image: profile.picture }
+              });
+            }
+          } catch (error) {
+            console.error("Error in signIn callback:", error);
+          }
         }
-        return true
       }
       return true
     },
@@ -105,10 +128,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async linkAccount({ user, account }) {
       if (account.provider === "google" && user.email) {
-        await db.user.update({
-          where: { email: user.email },
-          data: { emailVerified: new Date() }
-        })
+        try {
+          // Sync verification status and profile image during the account linking event
+          // This event is specifically triggered when an existing account joins with Google
+          await db.user.updateMany({
+            where: { 
+              email: user.email,
+              OR: [
+                { image: null },
+                { image: "" }
+              ]
+            },
+            data: { 
+              emailVerified: new Date(),
+              // Note: user.image is the image from the provider at this point if they just linked it
+              ...(user.image && { image: user.image })
+            }
+          });
+        } catch (error) {
+          console.error("Error in linkAccount event:", error);
+        }
       }
     },
     async createUser({ user }) {

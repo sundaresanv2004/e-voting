@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { ElectionStatus, UserRole } from "@prisma/client"
+import { ElectionSchema } from "@/lib/schemas/election"
 
 function generateCode(orgName: string = "EV") {
   // Sanitize the organization name to create a meaningful prefix
@@ -32,6 +33,17 @@ export async function createElection(formData: {
   if (!userId || !orgId || userRole !== UserRole.ORG_ADMIN) {
     throw new Error("Unauthorized - Only Organization Admins can create elections")
   }
+
+  const validatedFields = ElectionSchema.safeParse(formData)
+  
+  if (!validatedFields.success) {
+    return { 
+      success: false, 
+      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details" 
+    }
+  }
+
+  const { name, startTime, endTime } = validatedFields.data
 
   try {
     // 1. Fetch organization details to get a meaningful name for the code prefix
@@ -93,6 +105,17 @@ export async function updateElection(
   if (!userId || !orgId || userRole !== UserRole.ORG_ADMIN) {
     throw new Error("Unauthorized - Only Organization Admins can update elections")
   }
+
+  const validatedFields = ElectionSchema.safeParse(formData)
+
+  if (!validatedFields.success) {
+    return { 
+      success: false, 
+      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details" 
+    }
+  }
+
+  const { name, startTime, endTime } = validatedFields.data
 
   try {
     const election = await db.election.update({

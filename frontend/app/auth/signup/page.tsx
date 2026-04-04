@@ -17,43 +17,53 @@ import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { SignupSchema } from "@/lib/schemas/auth"
+import { z } from "zod"
+
 function SignupForm() {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [passwordValue, setPasswordValue] = useState("")
+
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
     const router = useRouter()
 
-    async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
+    const {
+        register,
+        handleSubmit,
+        watch,
+        control,
+        formState: { errors }
+    } = useForm<z.infer<typeof SignupSchema>>({
+        resolver: zodResolver(SignupSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            acceptTerms: false,
+        }
+    })
+
+    const passwordValue = watch("password")
+
+    const onSubmit = (values: z.infer<typeof SignupSchema>) => {
         setError(null)
-
-        const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
-        const email = formData.get("email") as string
-        const password = formData.get("password") as string
-        const confirmPassword = formData.get("confirmPassword") as string
-        const acceptTerms = formData.get("acceptTerms")
-        
-        if (password !== confirmPassword) {
-            setError("Passwords do not match")
-            return
-        }
-
-        if (!acceptTerms) {
-            setError("You must accept the terms and conditions")
-            return
-        }
 
         startTransition(async () => {
             try {
                 const res = await fetch("/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password, name })
+                    body: JSON.stringify({
+                        email: values.email,
+                        password: values.password,
+                        name: values.name
+                    })
                 })
 
                 if (!res.ok) {
@@ -63,9 +73,9 @@ function SignupForm() {
                 }
 
                 if (nextParam) {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(nextParam)}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}&next=${encodeURIComponent(nextParam)}`)
                 } else {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
                 }
                 router.refresh()
             } catch (err) {
@@ -91,10 +101,10 @@ function SignupForm() {
                     </div>
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                        <Alert variant="destructive">
-                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive" />
+                        <Alert variant="destructive" className="flex items-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                            <HugeiconsIcon icon={Alert01Icon} className="w-8 h-8 text-destructive mb-1" />
                             <AlertDescription className="text-sm text-destructive">
                                 <span>{error}</span>
                                 {(error.toLowerCase().includes("already registered") ||
@@ -117,21 +127,23 @@ function SignupForm() {
                         <FieldLabel htmlFor="name">Full Name</FieldLabel>
                         <Input
                             id="name"
-                            name="name"
-                            required
                             placeholder="John Doe"
+                            disabled={isPending}
+                            {...register("name")}
                         />
+                        <FieldError errors={[{ message: errors.name?.message }]} />
                     </Field>
 
                     <Field>
                         <FieldLabel htmlFor="email">Email</FieldLabel>
                         <Input
                             id="email"
-                            name="email"
-                            required
                             placeholder="john@example.com"
                             type="email"
+                            disabled={isPending}
+                            {...register("email")}
                         />
+                        <FieldError errors={[{ message: errors.email?.message }]} />
                     </Field>
 
                     <Field>
@@ -139,11 +151,10 @@ function SignupForm() {
                         <InputGroup>
                             <InputGroupInput
                                 id="password"
-                                name="password"
-                                required
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                onChange={(e) => setPasswordValue(e.target.value)}
+                                disabled={isPending}
+                                {...register("password")}
                             />
                             <InputGroupAddon
                                 align="inline-end"
@@ -158,6 +169,7 @@ function SignupForm() {
                             </InputGroupAddon>
                         </InputGroup>
                         <PasswordStrength password={passwordValue} />
+                        <FieldError errors={[{ message: errors.password?.message }]} />
                     </Field>
 
                     <Field>
@@ -165,10 +177,10 @@ function SignupForm() {
                         <InputGroup>
                             <InputGroupInput
                                 id="confirmPassword"
-                                name="confirmPassword"
-                                required
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="••••••••"
+                                disabled={isPending}
+                                {...register("confirmPassword")}
                             />
                             <InputGroupAddon
                                 align="inline-end"
@@ -182,14 +194,21 @@ function SignupForm() {
                                 )}
                             </InputGroupAddon>
                         </InputGroup>
+                        <FieldError errors={[{ message: errors.confirmPassword?.message }]} />
                     </Field>
 
                     <Field orientation="horizontal">
-                        <Checkbox
-                            id="acceptTerms"
+                        <Controller
                             name="acceptTerms"
-                            required
-                            value="true"
+                            control={control}
+                            render={({ field }) => (
+                                <Checkbox
+                                    id="acceptTerms"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={isPending}
+                                />
+                            )}
                         />
                         <div className="space-y-1 leading-none">
                             <FieldLabel htmlFor="acceptTerms" className="font-normal text-muted-foreground">
@@ -202,12 +221,13 @@ function SignupForm() {
                                     Privacy Policy
                                 </Link>
                             </FieldLabel>
+                            <FieldError errors={[{ message: errors.acceptTerms?.message }]} />
                         </div>
                     </Field>
 
                     <Button type="submit" className="w-full" disabled={isPending}>
                         {isPending && <Spinner className="h-4 w-4" />}
-                        Create Account
+                        {isPending ? "Creating Account..." : "Create Account"}
                     </Button>
                 </form>
             </CardContent>

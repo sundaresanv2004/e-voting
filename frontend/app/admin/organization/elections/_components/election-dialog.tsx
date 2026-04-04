@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { isBefore, addHours, addMinutes } from "date-fns"
+import { isBefore, addHours } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { InformationCircleIcon } from "@hugeicons/core-free-icons"
 
@@ -19,7 +19,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createElection, updateElection } from "../_actions"
 import { DateTimePicker } from "./date-time-picker"
-import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field"
+import { Field, FieldLabel, FieldError } from "@/components/ui/field"
+
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { ElectionSchema } from "@/lib/schemas/election"
+import { z } from "zod"
 
 interface ElectionDialogProps {
   children?: React.ReactNode
@@ -47,58 +52,65 @@ export function ElectionDialog({
   const [isPending, setIsPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const [name, setName] = React.useState(initialData?.name ?? "")
-  const [startTime, setStartTime] = React.useState<Date>(initialData?.startTime ?? new Date())
-  const [endTime, setEndTime] = React.useState<Date>(initialData?.endTime ?? addHours(new Date(), 24))
+  type ElectionFormValues = z.infer<typeof ElectionSchema>
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    reset,
+    formState: { errors }
+  } = useForm<ElectionFormValues>({
+    resolver: zodResolver(ElectionSchema),
+    defaultValues: {
+      name: initialData?.name ?? "",
+      startTime: initialData?.startTime ?? new Date(),
+      endTime: initialData?.endTime ?? addHours(new Date(), 24),
+    }
+  })
+
+  // Watch startTime to potentially update endTime
+  const watchedStartTime = watch("startTime")
+  const watchedEndTime = watch("endTime")
 
   // Sync state with initialData when it changes
   React.useEffect(() => {
     if (initialData) {
-      setName(initialData.name)
-      setStartTime(new Date(initialData.startTime))
-      setEndTime(new Date(initialData.endTime))
+      reset({
+        name: initialData.name,
+        startTime: new Date(initialData.startTime),
+        endTime: new Date(initialData.endTime),
+      })
     }
-  }, [initialData])
+  }, [initialData, reset])
 
-  // Automatic validation and correction
+  // Automatic correction
   React.useEffect(() => {
-    if (isBefore(endTime, startTime)) {
-      // If end time is before start time, set end time to start time + 1 hour
-      setEndTime(addHours(startTime, 1))
+    if (watchedStartTime && watchedEndTime && isBefore(watchedEndTime, watchedStartTime)) {
+      setValue("endTime", addHours(watchedStartTime, 1))
     }
-  }, [startTime, endTime])
+  }, [watchedStartTime, watchedEndTime, setValue])
 
-  const validateDateTime = () => {
-    if (isBefore(endTime, startTime)) return "End time must be after start time."
-    if (isBefore(endTime, addMinutes(startTime, 1))) return "Election must last at least 1 minute."
-    return null
-  }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    // Check date/time validation
-    const dateTimeError = validateDateTime()
-    if (dateTimeError) {
-      setError(dateTimeError)
-      return
-    }
-
+  const onSubmit = async (values: z.infer<typeof ElectionSchema>) => {
     setIsPending(true)
     setError(null)
 
     try {
       const result = initialData
-        ? await updateElection(initialData.id, { name, startTime, endTime })
-        : await createElection({ name, startTime, endTime })
+        ? await updateElection(initialData.id, values)
+        : await createElection(values)
 
       if (result.success) {
         toast.success(`Election ${initialData ? "updated" : "created"} successfully!`)
         setOpen(false)
         if (!initialData) {
-          setName("")
-          setStartTime(new Date())
-          setEndTime(addHours(new Date(), 24))
+          reset({
+            name: "",
+            startTime: new Date(),
+            endTime: addHours(new Date(), 24),
+          })
         }
       } else {
         setError(result.error || "Something went wrong")
@@ -111,7 +123,6 @@ export function ElectionDialog({
   }
 
   const isEdit = !!initialData
-  const dateTimeError = validateDateTime()
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -128,20 +139,18 @@ export function ElectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden bg-card">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden bg-card">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             <div className="space-y-5">
               <Field>
                 <FieldLabel htmlFor="name">Election Name</FieldLabel>
                 <Input
                   id="name"
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Student Council 2026"
-                  required
                   disabled={isPending}
+                  {...register("name")}
                 />
+                <FieldError errors={[{ message: errors.name?.message }]} />
               </Field>
 
               <Field>
@@ -149,28 +158,41 @@ export function ElectionDialog({
                   Scheduling Period
                 </FieldLabel>
                 <div className="space-y-4 p-5 rounded-2xl border">
-                  <DateTimePicker
-                    id="start"
-                    label="Start"
-                    date={startTime}
-                    onChange={setStartTime}
+                  <Controller
+                    name="startTime"
+                    control={control}
+                    render={({ field }) => (
+                      <DateTimePicker
+                        id="start"
+                        label="Start"
+                        date={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <div className="h-px bg-border -mx-5 opacity-40" />
-                  <DateTimePicker
-                    id="end"
-                    label="End"
-                    date={endTime}
-                    onChange={setEndTime}
-                    minDate={startTime}
+                  <Controller
+                    name="endTime"
+                    control={control}
+                    render={({ field }) => (
+                      <DateTimePicker
+                        id="end"
+                        label="End"
+                        date={field.value}
+                        onChange={field.onChange}
+                        minDate={watchedStartTime}
+                      />
+                    )}
                   />
                 </div>
+                <FieldError errors={[{ message: errors.endTime?.message }]} />
               </Field>
             </div>
 
-            {(error || dateTimeError) && (
+            {error && (
               <FieldError className="flex items-start gap-3 p-4 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in slide-in-from-top-1 duration-200">
                 <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 mt-0.5 shrink-0" />
-                <span className="font-medium">{error || dateTimeError}</span>
+                <span className="font-medium">{error}</span>
               </FieldError>
             )}
           </div>
@@ -186,7 +208,7 @@ export function ElectionDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isPending || !!dateTimeError || !name.trim()}
+              disabled={isPending}
             >
               {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Election")}
             </Button>

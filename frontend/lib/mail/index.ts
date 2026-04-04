@@ -3,8 +3,60 @@ import { VerificationTemplate } from "./templates/verification"
 import { WelcomeTemplate } from "./templates/welcome"
 import { OrgInvitationTemplate } from "./templates/org-invitation"
 import { ElectionAssignmentTemplate } from "./templates/election-assignment"
+import { PasswordResetTemplate } from "./templates/password-reset"
+import { PasswordResetConfirmationTemplate } from "./templates/password-reset-confirmation"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+export const sendPasswordResetConfirmationEmail = async (email: string) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Password reset confirmation email for ${email}`)
+      return { success: true, dev: true }
+    }
+
+    const html = PasswordResetConfirmationTemplate()
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || "E-Voting <reset@yourdomain.com>",
+      to: email,
+      subject: "Password Reset Successful - E-Voting",
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send password reset confirmation email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  const resetLink = `${domain}/auth/reset-password?token=${token}`
+
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Password reset link for ${email}: ${resetLink}`)
+      return { success: true, dev: true }
+    }
+
+    const html = PasswordResetTemplate(resetLink)
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || "E-Voting <reset@yourdomain.com>",
+      to: email,
+      subject: "Reset your password - E-Voting",
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send password reset email:", error)
+    return { success: false, error }
+  }
+}
 
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {

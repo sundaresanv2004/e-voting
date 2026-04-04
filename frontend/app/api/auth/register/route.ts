@@ -3,15 +3,18 @@ import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { generateVerificationToken } from "@/lib/tokens"
 import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/mail"
+import { RegisterSchema } from "@/lib/schemas/auth"
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { email, password, name } = body
+    const validatedFields = RegisterSchema.safeParse(body)
 
-    if (!email || !password) {
-      return new NextResponse("Missing email or password", { status: 400 })
+    if (!validatedFields.success) {
+      return new NextResponse("Invalid request data", { status: 400 })
     }
+
+    const { email, password, name } = validatedFields.data
 
     const existingUser = await db.user.findUnique({
       where: {
@@ -20,7 +23,7 @@ export async function POST(req: Request) {
     })
 
     if (existingUser) {
-      return new NextResponse("User already exists", { status: 400 })
+      return new NextResponse("An account with this email address already exists. Please log in to continue.", { status: 400 })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)

@@ -36,10 +36,14 @@ model User {
   updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
   approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
 
-  hasAllElectionsAccess Boolean              @default(false)
-  electionAccess        UserElectionAccess[] @relation("UserElections")
-  createdAccess         UserElectionAccess[] @relation("AccessCreatedBy")
-  updatedAccess         UserElectionAccess[] @relation("AccessUpdatedBy")
+  hasAllElectionsAccess Boolean                @default(false)
+  electionAccess        UserElectionAccess[]   @relation("UserElections")
+  createdAccess         UserElectionAccess[]   @relation("AccessCreatedBy")
+  updatedAccess         UserElectionAccess[]   @relation("AccessUpdatedBy")
+  createdSystemAccess   SystemElectionAccess[] @relation("SystemAccessCreatedBy")
+  updatedSystemAccess   SystemElectionAccess[] @relation("SystemAccessUpdatedBy")
+
+  @@index([organizationId])
 }
 
 model Organization {
@@ -64,20 +68,17 @@ model Organization {
 }
 
 model OrganizationSettings {
-  id                       String       @id @default(cuid())
-  organizationId           String       @unique
-  allowMachineSelfRegister Boolean      @default(true)
-  maxMachines              Int?
-  allowResultPublish       Boolean      @default(true)
-  electionRequiresApproval Boolean      @default(true)
-  voterImportEnabled       Boolean      @default(true)
-  createdAt                DateTime     @default(now())
-  updatedAt                DateTime     @updatedAt
-  createdByUserId          String
-  updatedByUserId          String
-  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy                User         @relation("SettingsCreatedBy", fields: [createdByUserId], references: [id])
-  updatedBy                User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
+  id                      String       @id @default(cuid())
+  organizationId          String       @unique
+  allowSystemRegistration Boolean      @default(true)
+  maxSystems              Int?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  createdByUserId         String
+  updatedByUserId         String
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy               User         @relation("SettingsCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy               User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
 }
 
 model Account {
@@ -114,6 +115,15 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
 }
 
 model Authenticator {
@@ -169,15 +179,18 @@ model Election {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy         User                 @relation("ElectionCreator", fields: [createdByUserId], references: [id])
-  updatedBy         User                 @relation("ElectionUpdatedBy", fields: [updatedByUserId], references: [id])
-  settings          ElectionSettings?
-  roles             ElectionRole[]
-  candidates        Candidate[]
-  ballots           Ballot[]
-  allowedSystems    AuthorizedSystem[]   @relation("ElectionSystems")
-  accessibleByUsers UserElectionAccess[] @relation("ElectionUsers")
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy           User                   @relation("ElectionCreator", fields: [createdByUserId], references: [id])
+  updatedBy           User                   @relation("ElectionUpdatedBy", fields: [updatedByUserId], references: [id])
+  settings            ElectionSettings?
+  roles               ElectionRole[]
+  candidates          Candidate[]
+  ballots             Ballot[]
+  accessibleBySystems SystemElectionAccess[] @relation("ElectionSystems")
+  accessibleByUsers   UserElectionAccess[]   @relation("ElectionUsers")
+
+  @@index([startTime, endTime])
+  @@index([status])
 }
 
 model ElectionSettings {
@@ -244,6 +257,9 @@ model Ballot {
   election Election         @relation(fields: [electionId], references: [id], onDelete: Cascade)
   system   AuthorizedSystem @relation(fields: [systemId], references: [id])
   votes    Vote[]
+
+  @@index([electionId])
+  @@index([createdAt])
 }
 
 model Vote {
@@ -256,26 +272,36 @@ model Vote {
   ballot    Ballot       @relation(fields: [ballotId], references: [id], onDelete: Cascade)
   role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
   candidate Candidate?   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([ballotId, electionRoleId])
+  @@index([ballotId])
+  @@index([electionRoleId])
+  @@index([createdAt])
 }
 
 model AuthorizedSystem {
-  id               String       @id @default(cuid())
-  organizationId   String
-  name             String?
-  hostName         String?
-  ipAddress        String?
-  macAddress       String?      @unique
-  status           SystemStatus @default(PENDING)
-  approvedByUserId String?
-  approvedAt       DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  organizationId    String
+  name              String?
+  hostName          String?
+  ipAddress         String?
+  macAddress        String?      @unique
+  status            SystemStatus @default(PENDING)
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  lastOpenedAt      DateTime?
+  lastClosedAt      DateTime?
+  hasAllRolesAccess Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  approvedBy   User?          @relation("SystemApprover", fields: [approvedByUserId], references: [id])
-  elections    Election[]     @relation("ElectionSystems")
-  roles        ElectionRole[] @relation("RoleSystems")
-  ballots      Ballot[]
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approvedBy     User?                  @relation("SystemApprover", fields: [approvedByUserId], references: [id])
+  electionAccess SystemElectionAccess[] @relation("SystemElections")
+  roles          ElectionRole[]         @relation("RoleSystems")
+  ballots        Ballot[]
+
+  @@index([organizationId])
 }
 
 model UserElectionAccess {
@@ -294,4 +320,24 @@ model UserElectionAccess {
   updatedBy User     @relation("AccessUpdatedBy", fields: [updatedByUserId], references: [id])
 
   @@unique([userId, electionId])
+}
+
+model SystemElectionAccess {
+  id         String @id @default(cuid())
+  systemId   String
+  electionId String
+
+  hasAllRolesAccess Boolean @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  system    AuthorizedSystem @relation("SystemElections", fields: [systemId], references: [id], onDelete: Cascade)
+  election  Election         @relation("ElectionSystems", fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("SystemAccessCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User             @relation("SystemAccessUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@unique([systemId, electionId])
 }

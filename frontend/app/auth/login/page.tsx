@@ -9,11 +9,16 @@ import { signIn } from "next-auth/react"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { LoginSchema } from "@/lib/schemas/auth"
+import { z } from "zod"
 
 function LoginForm() {
     const [isPending, startTransition] = useTransition()
@@ -23,25 +28,26 @@ function LoginForm() {
     const nextParam = searchParams.get("next")
     const router = useRouter()
 
-    async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        setError(null)
-
-        const formData = new FormData(e.currentTarget)
-        const email = formData.get("email") as string
-        const password = formData.get("password") as string
-        const redirectTo = formData.get("redirectTo") as string
-
-        if (!email || !password) {
-            setError("Email and password are required")
-            return
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
+    } = useForm<z.infer<typeof LoginSchema>>({
+        resolver: zodResolver(LoginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
         }
+    })
+
+    const onSubmit = (values: z.infer<typeof LoginSchema>) => {
+        setError(null)
 
         startTransition(async () => {
             try {
                 const result = await signIn("credentials", {
-                    email,
-                    password,
+                    email: values.email,
+                    password: values.password,
                     redirect: false,
                 })
 
@@ -50,8 +56,8 @@ function LoginForm() {
                     return
                 }
 
-                if (redirectTo) {
-                    router.push(redirectTo)
+                if (nextParam) {
+                    router.push(nextParam)
                 } else {
                     router.push('/admin/organization')
                 }
@@ -80,7 +86,7 @@ function LoginForm() {
                     </div>
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
                         <Alert variant="destructive" className="flex items-center text-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
@@ -94,11 +100,12 @@ function LoginForm() {
                         <FieldLabel htmlFor="email">Email</FieldLabel>
                         <Input
                             id="email"
-                            name="email"
-                            required
                             placeholder="john@example.com"
                             type="email"
+                            disabled={isPending}
+                            {...register("email")}
                         />
+                        <FieldError errors={[{ message: errors.email?.message }]} />
                     </Field>
 
                     <Field>
@@ -111,10 +118,10 @@ function LoginForm() {
                         <InputGroup>
                             <InputGroupInput
                                 id="password"
-                                name="password"
-                                required
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
+                                disabled={isPending}
+                                {...register("password")}
                             />
                             <InputGroupAddon
                                 align="inline-end"
@@ -128,13 +135,14 @@ function LoginForm() {
                                 )}
                             </InputGroupAddon>
                         </InputGroup>
+                        <FieldError errors={[{ message: errors.password?.message }]} />
                     </Field>
 
                     {nextParam && <input type="hidden" name="redirectTo" value={nextParam} />}
 
                     <Button type="submit" className="w-full" disabled={isPending}>
                         {isPending && <Spinner className="h-4 w-4" />}
-                        Sign In
+                        {isPending ? "Signing in..." : "Sign In"}
                     </Button>
                 </form>
             </CardContent>

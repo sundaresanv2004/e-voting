@@ -2,36 +2,56 @@
 
 import React, { useState, useTransition } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { CheckmarkBadge01Icon, ShieldKeyIcon } from '@hugeicons/core-free-icons'
+import { CheckmarkBadge01Icon, ShieldKeyIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Spinner } from "@/components/ui/spinner"
+import { resetPassword } from "@/lib/actions/auth-actions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { toast } from "sonner"
+
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { ForgotPasswordSchema } from "@/lib/schemas/auth"
+import { z } from "zod"
 
 export default function ForgotPasswordPage() {
     const [isPending, startTransition] = useTransition()
     const [isSuccess, setIsSuccess] = useState(false)
-    const [successMessage, setSuccessMessage] = useState<string>("")
+    const [error, setError] = useState<string | null>(null)
     const [emailSubmitted, setEmailSubmitted] = useState<string>("")
 
-    async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        const formData = new FormData(e.currentTarget)
-        const email = formData.get("email") as string
-        
-        if (!email) return
-        setEmailSubmitted(email)
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
+    } = useForm<z.infer<typeof ForgotPasswordSchema>>({
+        resolver: zodResolver(ForgotPasswordSchema),
+        defaultValues: {
+            email: "",
+        }
+    })
+
+    const onSubmit = (values: z.infer<typeof ForgotPasswordSchema>) => {
+        setError(null)
+        setEmailSubmitted(values.email)
+
+        const formData = new FormData()
+        formData.append("email", values.email)
 
         startTransition(async () => {
-            // Mock backend call
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            const result = await resetPassword(formData)
 
-            // Mock success
-            setIsSuccess(true)
-            setSuccessMessage("Email sent successfully")
+            if (result.success) {
+                setIsSuccess(true)
+                toast.success("Verification link sent successfully")
+            } else {
+                setError(result.error || "Internal Server Error")
+            }
         })
     }
 
@@ -65,32 +85,35 @@ export default function ForgotPasswordPage() {
                 {isSuccess ? (
                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
                         <p className="mb-2 font-medium text-foreground">
-                            {successMessage || "Email sent successfully"}
+                            Check your email
                         </p>
                         <p>
-                            If an account exists for{" "}
-                            <span className="font-medium text-foreground">
-                                {emailSubmitted}
-                            </span>
-                            , you will receive an email with a link to reset your password.
+                            If an account exists for {emailSubmitted}, you will receive an email with a link to reset your password.
                         </p>
                     </div>
                 ) : (
-                    <form onSubmit={onSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        {error && (
+                            <Alert variant="destructive" className="flex items-center text-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                                <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
+                                <AlertDescription className="text-destructive">{error}</AlertDescription>
+                            </Alert>
+                        )}
                         <Field>
                             <FieldLabel htmlFor="email">Email Address</FieldLabel>
                             <Input
                                 id="email"
-                                name="email"
-                                required
                                 placeholder="john@example.com"
                                 type="email"
+                                disabled={isPending}
+                                {...register("email")}
                             />
+                            <FieldError errors={[{ message: errors.email?.message }]} />
                         </Field>
 
                         <Button type="submit" className="w-full" disabled={isPending}>
                             {isPending && <Spinner className="h-4 w-4" />}
-                            Send Reset Link
+                            {isPending ? "Sending..." : "Send Reset Link"}
                         </Button>
                     </form>
                 )}

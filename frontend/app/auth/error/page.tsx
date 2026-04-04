@@ -6,9 +6,9 @@ import { Alert01Icon, ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
 
 enum ErrorType {
     Configuration = "Configuration",
@@ -17,7 +17,7 @@ enum ErrorType {
     Default = "Default"
 }
 
-const errorMessages: Record<ErrorType | string, { title: string; description: string }> = {
+const errorMessages: Record<string, { title: string; description: string }> = {
     [ErrorType.Configuration]: {
         title: "Server Error",
         description: "There is a problem with the server configuration. Please contact support if this persists."
@@ -27,52 +27,53 @@ const errorMessages: Record<ErrorType | string, { title: string; description: st
         description: "You do not have permission to sign in. Your account might be disabled or restricted."
     },
     [ErrorType.Verification]: {
-        title: "Verification Failed",
+        title: "Link Expired",
         description: "The verification link has expired or has already been used. Please try signing in again."
     },
     [ErrorType.Default]: {
-        title: "Authentication Error",
-        description: "An unexpected error occurred during authentication. Please try again."
+        title: "Auth Error",
+        description: "An unexpected error occurred during authentication. Please try again or contact support."
     }
 }
 
 function AuthErrorContent() {
     const searchParams = useSearchParams()
-    const error = searchParams.get("error") as ErrorType || ErrorType.Default
+    const error = searchParams.get("error") || "Default"
 
     const { title, description } = errorMessages[error] || errorMessages[ErrorType.Default]
 
     return (
-        <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">
-            <CardHeader className="text-center pt-0 md:pt-6 px-0 md:px-6">
+        <Card className="w-full border-none shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2">
+            <CardHeader className="text-center pt-0 md:pt-6">
                 <div className="flex justify-center mb-4">
-                    <div className="p-3 rounded-full bg-destructive/10">
-                        <HugeiconsIcon icon={Alert01Icon} className="w-8 h-8 text-destructive" />
+                    <div className="p-3 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive border border-destructive/20 ring-4 ring-destructive/5">
+                        <HugeiconsIcon icon={Alert01Icon} className="w-8 h-8" />
                     </div>
                 </div>
-                <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-                <CardDescription>Something went wrong during the sign-in process.</CardDescription>
+                <CardTitle className="text-2xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    {title}
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                    {description}
+                </CardDescription>
             </CardHeader>
 
-            <CardContent className="px-0 md:px-6">
-                <Alert variant="destructive" className="border-destructive/20 bg-destructive/5 rounded-2xl">
-                    <AlertTitle className="text-destructive font-semibold">Error Details</AlertTitle>
-                    <AlertDescription className="text-destructive/90">
-                        {description}
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-3 pb-4 px-0 md:px-6">
-                <Button asChild className="w-full">
-                    <Link href="/auth/login">
+            <CardContent className="px-0 md:px-6 flex flex-col items-center gap-6 pb-6 pt-2">
+                <Button asChild variant="outline">
+                    <Link href="/auth/login" className="flex items-center gap-2">
                         <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4" />
-                        Back to Login
+                        Return to Login
                     </Link>
                 </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                    Error Code: <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase">{error}</span>
-                </p>
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-4 border-t border-border/40 pb-4 px-0 md:px-6 pt-4 bg-muted/5 rounded-b-3xl">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
+                    <span className="opacity-70 uppercase tracking-wider">Error Code</span>
+                    <Badge variant="outline" className="font-mono bg-destructive/10 text-destructive uppercase">
+                        {error}
+                    </Badge>
+                </div>
             </CardFooter>
         </Card>
     )
