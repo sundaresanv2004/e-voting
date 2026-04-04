@@ -200,31 +200,31 @@ export const columns = (
           <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted group rounded-xl">
+                <Button variant="ghost" size="icon">
                   <span className="sr-only">Open menu</span>
                   <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" color="currentColor" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 shadow-2xl border-muted/20 rounded-2xl p-2">
-                <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-black tracking-widest px-2 py-2 mb-1">
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
                   Actions
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="opacity-40" />
-                <DropdownMenuItem onSelect={() => onView(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => onView(member)}>
                   <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
                   View Details
                 </DropdownMenuItem>
-                
+
                 {member.id !== currentUserId && (
                   <>
-                    <DropdownMenuItem onSelect={() => onEdit(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
+                    <DropdownMenuItem onSelect={() => onEdit(member)}>
                       <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
                       Edit Access
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="opacity-40" />
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => onRemove(member)}
-                      className="gap-2 text-destructive focus:bg-destructive/10 cursor-pointer py-2.5 rounded-xl font-semibold text-sm"
+                      variant="destructive"
                     >
                       <HugeiconsIcon
                         icon={Delete02Icon}

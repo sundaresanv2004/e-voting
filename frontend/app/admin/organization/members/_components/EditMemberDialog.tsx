@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -108,21 +107,7 @@ export function EditMemberDialog({ member, open, onOpenChange }: EditMemberDialo
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-8 space-y-6">
-            {/* Identity Card */}
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border">
-              <Avatar className="h-12 w-12 border-2 border">
-                <AvatarImage src={member?.image || ""} />
-                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {member?.name?.charAt(0) || member?.email?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-base truncate">{member?.name || "Anonymous Professional"}</h4>
-                <p className="text-xs text-muted-foreground truncate">{member?.email}</p>
-              </div>
-            </div>
-
+          <div className="flex-1 overflow-y-auto py-6 px-8 space-y-6">
             <div className="space-y-6">
               <div className="flex flex-col gap-6">
                 <Field>
@@ -156,7 +141,7 @@ export function EditMemberDialog({ member, open, onOpenChange }: EditMemberDialo
               {!hasAllAccess && role !== UserRole.ORG_ADMIN && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between pl-1">
-                    <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest opacity-60">
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest opacity-60">
                       Specific Assignments
                     </p>
                     <Badge variant="secondary" className="text-[10px] font-semibold">{selectedElectionIds.length} Selected</Badge>
@@ -177,7 +162,7 @@ export function EditMemberDialog({ member, open, onOpenChange }: EditMemberDialo
                             >
                               <Field orientation="horizontal">
                                 <FieldContent>
-                                  <FieldTitle className="text-sm font-bold">
+                                  <FieldTitle className="text-sm">
                                     {election.name}
                                   </FieldTitle>
                                   <FieldDescription className="text-[10px] uppercase tracking-wider font-bold">

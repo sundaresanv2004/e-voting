@@ -10,8 +10,6 @@ import {
   ViewIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { toast } from "sonner"
-
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { ElectionDetailsSheet, type Election } from "./election-details-sheet"
+import { type Election } from "./election-details-sheet"
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -91,37 +89,35 @@ export const columns = (
           <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted group">
+                <Button variant="ghost" size="icon">
                   <span className="sr-only">Open menu</span>
-                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" color="currentColor" />
+                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 shadow-lg border-muted/20">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase font-bold tracking-wider px-2 py-1.5">
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
                   Actions
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => onView(election)} className="gap-2 cursor-pointer py-2">
+                <DropdownMenuItem onSelect={() => onView(election)}>
                   <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onEdit(election)} className="gap-2 cursor-pointer py-2">
+                <DropdownMenuItem onSelect={() => onEdit(election)}>
                   <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
                   Edit Election
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  variant="destructive"
                   onSelect={() => onDelete(election)}
-                  className="gap-2 text-destructive focus:bg-destructive/10 cursor-pointer py-2"
                 >
                   <HugeiconsIcon
                     icon={Delete02Icon}
                     className="h-4 w-4"
-                    color="currentColor"
                   />
                   Delete Election
                 </DropdownMenuItem>
-
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

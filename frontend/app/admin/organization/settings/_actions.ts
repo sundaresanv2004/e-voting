@@ -8,7 +8,9 @@ import { UserRole, OrganizationType } from "@prisma/client"
 export async function getOrganizationData() {
   const session = await auth()
   const orgId = session?.user?.organizationId as string
-  if (!orgId) return null
+  const userRole = session?.user?.role as UserRole
+  
+  if (!orgId || userRole !== UserRole.ORG_ADMIN) return null
 
   const organization = await db.organization.findUnique({
     where: { id: orgId },
@@ -66,11 +68,8 @@ export async function updateOrganizationAction(
 }
 
 export async function updateOrganizationSettingsAction(data: {
-  allowMachineSelfRegister: boolean
-  maxMachines: number | null
-  allowResultPublish: boolean
-  electionRequiresApproval: boolean
-  voterImportEnabled: boolean
+  allowSystemRegistration: boolean
+  maxSystems: number | null
 }) {
   const session = await auth()
   const adminId = session?.user?.id
@@ -84,7 +83,8 @@ export async function updateOrganizationSettingsAction(data: {
     await db.organizationSettings.update({
       where: { organizationId: orgId },
       data: {
-        ...data,
+        allowSystemRegistration: data.allowSystemRegistration,
+        maxSystems: data.maxSystems,
         updatedByUserId: adminId!
       }
     })

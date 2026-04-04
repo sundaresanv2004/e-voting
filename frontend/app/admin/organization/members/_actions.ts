@@ -9,7 +9,11 @@ import { sendOrgInvitationEmail, sendElectionAssignmentEmail } from "@/lib/mail"
 export async function getMembers() {
   const session = await auth()
   const orgId = session?.user?.organizationId as string
-  if (!orgId) return { members: [], orgCreatorId: undefined }
+  const userRole = session?.user?.role
+
+  if (!orgId || userRole !== UserRole.ORG_ADMIN) {
+    return { members: [], orgCreatorId: undefined }
+  }
 
   const org = await db.organization.findUnique({
     where: { id: orgId },
@@ -69,8 +73,11 @@ export async function getMembers() {
 export async function searchPotentialMember(query: string) {
   const session = await auth()
   const orgId = session?.user?.organizationId
+  const userRole = session?.user?.role
 
-  if (!orgId) throw new Error("Unauthorized")
+  if (!orgId || userRole !== UserRole.ORG_ADMIN) {
+    throw new Error("Unauthorized")
+  }
 
   if (!query || query.length < 3) {
     return { success: false, error: "Search term must be at least 3 characters" }
@@ -79,8 +86,9 @@ export async function searchPotentialMember(query: string) {
   const users = await db.user.findMany({
     where: {
       OR: [
-        { email: { contains: query, mode: "insensitive" } },
-        { name: { contains: query, mode: "insensitive" } }
+        { email: { equals: query, mode: "insensitive" } },
+        { email: { startsWith: query, mode: "insensitive" } },
+        { name: { startsWith: query, mode: "insensitive" } }
       ]
     },
     include: {
@@ -324,8 +332,9 @@ export async function removeMemberAction(userId: string) {
 export async function getElectionsForAssignment() {
   const session = await auth()
   const orgId = session?.user?.organizationId
+  const userRole = session?.user?.role
 
-  if (!orgId) return []
+  if (!orgId || userRole !== UserRole.ORG_ADMIN) return []
 
   return await db.election.findMany({
     where: { organizationId: orgId },

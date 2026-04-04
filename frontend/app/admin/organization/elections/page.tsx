@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MapsIcon } from "@hugeicons/core-free-icons"
 
+import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import ElectionHero from "./_components/electionHero"
 import { CreateElectionTrigger } from "./_components/create-election-trigger"
 import { ElectionsList } from "./_components/ElectionsList"
@@ -12,7 +13,7 @@ export default async function OrganizationElectionsPage() {
   const session = await auth()
   if (!session?.user?.organizationId) redirect("/setup/organization")
 
-  const elections = await db.election.findMany({
+  let elections = await db.election.findMany({
     where: { organizationId: session.user.organizationId },
     orderBy: { createdAt: "desc" },
     include: {
@@ -24,6 +25,37 @@ export default async function OrganizationElectionsPage() {
       },
     },
   })
+
+  // Lazy sync status with time
+  const staleElections = elections.filter((e) => {
+    const currentStatus = getCalculatedElectionStatus(e.startTime, e.endTime)
+    return e.status !== currentStatus
+  })
+
+  if (staleElections.length > 0) {
+    await Promise.all(
+      staleElections.map((e) =>
+        db.election.update({
+          where: { id: e.id },
+          data: { status: getCalculatedElectionStatus(e.startTime, e.endTime) },
+        })
+      )
+    )
+
+    // Refetch to get updated data
+    elections = await db.election.findMany({
+      where: { organizationId: session.user.organizationId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        createdBy: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+        updatedBy: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+      },
+    })
+  }
 
   return (
     <div className="flex flex-col w-full min-h-full">

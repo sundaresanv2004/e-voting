@@ -12,7 +12,8 @@ import {
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
   HelpCircleIcon,
-  Loading03Icon
+  Loading03Icon,
+  Delete02Icon
 } from "@hugeicons/core-free-icons"
 import { UserRole } from "@prisma/client"
 import {
@@ -195,14 +196,30 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                     </InputGroupAddon>
                     <InputGroupInput
                       id="search"
-                      placeholder="e.g., john@gmail.com"
+                      placeholder="Enter exact email or name..."
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      className="text-base h-full"
+                      className="text-base h-full pr-12"
                       autoFocus
                     />
+                    {(query || results.length > 0) && (
+                      <InputGroupAddon align="inline-end" className="pr-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full hover:bg-muted"
+                          onClick={() => {
+                            setQuery("")
+                            setResults([])
+                            setSearchStatus(null)
+                          }}
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </InputGroupAddon>
+                    )}
                     {isPending && (
-                      <InputGroupAddon align="inline-end" className="pr-4">
+                      <InputGroupAddon align="inline-end" className="pr-4 z-10">
                         <HugeiconsIcon
                           icon={Loading03Icon}
                           className="h-5 w-5 text-primary dark:text-blue-600 animate-spin"
@@ -220,15 +237,16 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                 )}
 
                 <div className="relative">
-                  {query.length >= 3 && searchStatus === "not_found" && (
-                    <Empty className="p-8 rounded-[2rem] border-dashed bg-muted/5">
+                  {query.length >= 3 && searchStatus === "not_found" && !isPending && (
+                    <Empty className="p-8 rounded-[2rem] border-dashed bg-muted/5 border-amber-500/20">
                       <EmptyHeader>
                         <EmptyMedia variant="icon" className="bg-amber-500/10 text-amber-600 dark:text-amber-400">
                           <HugeiconsIcon icon={HelpCircleIcon} />
                         </EmptyMedia>
-                        <EmptyTitle className="text-sm font-bold">Account Not Found</EmptyTitle>
-                        <EmptyDescription className="text-xs">
-                          This user must create an account on E-Voting first.
+                        <EmptyTitle className="text-sm font-bold text-amber-900 dark:text-amber-100">User Not Found</EmptyTitle>
+                        <EmptyDescription className="text-[11px] leading-relaxed">
+                          We couldn't find a registered user with "<strong>{query}</strong>". <br />
+                          They must register an account first, or ensure you've typed their <strong>exact email address</strong> for a private search match.
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>)}
@@ -238,7 +256,7 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                       key="results"
                       className="space-y-4"
                     >
-                      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 pl-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 pl-1">
                         Found Users
                       </p>
                       <ScrollArea className="max-h-[300px] -mx-4 px-4 pr-6">
@@ -318,27 +336,6 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
               className="flex-1 overflow-y-auto p-8 space-y-6"
             >
               <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border">
-                  <Avatar className="h-12 w-12 border-2 border">
-                    <AvatarImage src={selectedUser?.image || ""} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                      {selectedUser?.name?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-base truncate">{selectedUser?.name}</h4>
-                    <p className="text-xs text-muted-foreground truncate">{selectedUser?.email}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-primary hover:bg-primary/10 hover:text-primary"
-                    onClick={() => setStep("selection")}
-                  >
-                    Change
-                  </Button>
-                </div>
-
                 <div className="flex flex-col gap-6">
                   <Field>
                     <FieldLabel>Organizational Role</FieldLabel>
@@ -371,7 +368,7 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                 {!hasAllAccess && role !== UserRole.ORG_ADMIN && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between pl-1">
-                      <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest opacity-60">
+                      <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-widest opacity-60">
                         Specific Assignments
                       </p>
                       <Badge variant="secondary" className="text-[10px] font-semibold">{selectedElectionIds.length} Selected</Badge>
@@ -392,7 +389,7 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                               >
                                 <Field orientation="horizontal">
                                   <FieldContent>
-                                    <FieldTitle className="text-sm font-bold">
+                                    <FieldTitle className="text-sm">
                                       {election.name}
                                     </FieldTitle>
                                     <FieldDescription className="text-[10px] uppercase tracking-wider font-bold">

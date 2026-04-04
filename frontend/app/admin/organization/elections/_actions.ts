@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { ElectionStatus, UserRole } from "@prisma/client"
 import { ElectionSchema } from "@/lib/schemas/election"
+import { getCalculatedElectionStatus } from "@/lib/utils/election"
 
 function generateCode(orgName: string = "EV") {
   // Sanitize the organization name to create a meaningful prefix
@@ -60,7 +61,7 @@ export async function createElection(formData: {
           code: generateCode(organization?.name),
           startTime: formData.startTime,
           endTime: formData.endTime,
-          status: ElectionStatus.UPCOMING,
+          status: getCalculatedElectionStatus(formData.startTime, formData.endTime),
           organizationId: orgId,
           createdByUserId: userId,
           updatedByUserId: userId,
@@ -127,6 +128,7 @@ export async function updateElection(
         name: formData.name,
         startTime: formData.startTime,
         endTime: formData.endTime,
+        status: getCalculatedElectionStatus(formData.startTime, formData.endTime),
         updatedByUserId: userId,
       },
     })

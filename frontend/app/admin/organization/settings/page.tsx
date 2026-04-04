@@ -42,11 +42,8 @@ export default async function OrganizationSettingsPage() {
           {organization.settings && (
             <OrganizationSettingsForm 
               initialData={{
-                allowMachineSelfRegister: organization.settings.allowMachineSelfRegister,
-                maxMachines: organization.settings.maxMachines,
-                allowResultPublish: organization.settings.allowResultPublish,
-                electionRequiresApproval: organization.settings.electionRequiresApproval,
-                voterImportEnabled: organization.settings.voterImportEnabled,
+                allowSystemRegistration: organization.settings.allowSystemRegistration,
+                maxSystems: organization.settings.maxSystems,
               }} 
             />
           )}
