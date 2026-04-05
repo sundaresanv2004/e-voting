@@ -4,41 +4,65 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
-export async function createRole(electionId: string, data: { name: string; order: number; systemIds: string[] }) {
+import { RoleSchema, type RoleFormValues } from "@/lib/schemas/role"
+
+export async function createRole(electionId: string, data: RoleFormValues) {
   const session = await auth()
-  if (!session?.user?.organizationId) throw new Error("Unauthorized")
+  if (!session?.user?.id || !session?.user?.organizationId) throw new Error("Unauthorized")
 
   try {
+    const validatedFields = RoleSchema.safeParse(data)
+    if (!validatedFields.success) {
+      return { 
+        success: false, 
+        error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid role details" 
+      }
+    }
+
+    const { name, order, allSystems, systemIds } = validatedFields.data
+
     // Verify election belongs to organization
     const election = await db.election.findFirst({
       where: { id: electionId, organizationId: session.user.organizationId }
     })
     if (!election) throw new Error("Election not found")
 
-    if (data.order < 1) {
-      throw new Error("Priority order must be 1 or greater")
-    }
-
     // Check if order is already taken in this election
     const existingOrder = await db.electionRole.findFirst({
       where: { 
         electionId, 
-        order: data.order 
+        order
       }
     })
     if (existingOrder) {
-      throw new Error(`Priority order ${data.order} is already taken by "${existingOrder.name}"`)
+      throw new Error(`Priority order ${order} is already taken by "${existingOrder.name}"`)
+    }
+
+    // Prepare system relations
+    const finalSystemIds = allSystems ? [] : systemIds
+
+    // Verify all systemIds belong to the same organization
+    if (finalSystemIds.length > 0) {
+      const authorizedSystems = await db.authorizedSystem.count({
+        where: {
+          id: { in: finalSystemIds },
+          organizationId: session.user.organizationId
+        }
+      })
+      if (authorizedSystems !== finalSystemIds.length) {
+        throw new Error("One or more selected systems are invalid")
+      }
     }
 
     const role = await db.electionRole.create({
       data: {
         electionId,
-        name: data.name,
-        order: data.order,
-        createdByUserId: session.user.id!,
-        updatedByUserId: session.user.id!,
+        name,
+        order,
+        createdByUserId: session.user.id,
+        updatedByUserId: session.user.id,
         allowedSystems: {
-          connect: data.systemIds.map(id => ({ id }))
+          connect: finalSystemIds.map(id => ({ id }))
         }
       }
     })
@@ -51,11 +75,21 @@ export async function createRole(electionId: string, data: { name: string; order
   }
 }
 
-export async function updateRole(roleId: string, electionId: string, data: { name: string; order: number; systemIds: string[] }) {
+export async function updateRole(roleId: string, electionId: string, data: RoleFormValues) {
   const session = await auth()
-  if (!session?.user?.organizationId) throw new Error("Unauthorized")
+  if (!session?.user?.id || !session?.user?.organizationId) throw new Error("Unauthorized")
 
   try {
+    const validatedFields = RoleSchema.safeParse(data)
+    if (!validatedFields.success) {
+      return { 
+        success: false, 
+        error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid role details" 
+      }
+    }
+
+    const { name, order, allSystems, systemIds } = validatedFields.data
+
     // Verify role belongs to organization through election
     const role = await db.electionRole.findFirst({
       where: { 
@@ -65,30 +99,42 @@ export async function updateRole(roleId: string, electionId: string, data: { nam
     })
     if (!role) throw new Error("Role not found")
 
-    if (data.order < 1) {
-      throw new Error("Priority order must be 1 or greater")
-    }
-
     // Check if order is taken by another role
     const existingOrder = await db.electionRole.findFirst({
       where: { 
         electionId, 
-        order: data.order,
+        order,
         NOT: { id: roleId }
       }
     })
     if (existingOrder) {
-      throw new Error(`Priority order ${data.order} is already taken by "${existingOrder.name}"`)
+      throw new Error(`Priority order ${order} is already taken by "${existingOrder.name}"`)
+    }
+
+    // Prepare system relations
+    const finalSystemIds = allSystems ? [] : systemIds
+
+    // Verify all systemIds belong to the same organization
+    if (finalSystemIds.length > 0) {
+      const authorizedSystems = await db.authorizedSystem.count({
+        where: {
+          id: { in: finalSystemIds },
+          organizationId: session.user.organizationId
+        }
+      })
+      if (authorizedSystems !== finalSystemIds.length) {
+        throw new Error("One or more selected systems are invalid")
+      }
     }
 
     const updatedRole = await db.electionRole.update({
       where: { id: roleId },
       data: {
-        name: data.name,
-        order: data.order,
-        updatedByUserId: session.user.id!,
+        name,
+        order,
+        updatedByUserId: session.user.id,
         allowedSystems: {
-          set: data.systemIds.map(id => ({ id }))
+          set: finalSystemIds.map(id => ({ id }))
         }
       }
     })

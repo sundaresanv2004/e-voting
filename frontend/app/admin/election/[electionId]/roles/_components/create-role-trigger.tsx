@@ -9,7 +9,7 @@ import { RoleDialog } from "./RoleDialog"
 
 interface CreateRoleTriggerProps {
   electionId: string
-  availableSystems: { id: string; name: string | null }[]
+  availableSystems: { id: string; name: string | null; hostName: string | null }[]
   nextSuggestedOrder?: number
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
   size?: "default" | "sm" | "lg" | "icon"
@@ -52,7 +52,7 @@ export function CreateRoleTrigger({
       onOpenChange={setOpen}
       electionId={electionId}
       availableSystems={availableSystems}
-      nextSuggestedOrder={nextSuggestedOrder}
+      nextSuggestedOrder={nextSuggestedOrder || 1}
     >
       <Button variant={variant} size={size} className={className}>
         <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="w-4 h-4" />

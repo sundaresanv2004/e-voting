@@ -10,6 +10,7 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { UserRole } from "@prisma/client"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +48,7 @@ interface RoleDetailsSheetProps {
   role: RoleDetails | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  userRole: string
   onEdit: (role: RoleDetails) => void
   onDelete: (role: RoleDetails) => void
 }
@@ -55,6 +57,7 @@ export function RoleDetailsSheet({
   role,
   open,
   onOpenChange,
+  userRole,
   onEdit,
   onDelete,
 }: RoleDetailsSheetProps) {
@@ -199,30 +202,32 @@ export function RoleDetailsSheet({
 
         </div>
 
-        <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 sm:flex-row flex-col bg-muted/5 lg:backdrop-blur-sm">
-          <Button
-            variant="destructive"
-            className="w-1/2"
-            onClick={() => {
-              onOpenChange(false)
-              setTimeout(() => onDelete(role), 300)
-            }}
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-            Delete Role
-          </Button>
-          <Button
-            variant="outline"
-            className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
-            onClick={() => {
-              onOpenChange(false)
-              setTimeout(() => onEdit(role), 300)
-            }}
-          >
-            <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
-            Edit Role
-          </Button>
-        </SheetFooter>
+        {(userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF) && (
+          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 sm:flex-row flex-col bg-muted/5 lg:backdrop-blur-sm">
+            <Button
+              variant="destructive"
+              className="w-1/2"
+              onClick={() => {
+                onOpenChange(false)
+                setTimeout(() => onDelete(role), 300)
+              }}
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+              Delete Role
+            </Button>
+            <Button
+              variant="outline"
+              className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
+              onClick={() => {
+                onOpenChange(false)
+                setTimeout(() => onEdit(role), 300)
+              }}
+            >
+              <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
+              Edit Role
+            </Button>
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   )

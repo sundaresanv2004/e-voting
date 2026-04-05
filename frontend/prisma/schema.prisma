@@ -197,14 +197,14 @@ model Election {
 }
 
 model ElectionSettings {
-  id                String   @id @default(cuid())
-  electionId        String   @unique
-  requireSystemAuth Boolean  @default(true)
-  allSystemsAllowed Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  createdByUserId   String
-  updatedByUserId   String
+  id                  String   @id @default(cuid())
+  electionId          String   @unique
+  requireSystemAuth   Boolean  @default(true)
+  allSystemsAllowed   Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  createdByUserId     String
+  updatedByUserId     String
 
   election  Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
   createdBy User     @relation("ElectionSettingsCreatedBy", fields: [createdByUserId], references: [id])

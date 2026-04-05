@@ -76,7 +76,7 @@ export default function AccountSettingsPage() {
 
             {currentTab === "danger" && (
               <div className="space-y-6">
-                <div>
+                <div className="space-y-6">
                   {session?.user?.organizationId && (
                     <LeaveOrganization />
                   )}

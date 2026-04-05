@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ShieldKeyIcon } from "@hugeicons/core-free-icons"
+import { UserRole } from "@prisma/client"
 
 import RoleHero from "./_components/role-hero"
 import { CreateRoleTrigger } from "./_components/create-role-trigger"
@@ -18,6 +19,9 @@ export default async function RolesPage({
   const electionId = (await params).electionId
 
   if (!session?.user?.organizationId) redirect("/auth/login")
+
+  const userRole = session?.user?.role as UserRole
+  const canManage = userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF
 
   // Verify election exists and belongs to the organization
   const election = await db.election.findFirst({
@@ -57,7 +61,8 @@ export default async function RolesPage({
     },
     select: {
       id: true,
-      name: true
+      name: true,
+      hostName: true
     }
   })
 
@@ -66,12 +71,14 @@ export default async function RolesPage({
   return (
     <div className="flex flex-col w-full">
       <RoleHero title="Election Roles" subtitle={election.name}>
-        <CreateRoleTrigger
-          electionId={electionId}
-          availableSystems={systems}
-          nextSuggestedOrder={nextOrder}
-          listenToParams
-        />
+        {canManage && (
+          <CreateRoleTrigger
+            electionId={electionId}
+            availableSystems={systems}
+            nextSuggestedOrder={nextOrder}
+            listenToParams
+          />
+        )}
       </RoleHero>
 
       <div className="flex-1 py-10 px-4 md:px-8 w-full">
@@ -84,13 +91,19 @@ export default async function RolesPage({
             <p className="text-sm text-muted-foreground max-w-md mb-8 leading-relaxed">
               Create the positions that candidates will contest for. You can restrict certain roles to specific voting systems.
             </p>
-            <CreateRoleTrigger
-              electionId={electionId}
-              availableSystems={systems}
-              nextSuggestedOrder={nextOrder}
-              variant="default"
-              size="lg"
-            />
+            {canManage ? (
+              <CreateRoleTrigger
+                electionId={electionId}
+                availableSystems={systems}
+                nextSuggestedOrder={nextOrder}
+                variant="default"
+                size="lg"
+              />
+            ) : (
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest bg-muted px-4 py-2 rounded-xl border">
+                Read-only mode for Viewers
+              </p>
+            )}
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -106,6 +119,7 @@ export default async function RolesPage({
               roles={roles}
               electionId={electionId}
               availableSystems={systems}
+              userRole={userRole}
             />
           </div>
         )}

@@ -42,9 +42,12 @@ export type RoleColumn = {
   candidates?: { id: string; name: string; profileImage: string | null }[]
 }
 
+import { UserRole } from "@prisma/client"
+
 export const columns = (
   electionId: string, 
   availableSystems: { id: string; name: string | null }[],
+  userRole: string,
   onView: (role: RoleColumn) => void,
   onEdit: (role: RoleColumn) => void,
   onDelete: (role: RoleColumn) => void
@@ -105,21 +108,25 @@ export const columns = (
                 <HugeiconsIcon icon={InformationCircleIcon} className="h-4 w-4" />
                 <span>View Details</span>
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="gap-2 cursor-pointer focus:bg-accent focus:text-accent-foreground py-2" 
-                onSelect={() => onEdit(role)}
-              >
-                <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
-                <span>Edit Role</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer py-2" 
-                onSelect={() => onDelete(role)}
-              >
-                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-                <span>Delete Role</span>
-              </DropdownMenuItem>
+              {(userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF) && (
+                <>
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer focus:bg-accent focus:text-accent-foreground py-2" 
+                    onSelect={() => onEdit(role)}
+                  >
+                    <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
+                    <span>Edit Role</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer py-2" 
+                    onSelect={() => onDelete(role)}
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+                    <span>Delete Role</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

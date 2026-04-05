@@ -1,10 +1,14 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { DashboardHero } from "./_components/DashboardHero"
-import { StatsGrid } from "./_components/StatsGrid"
-import { RecentActivity, ActivityItem } from "./_components/RecentActivity"
-import { ElectionStatus, SystemStatus } from "@prisma/client"
+import { DashboardHeader } from "./_components/DashboardHeader"
+import { MetricCards } from "./_components/MetricCards"
+import { ElectionsOverview, type ElectionSummary } from "./_components/ElectionsOverview"
+import { HardwareHealth } from "./_components/HardwareHealth"
+import { TeamSnapshot } from "./_components/TeamSnapshot"
+import { QuickNavigate } from "./_components/QuickNavigate"
+import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
+import { ElectionStatus, SystemStatus, UserRole } from "@prisma/client"
 
 export default async function OrganizationDashboardPage() {
   const session = await auth()
@@ -14,48 +18,70 @@ export default async function OrganizationDashboardPage() {
     redirect("/setup/organization")
   }
 
-  // Optimize: Fetch all dashboard data in parallel
+  // Fetch all dashboard data in parallel for maximum performance
   const [
     organization,
     totalElections,
     activeElections,
     totalMembers,
-    totalSystems,
+    adminCount,
+    staffCount,
+    viewerCount,
+    approvedSystems,
     pendingSystems,
-    totalBallots,
+    rejectedSystems,
+    revokedSystems,
     latestElections,
     latestSystems,
   ] = await Promise.all([
     db.organization.findUnique({
       where: { id: orgId },
-      select: { name: true, code: true }
+      select: { name: true }
     }),
     db.election.count({ where: { organizationId: orgId } }),
-    db.election.count({ 
-      where: { 
-        organizationId: orgId,
-        status: ElectionStatus.ACTIVE 
-      } 
-    }),
-    db.user.count({ where: { organizationId: orgId } }),
-    db.authorizedSystem.count({ where: { organizationId: orgId } }),
-    db.authorizedSystem.count({ 
-      where: { 
-        organizationId: orgId,
-        status: SystemStatus.PENDING 
-      } 
-    }),
-    db.ballot.count({
+    db.election.count({
       where: {
-        election: { organizationId: orgId }
+        organizationId: orgId,
+        status: ElectionStatus.ACTIVE
       }
     }),
-    // For Activity Feed:
+    db.user.count({ where: { organizationId: orgId } }),
+    db.user.count({ where: { organizationId: orgId, role: UserRole.ORG_ADMIN } }),
+    db.user.count({ where: { organizationId: orgId, role: UserRole.STAFF } }),
+    db.user.count({ where: { organizationId: orgId, role: UserRole.VIEWER } }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.APPROVED }
+    }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.PENDING }
+    }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.REJECTED }
+    }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.REVOKED }
+    }),
+    // Elections with counts for the overview widget
     db.election.findMany({
       where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
       take: 5,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        startTime: true,
+        endTime: true,
+        createdAt: true,
+        _count: {
+          select: {
+            candidates: true,
+            roles: true,
+          }
+        }
+      }
     }),
+    // Latest systems for activity feed
     db.authorizedSystem.findMany({
       where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
@@ -73,7 +99,7 @@ export default async function OrganizationDashboardPage() {
       id: e.id,
       type: "ELECTION" as const,
       title: e.name,
-      description: `New election created: ${e.status.toLowerCase()}`,
+      description: `Election created — ${e.status.toLowerCase()}`,
       timestamp: e.createdAt,
       status: e.status,
     })),
@@ -81,64 +107,70 @@ export default async function OrganizationDashboardPage() {
       id: s.id,
       type: "SYSTEM" as const,
       title: s.name || s.hostName || "Unnamed System",
-      description: `New hardware registration request: ${s.macAddress}`,
+      description: `Hardware registration — ${s.macAddress || "unknown MAC"}`,
       timestamp: s.createdAt,
       status: s.status,
     }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8)
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 6)
+
+  // Format elections for overview
+  const electionsForOverview: ElectionSummary[] = latestElections.map(e => ({
+    id: e.id,
+    name: e.name,
+    status: e.status,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    _count: e._count,
+  }))
+
+  const totalSystems = approvedSystems + pendingSystems + rejectedSystems + revokedSystems
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-muted/5 pb-20 overflow-x-hidden">
-      {/* 🚀 Hero Section: Welcome + Quick Actions */}
-      <DashboardHero 
-        orgName={organization.name} 
-        orgCode={organization.code} 
+    <div className="flex flex-col w-full min-h-screen pb-16">
+      {/* Header */}
+      <DashboardHeader
+        orgName={organization.name}
       />
 
-      {/* 📊 Metrics Section: Stat Cards */}
-      <StatsGrid 
-        totalElections={totalElections}
-        activeElections={activeElections}
-        totalMembers={totalMembers}
-        approvedSystems={totalSystems - pendingSystems}
-        pendingSystems={pendingSystems}
-        totalBallots={totalBallots}
-      />
+      {/* Main Content */}
+      <div className="flex-1 px-4 md:px-8 py-6 space-y-6 max-w-[1400px] mx-auto w-full">
+        {/* Metric Cards */}
+        <MetricCards
+          totalElections={totalElections}
+          activeElections={activeElections}
+          totalMembers={totalMembers}
+          approvedSystems={approvedSystems}
+          pendingSystems={pendingSystems}
+        />
 
-      <div className="max-w-7xl mx-auto w-full px-8 mt-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* ⏱️ Activity Timeline */}
-            <div className="lg:col-span-2">
-                <RecentActivity activities={activities} />
-            </div>
+        {/* Two-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column — 2/3 */}
+          <div className="lg:col-span-2 space-y-6">
+            <ElectionsOverview elections={electionsForOverview} />
+            <ActivityTimeline activities={activities} />
+          </div>
 
-            {/* 🎯 Organization Summary Sidebar */}
-            <div className="space-y-6">
-                <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Quick Insights</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Admin-to-Staff Ratio</span>
-                            <span className="text-sm font-bold">1 : {Math.max(0, totalMembers - 1)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Hardware Utilization</span>
-                            <span className="text-sm font-bold">{totalSystems > 0 ? "High" : "None"}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Overall Participation</span>
-                            <span className="text-sm font-bold text-sky-600">{totalBallots > 1000 ? "Active" : "Stable"}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rounded-2xl border bg-primary/5 p-6 border-primary/10 space-y-3">
-                    <h4 className="text-sm font-bold text-primary">Need Help?</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Need assistance managing your elections or setting up hardware? Check out our administrator guide or contact support.
-                    </p>
-                </div>
-            </div>
+          {/* Right Column — 1/3 */}
+          <div className="space-y-6">
+            <HardwareHealth
+              approved={approvedSystems}
+              pending={pendingSystems}
+              rejected={rejectedSystems}
+              revoked={revokedSystems}
+            />
+            <TeamSnapshot
+              adminCount={adminCount}
+              staffCount={staffCount}
+              viewerCount={viewerCount}
+              totalMembers={totalMembers}
+            />
+            <QuickNavigate
+              electionCount={totalElections}
+              memberCount={totalMembers}
+              systemCount={totalSystems}
+            />
+          </div>
         </div>
       </div>
     </div>

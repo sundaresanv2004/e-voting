@@ -21,10 +21,11 @@ import { toast } from "sonner"
 interface RolesListProps {
   roles: RoleColumn[]
   electionId: string
-  availableSystems: { id: string; name: string | null }[]
+  availableSystems: { id: string; name: string | null; hostName: string | null }[]
+  userRole: string
 }
 
-export function RolesList({ roles, electionId, availableSystems }: RolesListProps) {
+export function RolesList({ roles, electionId, availableSystems, userRole }: RolesListProps) {
   const [selectedRole, setSelectedRole] = React.useState<RoleColumn | null>(null)
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   
@@ -64,12 +65,15 @@ export function RolesList({ roles, electionId, availableSystems }: RolesListProp
     }
   }
 
+  const nextSuggestedOrder = roles.length > 0 ? Math.max(...roles.map(r => r.order)) + 1 : 1
+
   return (
     <>
       <RoleDetailsSheet 
         role={selectedRole}
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        userRole={userRole}
         onEdit={(role) => handleEdit(role as RoleColumn)}
         onDelete={(role) => {
           setRoleToDelete(role as RoleColumn)
@@ -83,6 +87,7 @@ export function RolesList({ roles, electionId, availableSystems }: RolesListProp
         electionId={electionId}
         availableSystems={availableSystems}
         initialData={roleToEdit ?? undefined}
+        nextSuggestedOrder={nextSuggestedOrder}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -109,7 +114,8 @@ export function RolesList({ roles, electionId, availableSystems }: RolesListProp
       <RoleDataTable 
         columns={columns(
           electionId, 
-          availableSystems, 
+          availableSystems,
+          userRole,
           handleView,
           handleEdit,
           (role) => {
