@@ -3,9 +3,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import SetTheme from "@/components/shared/setTheme";
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Layout01Icon, Logout01Icon } from '@hugeicons/core-free-icons';
+import { Layout01Icon, Logout01Icon, UserIcon } from '@hugeicons/core-free-icons';
 
 import { auth, signOut } from "@/auth";
+import { RootNavActions } from "./_components/nav-actions";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
     const session = await auth();
@@ -15,12 +16,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                 {session?.user ? (
                     <>
-                        <Link href="/admin/organization">
-                            <Button variant="default" size="sm">
-                                <HugeiconsIcon icon={Layout01Icon} className="w-4 h-4" />
-                                Dashboard
-                            </Button>
-                        </Link>
+                        <RootNavActions />
                         <form action={async () => {
                             "use server"
                             await signOut({ redirectTo: "/" })

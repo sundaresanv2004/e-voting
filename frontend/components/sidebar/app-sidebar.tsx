@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import Cookies from "js-cookie"
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
@@ -13,6 +14,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarMenuItem,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {

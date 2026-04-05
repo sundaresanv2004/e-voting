@@ -21,10 +21,12 @@ export function AdminHeader() {
   const pathSegments = pathname.split('/').filter(Boolean)
   const isElectionContext = pathSegments.includes('election')
   const isOrganizationContext = pathSegments.includes('organization')
+  const isUserContext = pathSegments.includes('user')
 
   let contextLabel = "Admin"
   if (isElectionContext) contextLabel = "Election"
   if (isOrganizationContext) contextLabel = "Organization"
+  if (isUserContext) contextLabel = "User"
 
   let pageLabel = "Dashboard"
   // Heuristic for dashboard vs subpage:
@@ -33,6 +35,9 @@ export function AdminHeader() {
     const last = pathSegments[pathSegments.length - 1]
     pageLabel = last.charAt(0).toUpperCase() + last.slice(1)
   } else if (isElectionContext && pathSegments.length > 3) {
+    const last = pathSegments[pathSegments.length - 1]
+    pageLabel = last.charAt(0).toUpperCase() + last.slice(1)
+  } else if (isUserContext && pathSegments.length > 2) {
     const last = pathSegments[pathSegments.length - 1]
     pageLabel = last.charAt(0).toUpperCase() + last.slice(1)
   }

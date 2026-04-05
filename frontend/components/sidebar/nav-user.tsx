@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { useTheme } from "next-themes"
 import {
@@ -29,12 +30,14 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UnfoldMoreIcon,
   UserIcon,
-  NotificationIcon,
+  Settings01Icon,
   LogoutIcon,
   Sun03Icon,
   Moon02Icon,
   LaptopIcon,
-  PaintBrushIcon
+  PaintBrushIcon,
+  Message01Icon,
+  HelpCircleIcon
 } from "@hugeicons/core-free-icons"
 
 export function NavUser({
@@ -73,7 +76,7 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.avatar || undefined} alt={user.name} />
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -92,7 +95,7 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar || undefined} alt={user.name} />
                   <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -103,9 +106,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
-                Profile
+              <DropdownMenuItem asChild>
+                <Link href="/user/settings" className="cursor-pointer">
+                  <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+                  Account Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
@@ -113,23 +118,34 @@ export function NavUser({
                   Appearance
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer">
                     <HugeiconsIcon icon={Sun03Icon} strokeWidth={2} />
                     Light
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer">
                     <HugeiconsIcon icon={Moon02Icon} strokeWidth={2} />
                     Dark
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer">
                     <HugeiconsIcon icon={LaptopIcon} strokeWidth={2} />
                     System
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={NotificationIcon} strokeWidth={2} />
-                Notifications
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <a href="mailto:feedback@evoting.sundaresa.dev">
+                  <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
+                  Feedback & Suggestion
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <a href="mailto:support@evoting.sundaresa.dev">
+                  <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
+                  Contact Support
+                </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

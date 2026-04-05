@@ -57,6 +57,7 @@ export async function createOrganization(formData: FormData) {
           type,
           code,
           createdByUserId: session.user.id!,
+          ownerId: session.user.id!,
           updatedByUserId: session.user.id!,
         },
       })

@@ -51,20 +51,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token }: any) {
-      // 🚀 IMPORTANT: Always re-fetch from the database to ensure the Middleware (Proxy) 
+    async jwt({ token, user, account }: any) {
+      if (account) {
+        token.provider = account.provider
+      }
+
+      // 1. Initial sign-in: Enrich token with Google verification status
+      if (account?.provider === "google") {
+        token.emailVerified = new Date()
+      }
+
+      // 2. Continuous Sync: Always re-fetch from the database to ensure the Middleware (Proxy) 
       // has the absolute latest Organization and Role data. 
       // This prevents redirect loops caused by stale JWT tokens (Create/Delete cases).
       if (token.sub) {
         const freshUser = await db.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, organizationId: true, emailVerified: true, image: true }
+          select: { name: true, role: true, organizationId: true, emailVerified: true, image: true }
         })
         
         if (freshUser) {
+          token.name = freshUser.name
           token.role = freshUser.role
           token.organizationId = freshUser.organizationId
-          token.emailVerified = freshUser.emailVerified
+          token.emailVerified = freshUser.emailVerified || (token.provider === "google" ? new Date() : null)
           token.image = freshUser.image
         }
       }
@@ -74,6 +84,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }: any) {
       if (token.sub && session.user) {
         session.user.id = token.sub
+      }
+
+      if (token.name && session.user) {
+        session.user.name = token.name as string
       }
 
       if (token.role && session.user) {
@@ -87,6 +101,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.emailVerified = token.emailVerified as Date | null
         session.user.image = token.image as string | null
+        session.user.provider = token.provider as string
       }
 
       return session

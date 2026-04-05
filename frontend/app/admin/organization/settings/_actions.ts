@@ -68,7 +68,7 @@ export async function updateOrganizationAction(
 }
 
 export async function updateOrganizationSettingsAction(data: {
-  allowSystemRegistration: boolean
+  allowSystemConnection: boolean
   maxSystems: number | null
 }) {
   const session = await auth()
@@ -83,7 +83,7 @@ export async function updateOrganizationSettingsAction(data: {
     await db.organizationSettings.update({
       where: { organizationId: orgId },
       data: {
-        allowSystemRegistration: data.allowSystemRegistration,
+        allowSystemConnection: data.allowSystemConnection,
         maxSystems: data.maxSystems,
         updatedByUserId: adminId!
       }
@@ -130,6 +130,73 @@ export async function deleteOrganizationAction() {
   } catch (error: any) {
     console.error("[DELETE_ORGANIZATION_ACTION]", error)
     return { success: false, error: "Failed to delete organization. Please try again later." }
+  }
+}
+
+export async function getOrganizationMembersAction() {
+  const session = await auth()
+  const orgId = session?.user?.organizationId
+  const userId = session?.user?.id
+
+  if (!orgId || !userId) {
+    throw new Error("Unauthorized")
+  }
+
+  // Fetch all members of the organization except the current user
+  const members = await db.user.findMany({
+    where: {
+      organizationId: orgId,
+      NOT: { id: userId }
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      role: true
+    }
+  })
+
+  return { success: true, data: members }
+}
+
+export async function transferOwnershipAction(newOwnerId: string) {
+  const session = await auth()
+  const orgId = session?.user?.organizationId
+  const currentUserId = session?.user?.id
+
+  if (!orgId || !currentUserId) {
+    throw new Error("Unauthorized")
+  }
+
+  try {
+    // 1. Verify current user is the owner
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { ownerId: true }
+    })
+
+    if (!organization || organization.ownerId !== currentUserId) {
+      return { success: false, error: "Only the organization owner can transfer ownership." }
+    }
+
+    // 2. Perform the transfer
+    await db.$transaction([
+      db.organization.update({
+        where: { id: orgId },
+        data: { ownerId: newOwnerId }
+      }),
+      db.user.update({
+        where: { id: newOwnerId },
+        data: { role: UserRole.ORG_ADMIN }
+      })
+    ])
+
+    revalidatePath("/admin/organization/settings")
+    return { success: true }
+  } catch (error: any) {
+    console.error("[TRANSFER_OWNERSHIP_ACTION]", error)
+    return { success: false, error: "Failed to transfer ownership. Please try again later." }
   }
 }
 

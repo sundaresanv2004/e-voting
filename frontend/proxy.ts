@@ -6,13 +6,15 @@ export default auth((req: any) => {
 
   const organizationId = (req.auth?.user as any)?.organizationId
   const hasOrganization = !!organizationId
-  const isEmailVerified = !!(req.auth?.user as any)?.emailVerified
+  const isGoogleUser = (req.auth?.user as any)?.provider === 'google'
+  const isEmailVerified = !!(req.auth?.user as any)?.emailVerified || isGoogleUser
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname)
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
   const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
+  const isUserRoute = nextUrl.pathname.startsWith('/user')
   const isAdminRoute = nextUrl.pathname.startsWith('/admin')
 
   // 1. Allow API Auth routes
@@ -57,7 +59,7 @@ export default auth((req: any) => {
 
   // Next Priority: Organization Setup
   if (!hasOrganization) {
-    if (isSetupRoute) return undefined // Let them setup
+    if (isSetupRoute || isUserRoute) return undefined // Let them setup or manage their profile
     return Response.redirect(new URL('/setup/organization', nextUrl))
   }
 
