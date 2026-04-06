@@ -33,10 +33,16 @@ export type System = {
   ipAddress: string | null
   macAddress: string | null
   status: SystemStatus
+  secretToken: string | null
+  tokenExpiresAt?: Date | null
   createdAt: Date
   updatedAt: Date
   lastOpenedAt?: Date | null
   lastClosedAt?: Date | null
+  _count?: {
+    logs: number
+    ballots: number
+  }
   electionAccess: {
     election: {
       name: string
@@ -132,6 +138,13 @@ export const columns = (
             </Badge>
           )
         }
+        if (status === "EXPIRED") {
+          return (
+            <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+              EXPIRED
+            </Badge>
+          )
+        }
         return <Badge variant="outline">{status}</Badge>
       },
     },
@@ -186,7 +199,7 @@ export const columns = (
                     Revoke Access
                   </DropdownMenuItem>
                 )}
-                {(system.status === "REJECTED" || system.status === "REVOKED") && (
+                {(system.status === "REJECTED" || system.status === "REVOKED" || system.status === "EXPIRED") && (
                   <DropdownMenuItem 
                     onClick={() => onStatusUpdate(system.id, SystemStatus.PENDING)} 
                     className="flex items-center gap-2 text-blue-600 focus:text-blue-700 focus:bg-blue-500/10 cursor-pointer"

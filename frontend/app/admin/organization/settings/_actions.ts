@@ -49,14 +49,50 @@ export async function updateOrganizationAction(
   }
 
   try {
-    await db.organization.update({
-      where: { id: orgId },
-      data: {
-        name,
-        type,
-        logo: logo || null,
-        updatedByUserId: adminId!
+    const result = await db.$transaction(async (tx) => {
+      const oldOrg = await tx.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true, type: true, logo: true, isActive: true }
+      })
+
+      const organization = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          name,
+          type,
+          logo: logo || null,
+          updatedByUserId: adminId!
+        }
+      })
+
+      // Log Update
+      await tx.auditLog.create({
+        data: {
+          action: "ORGANIZATION_UPDATED",
+          entityType: "Organization",
+          entityId: orgId,
+          userId: adminId!,
+          metadata: { 
+            before: oldOrg, 
+            after: { name, type, logo, isActive: organization.isActive } 
+          }
+        }
+      })
+
+      // Log Deactivation if isActive changed from true to false
+      if (oldOrg?.isActive && !organization.isActive) {
+        await tx.auditLog.create({
+          data: {
+            action: "ORGANIZATION_DEACTIVATED",
+            entityType: "Organization",
+            entityId: orgId,
+            userId: adminId!,
+            metadata: { name: organization.name, code: organization.code }
+          }
+        })
       }
+
+      return organization
     })
 
     revalidatePath("/admin/organization/settings")
@@ -80,13 +116,33 @@ export async function updateOrganizationSettingsAction(data: {
   }
 
   try {
-    await db.organizationSettings.update({
-      where: { organizationId: orgId },
-      data: {
-        allowSystemConnection: data.allowSystemConnection,
-        maxSystems: data.maxSystems,
-        updatedByUserId: adminId!
-      }
+    await db.$transaction(async (tx) => {
+      const oldSettings = await tx.organizationSettings.findUnique({
+        where: { organizationId: orgId },
+        select: { allowSystemConnection: true, maxSystems: true }
+      })
+
+      await tx.organizationSettings.update({
+        where: { organizationId: orgId },
+        data: {
+          allowSystemConnection: data.allowSystemConnection,
+          maxSystems: data.maxSystems,
+          updatedByUserId: adminId!
+        }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "ORG_SETTINGS_UPDATED",
+          entityType: "OrganizationSettings",
+          entityId: orgId,
+          userId: adminId!,
+          metadata: { 
+            before: oldSettings, 
+            after: { allowSystemConnection: data.allowSystemConnection, maxSystems: data.maxSystems } 
+          }
+        }
+      })
     })
 
     revalidatePath("/admin/organization/settings")
@@ -106,24 +162,37 @@ export async function deleteOrganizationAction() {
   }
 
   try {
-    // 1. Manually update all members of the organization to have no organization
-    // and reset their role to USER before the organization is deleted.
-    // This ensures they don't get stuck in an invalid state.
-    await db.$transaction([
-      db.user.updateMany({
+    await db.$transaction(async (tx) => {
+      const organization = await tx.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true, code: true }
+      })
+
+      if (!organization) throw new Error("Organization not found")
+
+      await tx.user.updateMany({
         where: { organizationId: orgId },
         data: {
           organizationId: null,
           role: UserRole.USER,
           isActive: true
         }
-      }),
-      // 2. Delete the organization. 
-      // Prisma relations with onDelete: Cascade will handle settings, elections, etc.
-      db.organization.delete({
+      })
+
+      await tx.organization.delete({
         where: { id: orgId }
       })
-    ])
+
+      await tx.auditLog.create({
+        data: {
+          action: "ORGANIZATION_DELETED",
+          entityType: "Organization",
+          entityId: orgId,
+          userId: session?.user?.id!,
+          metadata: { name: organization.name, code: organization.code }
+        }
+      })
+    })
 
     revalidatePath("/")
     return { success: true }

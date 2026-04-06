@@ -5,52 +5,48 @@ import { db } from "@/lib/db"
 import { OrganizationType, UserRole } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 
-export async function createOrganization(formData: FormData) {
+import { OrganizationFormValues } from "@/lib/schemas/org"
+
+export async function createOrganization(values: OrganizationFormValues) {
   const session = await auth()
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized")
   }
 
-  const name = formData.get("name") as string
-  const type = formData.get("type") as OrganizationType
+  const { name, type } = values
 
   if (!name || !type) {
     throw new Error("Missing required fields")
   }
 
-  // Generate a professional organization code
-  // Format: [INITIALS]-[6 RANDOM CHARACTERS] (e.g., VV-A1B2C3)
   const prefix = name
     .split(/\s+/)
     .filter(word => word.length > 0)
     .map(word => word[0].toUpperCase())
     .join("")
-    .replace(/[^A-Z]/g, '') // Keep only letters
-  
+    .replace(/[^A-Z]/g, '')
+
   let code: string = ""
   let isUnique = false
 
-  // Guarantee uniqueness (highly likely on first try, but safely handles collisions)
   while (!isUnique) {
     const randomSuffix = Math.random()
-        .toString(36)
-        .substring(2, 8)
-        .toUpperCase()
-    
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase()
+
     code = prefix ? `${prefix}-${randomSuffix}` : randomSuffix
-    
+
     const existing = await db.organization.findUnique({
-        where: { code }
+      where: { code }
     })
-    
+
     if (!existing) isUnique = true
   }
 
   try {
-    // Create organization and update user in a transaction
     const result = await db.$transaction(async (tx) => {
-      // 1. Create the Organization
       const organization = await tx.organization.create({
         data: {
           name,
@@ -62,7 +58,6 @@ export async function createOrganization(formData: FormData) {
         },
       })
 
-      // 2. Create default OrganizationSettings
       await tx.organizationSettings.create({
         data: {
           organizationId: organization.id,
@@ -71,13 +66,22 @@ export async function createOrganization(formData: FormData) {
         },
       })
 
-      // 3. Update the User role and organizationId
       await tx.user.update({
         where: { id: session.user.id },
         data: {
           role: UserRole.ORG_ADMIN,
           organizationId: organization.id,
         },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "ORGANIZATION_CREATED",
+          entityType: "Organization",
+          entityId: organization.id,
+          userId: session.user.id!,
+          metadata: { name, type, code },
+        }
       })
 
       return organization

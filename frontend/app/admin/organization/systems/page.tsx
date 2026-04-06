@@ -3,10 +3,25 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import SystemsHero from "./_components/SystemsHero"
 import { SystemsList } from "./_components/SystemsList"
+import { SystemStatus } from "@prisma/client"
 
 export default async function AuthorizedSystemsPage() {
   const session = await auth()
   if (!session?.user?.organizationId) redirect("/setup/organization")
+
+  // Auto-expire systems that have passed their 30-day authorization window
+  await db.authorizedSystem.updateMany({
+    where: {
+      organizationId: session.user.organizationId,
+      status: SystemStatus.APPROVED,
+      tokenExpiresAt: { lte: new Date() },
+    },
+    data: {
+      status: SystemStatus.EXPIRED,
+      secretToken: null,
+      tokenExpiresAt: null,
+    },
+  })
 
   const organization = await db.organization.findUnique({
     where: { id: session.user.organizationId },
@@ -39,12 +54,18 @@ export default async function AuthorizedSystemsPage() {
             select: { name: true }
           }
         }
+      },
+      _count: {
+        select: {
+          logs: true,
+          ballots: true,
+        }
       }
     }
   })
 
   return (
-    <div className="flex flex-col w-full bg-muted/5">
+    <div className="flex flex-col w-full">
       <SystemsHero orgCode={organization.code} />
 
       <div className="flex-1 py-6 px-4 md:px-8 w-full">

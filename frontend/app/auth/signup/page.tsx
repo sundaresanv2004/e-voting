@@ -5,7 +5,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { PasswordStrength } from "@/components/auth/password-strength"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { Button } from "@/components/ui/button"
@@ -16,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { SignupSchema } from "@/lib/schemas/auth"
@@ -103,7 +101,7 @@ function SignupForm() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                        <Alert variant="destructive" className="flex items-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                        <Alert variant="destructive">
                             <HugeiconsIcon icon={Alert01Icon} className="w-8 h-8 text-destructive mb-1" />
                             <AlertDescription className="text-sm text-destructive">
                                 <span>{error}</span>
@@ -113,7 +111,7 @@ function SignupForm() {
                                             {" "}
                                             <Link
                                                 href="/auth/login"
-                                                className="font-medium underline underline-offset-4 hover:text-destructive-foreground"
+                                                className="font-medium underline underline-offset-4 hover:text-primary"
                                             >
                                                 Login here
                                             </Link>

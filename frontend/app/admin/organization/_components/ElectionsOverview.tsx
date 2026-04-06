@@ -84,7 +84,7 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
                   className="w-full flex items-center gap-4 p-3 -mx-1 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer text-left group"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                    <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-amber-600" strokeWidth={2} />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2">

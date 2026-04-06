@@ -37,6 +37,8 @@ model User {
   approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
   updatedSystems          AuthorizedSystem[]     @relation("SystemUpdatedBy")
   ownedOrganizations      Organization[]         @relation("OrganizationOwner")
+  auditLogs               AuditLog[]
+  generatedResults        ElectionResult[]       @relation("ResultGeneratedBy")
 
   hasAllElectionsAccess Boolean                @default(false)
   electionAccess        UserElectionAccess[]   @relation("UserElections")
@@ -161,6 +163,8 @@ enum ElectionStatus {
   UPCOMING
   ACTIVE
   COMPLETED
+  PAUSED
+  CANCELLED
 }
 
 enum SystemStatus {
@@ -168,6 +172,8 @@ enum SystemStatus {
   APPROVED
   REJECTED
   REVOKED
+  SUSPENDED
+  EXPIRED
 }
 
 model Election {
@@ -187,25 +193,29 @@ model Election {
   createdBy           User                   @relation("ElectionCreator", fields: [createdByUserId], references: [id])
   updatedBy           User                   @relation("ElectionUpdatedBy", fields: [updatedByUserId], references: [id])
   settings            ElectionSettings?
+  result              ElectionResult?
   roles               ElectionRole[]
-  candidates          Candidate[]
   ballots             Ballot[]
+  voters              Voter[]
   accessibleBySystems SystemElectionAccess[] @relation("ElectionSystems")
   accessibleByUsers   UserElectionAccess[]   @relation("ElectionUsers")
+  systemLogs          SystemLog[]
 
   @@index([startTime, endTime])
   @@index([status])
 }
 
 model ElectionSettings {
-  id                  String   @id @default(cuid())
-  electionId          String   @unique
-  requireSystemAuth   Boolean  @default(true)
-  allSystemsAllowed   Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  createdByUserId     String
-  updatedByUserId     String
+  id                String   @id @default(cuid())
+  electionId        String   @unique
+  requireSystemAuth Boolean  @default(true)
+  allSystemsAllowed Boolean  @default(true)
+  authorizeVoters   Boolean  @default(false)
+  verifyDob         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdByUserId   String
+  updatedByUserId   String
 
   election  Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
   createdBy User     @relation("ElectionSettingsCreatedBy", fields: [createdByUserId], references: [id])
@@ -234,7 +244,6 @@ model ElectionRole {
 
 model Candidate {
   id              String   @id @default(cuid())
-  electionId      String
   electionRoleId  String
   name            String
   profileImage    String?
@@ -244,7 +253,6 @@ model Candidate {
   createdByUserId String
   updatedByUserId String
 
-  election  Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
   role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
   createdBy User         @relation("CandidateCreatedBy", fields: [createdByUserId], references: [id])
   updatedBy User         @relation("CandidateUpdatedBy", fields: [updatedByUserId], references: [id])
@@ -259,9 +267,12 @@ model Ballot {
 
   election Election         @relation(fields: [electionId], references: [id], onDelete: Cascade)
   system   AuthorizedSystem @relation(fields: [systemId], references: [id])
+  voterId  String?          @unique
+  voter    Voter?           @relation(fields: [voterId], references: [id])
   votes    Vote[]
 
   @@index([electionId])
+  @@index([electionId, systemId])
   @@index([createdAt])
 }
 
@@ -274,29 +285,32 @@ model Vote {
 
   ballot    Ballot       @relation(fields: [ballotId], references: [id], onDelete: Cascade)
   role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
-  candidate Candidate?   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate Candidate?   @relation(fields: [candidateId], references: [id], onDelete: SetNull)
 
   @@unique([ballotId, electionRoleId])
   @@index([ballotId])
+  @@index([candidateId])
   @@index([electionRoleId])
   @@index([createdAt])
 }
 
 model AuthorizedSystem {
-  id                String       @id @default(cuid())
-  organizationId    String
-  name              String?
-  hostName          String?
-  ipAddress         String?
-  macAddress        String?      @unique
-  status            SystemStatus @default(PENDING)
-  approvedByUserId  String?
-  approvedAt        DateTime?
-  lastOpenedAt      DateTime?
-  lastClosedAt      DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  updatedByUserId   String?
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String?
+  hostName         String?
+  ipAddress        String?
+  macAddress       String?      @unique
+  status           SystemStatus @default(PENDING)
+  secretToken      String?      @unique
+  tokenExpiresAt   DateTime?
+  approvedByUserId String?
+  approvedAt       DateTime?
+  lastOpenedAt     DateTime?
+  lastClosedAt     DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  updatedByUserId  String?
 
   organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   approvedBy     User?                  @relation("SystemApprover", fields: [approvedByUserId], references: [id])
@@ -304,6 +318,7 @@ model AuthorizedSystem {
   electionAccess SystemElectionAccess[] @relation("SystemElections")
   roles          ElectionRole[]         @relation("RoleSystems")
   ballots        Ballot[]
+  logs           SystemLog[]
 
   @@index([organizationId])
 }
@@ -342,4 +357,75 @@ model SystemElectionAccess {
   updatedBy User             @relation("SystemAccessUpdatedBy", fields: [updatedByUserId], references: [id])
 
   @@unique([systemId, electionId])
+}
+
+model Voter {
+  id                String    @id @default(cuid())
+  electionId        String
+  uniqueId          String
+  name              String
+  image             String?
+  dob               DateTime?
+  additionalDetails Json?
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  ballot   Ballot?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([electionId, uniqueId])
+  @@index([electionId])
+  @@index([uniqueId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String // e.g. "BALLOT_SUBMITTED", "SYSTEM_REVOKED", "ELECTION_STARTED"
+  entityType String // e.g. "Ballot", "Election", "AuthorizedSystem"
+  entityId   String?
+  metadata   Json? // store request context, old/new values
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ElectionResult {
+  id                String    @id @default(cuid())
+  electionId        String    @unique
+  totalVoters       Int
+  totalBallots      Int
+  turnoutPercentage Float?
+  resultData        Json // { roleId: { candidateId: voteCount } }
+  isFinalized       Boolean   @default(false)
+  finalizedAt       DateTime?
+  generatedAt       DateTime  @default(now())
+  generatedByUserId String?
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  generatedBy User?    @relation("ResultGeneratedBy", fields: [generatedByUserId], references: [id], onDelete: SetNull)
+}
+
+model SystemLog {
+  id         String   @id @default(cuid())
+  systemId   String
+  electionId String?
+  event      String // e.g., "OPENED", "CLOSED", "BALLOT_SUBMITTED", "AUTH_FAILED"
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  system   AuthorizedSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  election Election?        @relation(fields: [electionId], references: [id], onDelete: SetNull)
+
+  @@index([systemId])
+  @@index([electionId])
+  @@index([createdAt])
 }

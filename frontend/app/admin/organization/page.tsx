@@ -73,10 +73,17 @@ export default async function OrganizationDashboardPage() {
         startTime: true,
         endTime: true,
         createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
-            candidates: true,
             roles: true,
+          }
+        },
+        roles: {
+          select: {
+            _count: {
+              select: { candidates: true }
+            }
           }
         }
       }
@@ -84,7 +91,7 @@ export default async function OrganizationDashboardPage() {
     // Latest systems for activity feed
     db.authorizedSystem.findMany({
       where: { organizationId: orgId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       take: 5,
     }),
   ])
@@ -100,15 +107,17 @@ export default async function OrganizationDashboardPage() {
       type: "ELECTION" as const,
       title: e.name,
       description: `Election created — ${e.status.toLowerCase()}`,
-      timestamp: e.createdAt,
+      timestamp: e.updatedAt,
       status: e.status,
     })),
     ...latestSystems.map(s => ({
       id: s.id,
       type: "SYSTEM" as const,
       title: s.name || s.hostName || "Unnamed System",
-      description: `Hardware registration — ${s.macAddress || "unknown MAC"}`,
-      timestamp: s.createdAt,
+      description: s.updatedAt > s.createdAt 
+        ? `Status updated to ${s.status}` 
+        : `Hardware registration — ${s.macAddress || "unknown MAC"}`,
+      timestamp: s.updatedAt,
       status: s.status,
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 6)
@@ -120,7 +129,10 @@ export default async function OrganizationDashboardPage() {
     status: e.status,
     startTime: e.startTime,
     endTime: e.endTime,
-    _count: e._count,
+    _count: {
+      roles: e._count.roles,
+      candidates: e.roles.reduce((acc, role) => acc + role._count.candidates, 0),
+    },
   }))
 
   const totalSystems = approvedSystems + pendingSystems + rejectedSystems + revokedSystems

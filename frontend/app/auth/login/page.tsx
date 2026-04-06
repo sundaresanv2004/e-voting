@@ -88,7 +88,7 @@ function LoginForm() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                        <Alert variant="destructive" className="flex items-center text-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                        <Alert variant="destructive">
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
                                 {error}

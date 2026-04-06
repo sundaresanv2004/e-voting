@@ -68,7 +68,7 @@ export async function createElection(formData: {
         },
       })
 
-      // 2. Create default ElectionSettings
+      // 3. Create default ElectionSettings
       await tx.electionSettings.create({
         data: {
           electionId: election.id,
@@ -77,6 +77,17 @@ export async function createElection(formData: {
           createdByUserId: userId,
           updatedByUserId: userId,
         },
+      })
+
+      // 4. Log the creation
+      await tx.auditLog.create({
+        data: {
+          action: "ELECTION_CREATED",
+          entityType: "Election",
+          entityId: election.id,
+          userId: userId,
+          metadata: { name: election.name, startTime: election.startTime, endTime: election.endTime, code: election.code },
+        }
       })
 
       return election
@@ -119,22 +130,45 @@ export async function updateElection(
   const { name, startTime, endTime } = validatedFields.data
 
   try {
-    const election = await db.election.update({
-      where: { 
-        id,
-        organizationId: orgId 
-      },
-      data: {
-        name: formData.name,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        status: getCalculatedElectionStatus(formData.startTime, formData.endTime),
-        updatedByUserId: userId,
-      },
+    const result = await db.$transaction(async (tx) => {
+      const oldElection = await tx.election.findUnique({
+        where: { id, organizationId: orgId },
+        select: { name: true, startTime: true, endTime: true, status: true },
+      })
+
+      if (!oldElection) {
+        throw new Error("Election not found")
+      }
+
+      const election = await tx.election.update({
+        where: { 
+          id,
+          organizationId: orgId 
+        },
+        data: {
+          name: formData.name,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          status: getCalculatedElectionStatus(formData.startTime, formData.endTime),
+          updatedByUserId: userId,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "ELECTION_UPDATED",
+          entityType: "Election",
+          entityId: election.id,
+          userId: userId,
+          metadata: { old: oldElection, new: { name: election.name, startTime: election.startTime, endTime: election.endTime, status: election.status } },
+        }
+      })
+
+      return election
     })
 
     revalidatePath("/admin/organization/elections")
-    return { success: true, election }
+    return { success: true, election: result }
   } catch (error: any) {
     console.error("[UPDATE_ELECTION_ACTION]", error)
     return { success: false, error: "Failed to update election. Please try again." }
@@ -151,11 +185,30 @@ export async function deleteElection(id: string) {
   }
 
   try {
-    await db.election.delete({
-      where: { 
-        id,
-        organizationId: orgId 
-      },
+    await db.$transaction(async (tx) => {
+      const election = await tx.election.findUnique({
+        where: { id, organizationId: orgId },
+        select: { name: true, code: true }
+      })
+
+      if (!election) throw new Error("Election not found")
+
+      await tx.election.delete({
+        where: { 
+          id,
+          organizationId: orgId 
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "ELECTION_DELETED",
+          entityType: "Election",
+          entityId: id,
+          userId: session?.user?.id,
+          metadata: { name: election.name, code: election.code },
+        }
+      })
     })
 
     revalidatePath("/admin/organization/elections")

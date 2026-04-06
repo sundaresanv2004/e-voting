@@ -12,6 +12,9 @@ import {
   ComputerIcon,
   GlobeIcon,
   Shield01Icon,
+  ViewIcon,
+  Activity01Icon,
+  CheckListIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SystemStatus } from "@prisma/client"
@@ -49,6 +52,8 @@ function getStatusBadgeStyle(status: SystemStatus) {
     case SystemStatus.REJECTED:
     case SystemStatus.REVOKED:
       return "bg-red-50/50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 shadow-none"
+    case SystemStatus.EXPIRED:
+      return "bg-orange-50/50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20 shadow-none"
     default:
       return "bg-secondary text-secondary-foreground"
   }
@@ -63,6 +68,8 @@ function getStatusDot(status: SystemStatus) {
     case SystemStatus.REJECTED:
     case SystemStatus.REVOKED:
       return "bg-red-500"
+    case SystemStatus.EXPIRED:
+      return "bg-orange-500"
     default:
       return "bg-secondary"
   }
@@ -163,6 +170,39 @@ export function SystemDetailsSheet({
                 </div>
               </div>
             </div>
+
+            {/* Device Stats */}
+            {system._count && (
+              <>
+                <Separator className="border-dashed" />
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium px-1 text-foreground/80 flex items-center gap-2">
+                    <HugeiconsIcon icon={Activity01Icon} className="h-4 w-4 text-muted-foreground" />
+                    Device Statistics
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 ring-1 ring-violet-500/20">
+                        <HugeiconsIcon icon={Activity01Icon} className="h-4 w-4" color="currentColor" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground">Logs</p>
+                        <p className="text-lg font-bold leading-tight">{system._count.logs}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 ring-1 ring-cyan-500/20">
+                        <HugeiconsIcon icon={CheckListIcon} className="h-4 w-4" color="currentColor" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground">Ballots</p>
+                        <p className="text-lg font-bold leading-tight">{system._count.ballots}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator className="border-dashed" />
 

@@ -35,7 +35,7 @@ export default async function CandidatesPage({
 
   const candidates = await db.candidate.findMany({
     where: {
-      electionId
+      role: { electionId }
     },
     orderBy: {
       role: {

@@ -179,8 +179,30 @@ export async function addMemberAction(
               updatedByUserId: adminId!
             }))
           })
+
+          // AuditLog: Specific Election Access
+          await tx.auditLog.create({
+            data: {
+              action: "ACCESS_GRANTED",
+              entityType: "UserElectionAccess",
+              entityId: userId,
+              userId: adminId!,
+              metadata: { electionIds, reason: "Initial member add" }
+            }
+          })
         }
       }
+
+      // 3. AuditLog: Member Added
+      await tx.auditLog.create({
+        data: {
+          action: "MEMBER_ADDED",
+          entityType: "User",
+          entityId: userId,
+          userId: adminId!,
+          metadata: { role, hasAllElectionsAccess: hasAllAccess }
+        }
+      })
     })
 
     // 3. Send Notifications
@@ -244,6 +266,17 @@ export async function updateMemberAction(
     const newlyAddedIds = electionIds.filter(id => !existingIds.includes(id))
 
     await db.$transaction(async (tx) => {
+      const oldUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { role: true, hasAllElectionsAccess: true }
+      })
+
+      const oldAccess = await tx.userElectionAccess.findMany({
+        where: { userId },
+        select: { electionId: true }
+      })
+      const oldIds = oldAccess.map(a => a.electionId)
+
       // 1. Update User Role & Access
       await tx.user.update({
         where: { id: userId },
@@ -268,6 +301,48 @@ export async function updateMemberAction(
             createdByUserId: adminId!,
             updatedByUserId: adminId!
           }))
+        })
+      }
+
+      // 3. Perform Member Update Log
+      await tx.auditLog.create({
+        data: {
+          action: "MEMBER_UPDATED",
+          entityType: "User",
+          entityId: userId,
+          userId: adminId!,
+          metadata: { 
+            before: { role: oldUser?.role, hasAllAccess: oldUser?.hasAllElectionsAccess },
+            after: { role, hasAllAccess }
+          }
+        }
+      })
+
+      // 4. Log Access Changes
+      const addedIds = electionIds.filter(id => !oldIds.includes(id))
+      const removedIds = oldIds.filter(id => !electionIds.includes(id))
+
+      if (addedIds.length > 0) {
+        await tx.auditLog.create({
+          data: {
+            action: "ACCESS_GRANTED",
+            entityType: "UserElectionAccess",
+            entityId: userId,
+            userId: adminId!,
+            metadata: { electionIds: addedIds }
+          }
+        })
+      }
+
+      if (removedIds.length > 0) {
+        await tx.auditLog.create({
+          data: {
+            action: "ACCESS_REVOKED",
+            entityType: "UserElectionAccess",
+            entityId: userId,
+            userId: adminId!,
+            metadata: { electionIds: removedIds }
+          }
         })
       }
     })
@@ -307,6 +382,17 @@ export async function removeMemberAction(userId: string) {
 
   try {
     await db.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true }
+      })
+
+      const access = await tx.userElectionAccess.findMany({
+        where: { userId },
+        select: { electionId: true }
+      })
+      const electionIds = access.map(a => a.electionId)
+
       await tx.user.update({
         where: { id: userId, organizationId: orgId },
         data: {
@@ -319,6 +405,29 @@ export async function removeMemberAction(userId: string) {
       await tx.userElectionAccess.deleteMany({
         where: { userId }
       })
+
+      // AuditLog: Removal
+      await tx.auditLog.create({
+        data: {
+          action: "MEMBER_REMOVED",
+          entityType: "User",
+          entityId: userId,
+          userId: session?.user?.id,
+          metadata: { name: user?.name, email: user?.email }
+        }
+      })
+
+      if (electionIds.length > 0) {
+        await tx.auditLog.create({
+          data: {
+            action: "ACCESS_REVOKED",
+            entityType: "UserElectionAccess",
+            entityId: userId,
+            userId: session?.user?.id,
+            metadata: { electionIds, reason: "Member removed from organization" }
+          }
+        })
+      }
     })
 
     revalidatePath("/admin/organization/members")

@@ -39,16 +39,29 @@ export async function createCandidate(electionId: string, values: CandidateFormV
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
 
-    const candidate = await db.candidate.create({
-      data: {
-        electionId,
-        electionRoleId,
-        name,
-        profileImage: profileImage || null,
-        symbolImage: symbolImage || null,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id,
-      }
+    const candidate = await db.$transaction(async (tx) => {
+      const candidate = await tx.candidate.create({
+        data: {
+          electionRoleId,
+          name,
+          profileImage: profileImage || null,
+          symbolImage: symbolImage || null,
+          createdByUserId: session.user.id!,
+          updatedByUserId: session.user.id!,
+        }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "CANDIDATE_ADDED",
+          entityType: "Candidate",
+          entityId: candidate.id,
+          userId: session.user.id!,
+          metadata: { name, electionRoleId },
+        }
+      })
+
+      return candidate
     })
 
     revalidatePath(`/admin/election/${electionId}/candidates`)
@@ -83,9 +96,10 @@ export async function updateCandidate(candidateId: string, electionId: string, v
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        election: { organizationId: session.user.organizationId }
+        role: { election: { organizationId: session.user.organizationId } }
       }
     })
+
     if (!candidate) return { success: false, error: "Candidate not found" }
 
     // Verify role belongs to this election
@@ -94,15 +108,37 @@ export async function updateCandidate(candidateId: string, electionId: string, v
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
 
-    const updatedCandidate = await db.candidate.update({
-      where: { id: candidateId },
-      data: {
-        name,
-        electionRoleId,
-        profileImage: profileImage || null,
-        symbolImage: symbolImage || null,
-        updatedByUserId: session.user.id,
-      }
+    const updatedCandidate = await db.$transaction(async (tx) => {
+      const oldCandidate = await tx.candidate.findUnique({
+        where: { id: candidateId },
+        select: { name: true, electionRoleId: true, profileImage: true, symbolImage: true }
+      })
+
+      const candidateData = await tx.candidate.update({
+        where: { id: candidateId },
+        data: {
+          name,
+          electionRoleId,
+          profileImage: profileImage || null,
+          symbolImage: symbolImage || null,
+          updatedByUserId: session.user.id,
+        }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "CANDIDATE_UPDATED",
+          entityType: "Candidate",
+          entityId: candidateId,
+          userId: session.user.id!,
+          metadata: { 
+            before: oldCandidate, 
+            after: { name, electionRoleId, profileImage, symbolImage } 
+          }
+        }
+      })
+
+      return candidateData
     })
 
     revalidatePath(`/admin/election/${electionId}/candidates`)
@@ -130,13 +166,31 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        election: { organizationId: session.user.organizationId }
+        role: { election: { organizationId: session.user.organizationId } }
       }
     })
+
     if (!candidate) return { success: false, error: "Candidate not found" }
 
-    await db.candidate.delete({
-      where: { id: candidateId }
+    await db.$transaction(async (tx) => {
+      const candidateData = await tx.candidate.findUnique({
+        where: { id: candidateId },
+        select: { name: true, electionRoleId: true }
+      })
+
+      await tx.candidate.delete({
+        where: { id: candidateId }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: "CANDIDATE_REMOVED",
+          entityType: "Candidate",
+          entityId: candidateId,
+          userId: session.user.id!,
+          metadata: { name: candidateData?.name, electionRoleId: candidateData?.electionRoleId },
+        }
+      })
     })
 
     revalidatePath(`/admin/election/${electionId}/candidates`)

@@ -25,10 +25,10 @@ interface ActivityTimelineProps {
   activities: ActivityItem[]
 }
 
-const activityIcons = {
-  ELECTION: MapsIcon,
-  SYSTEM: LaptopIcon,
-  MEMBER: UserAdd01Icon,
+const activityConfig = {
+  ELECTION: { icon: MapsIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  SYSTEM: { icon: LaptopIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  MEMBER: { icon: UserAdd01Icon, color: "text-blue-600", bg: "bg-blue-500/10" },
 }
 
 const statusBadgeStyles: Record<string, string> = {
@@ -39,6 +39,7 @@ const statusBadgeStyles: Record<string, string> = {
   PENDING: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   REJECTED: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   REVOKED: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20",
+  EXPIRED: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
 }
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
@@ -62,15 +63,16 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
         ) : (
           <div className="space-y-0">
             {activities.map((activity, index) => {
-              const Icon = activityIcons[activity.type]
+              const config = activityConfig[activity.type] || { icon: MapsIcon, color: "text-muted-foreground", bg: "bg-muted" }
+              const Icon = config.icon
               const badgeStyle = activity.status ? (statusBadgeStyles[activity.status] || "") : ""
               return (
                 <div
                   key={activity.id}
                   className={`flex items-start gap-4 py-3 ${index !== activities.length - 1 ? "border-b" : ""}`}
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
-                    <HugeiconsIcon icon={Icon} className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md mt-0.5 ${config.bg}`}>
+                    <HugeiconsIcon icon={Icon} className={`h-4 w-4 ${config.color}`} strokeWidth={2} />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-start justify-between gap-3">
