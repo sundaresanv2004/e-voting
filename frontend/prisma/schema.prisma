@@ -35,6 +35,7 @@ model User {
   createdCandidates       Candidate[]            @relation("CandidateCreatedBy")
   updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
   approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
+  updatedSystems          AuthorizedSystem[]     @relation("SystemUpdatedBy")
   ownedOrganizations      Organization[]         @relation("OrganizationOwner")
 
   hasAllElectionsAccess Boolean                @default(false)
@@ -238,7 +239,6 @@ model Candidate {
   name            String
   profileImage    String?
   symbolImage     String?
-  biography       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   createdByUserId String
@@ -294,12 +294,13 @@ model AuthorizedSystem {
   approvedAt        DateTime?
   lastOpenedAt      DateTime?
   lastClosedAt      DateTime?
-  hasAllRolesAccess Boolean      @default(false)
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+  updatedByUserId   String?
 
   organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   approvedBy     User?                  @relation("SystemApprover", fields: [approvedByUserId], references: [id])
+  updatedBy      User?                  @relation("SystemUpdatedBy", fields: [updatedByUserId], references: [id])
   electionAccess SystemElectionAccess[] @relation("SystemElections")
   roles          ElectionRole[]         @relation("RoleSystems")
   ballots        Ballot[]
@@ -329,8 +330,6 @@ model SystemElectionAccess {
   id         String @id @default(cuid())
   systemId   String
   electionId String
-
-  hasAllRolesAccess Boolean @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

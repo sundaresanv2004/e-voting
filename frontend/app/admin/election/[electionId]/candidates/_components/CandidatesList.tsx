@@ -23,9 +23,10 @@ interface CandidatesListProps {
   candidates: CandidateColumn[]
   electionId: string
   availableRoles: RoleColumn[]
+  userRole: string
 }
 
-export function CandidatesList({ candidates, electionId, availableRoles }: CandidatesListProps) {
+export function CandidatesList({ candidates, electionId, availableRoles, userRole }: CandidatesListProps) {
   const [selectedCandidate, setSelectedCandidate] = React.useState<CandidateColumn | null>(null)
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   
@@ -71,6 +72,7 @@ export function CandidatesList({ candidates, electionId, availableRoles }: Candi
         candidate={selectedCandidate}
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        userRole={userRole}
         onEdit={(c) => handleEdit(c as CandidateColumn)}
         onDelete={(c) => {
           setCandidateToDelete(c as CandidateColumn)
@@ -109,6 +111,7 @@ export function CandidatesList({ candidates, electionId, availableRoles }: Candi
 
       <CandidateDataTable 
         columns={columns(
+          userRole,
           handleView,
           handleEdit,
           (candidate) => {

@@ -20,6 +20,7 @@ export async function updateSystemStatusAction(
   try {
     const data: any = {
       status,
+      updatedByUserId: userId,
     }
 
     if (status === SystemStatus.APPROVED) {

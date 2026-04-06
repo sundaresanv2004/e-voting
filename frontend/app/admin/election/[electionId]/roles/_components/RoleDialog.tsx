@@ -22,11 +22,11 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Field, 
-  FieldLabel, 
-  FieldDescription, 
-  FieldError, 
+import {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
   FieldContent,
   FieldTitle
 } from "@/components/ui/field"
@@ -108,12 +108,12 @@ export function RoleDialog({
         onOpenChange(false)
       } else {
         const errorMsg = result.error || "Something went wrong"
-        
+
         // Handle field-specific errors
         if (errorMsg.includes("Priority order")) {
-          setError("order", { 
+          setError("order", {
             type: "manual",
-            message: errorMsg 
+            message: errorMsg
           })
         } else if (errorMsg.toLowerCase().includes("name")) {
           setError("name", {
@@ -142,8 +142,8 @@ export function RoleDialog({
             {isEdit ? "Edit Election Role" : "Create New Role"}
           </DialogTitle>
           <DialogDescription>
-            {isEdit 
-              ? "Update the details and restrictions for this role." 
+            {isEdit
+              ? "Update the details and restrictions for this role."
               : "Define a new position for this election."}
           </DialogDescription>
         </DialogHeader>
@@ -163,7 +163,7 @@ export function RoleDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="order">Ballot Priority Order</FieldLabel>
+                <FieldLabel htmlFor="order">Priority Order</FieldLabel>
                 <Input
                   id="order"
                   type="number"
@@ -171,7 +171,7 @@ export function RoleDialog({
                   disabled={isPending}
                   {...register("order", { valueAsNumber: true })}
                 />
-                <FieldDescription>Lower numbers appear first on the ballot.</FieldDescription>
+                <FieldDescription>Determines the display order on the voting terminals.</FieldDescription>
                 {errors.order && <FieldError errors={[{ message: errors.order.message }]} />}
               </Field>
 
@@ -219,7 +219,7 @@ export function RoleDialog({
                                 <FieldLabel
                                   key={system.id}
                                   htmlFor={`sys-${system.id}`}
-                                  className="cursor-pointer block border rounded-3xl p-4 transition-all hover:bg-muted/5 group data-[checked=true]:bg-primary/5 data-[checked=true]:border-primary/20"
+                                  className="cursor-pointer block border rounded-3xl transition-all hover:bg-muted/5 group data-[checked=true]:bg-primary/5 data-[checked=true]:border-primary/20"
                                   data-checked={isSelected}
                                 >
                                   <Field orientation="horizontal" className="mb-0">
@@ -257,6 +257,7 @@ export function RoleDialog({
                           )}
                         </div>
                       </ScrollArea>
+                      {errors.systemIds && <FieldError errors={[{ message: errors.systemIds.message as string }]} />}
                     </div>
                   )}
                 </div>

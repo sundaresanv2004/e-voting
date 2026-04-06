@@ -43,7 +43,7 @@ export default async function RolesPage({
     },
     include: {
       allowedSystems: {
-        select: { id: true, name: true }
+        select: { id: true, name: true, hostName: true }
       },
       _count: {
         select: { candidates: true }
@@ -69,7 +69,7 @@ export default async function RolesPage({
   const nextOrder = roles.length > 0 ? Math.max(...roles.map(r => r.order)) + 1 : 1
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full bg-muted/5">
       <RoleHero title="Election Roles" subtitle={election.name}>
         {canManage && (
           <CreateRoleTrigger
@@ -81,13 +81,13 @@ export default async function RolesPage({
         )}
       </RoleHero>
 
-      <div className="flex-1 py-10 px-4 md:px-8 w-full">
+      <div className="flex-1 py-6 px-4 md:px-8 w-full">
         {roles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[400px] rounded-3xl border-2 border-dashed border-muted-foreground/20 p-12 text-center bg-muted/5">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/5 mb-6 ring-1 ring-primary/10 shadow-inner">
-              <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={1.5} className="w-10 h-10 text-primary" />
+          <div className="flex flex-col items-center justify-center min-h-[400px] rounded-[2rem] border border-dashed border-muted-foreground/20 p-8 text-center bg-muted/5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4 shadow-sm border border-muted-foreground/10">
+              <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={1.5} className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-bold mb-2 tracking-tight">Set up Election Roles</h2>
+            <h2 className="text-xl font-bold mb-2 tracking-tight">Set up Election Roles</h2>
             <p className="text-sm text-muted-foreground max-w-md mb-8 leading-relaxed">
               Create the positions that candidates will contest for. You can restrict certain roles to specific voting systems.
             </p>
@@ -106,22 +106,12 @@ export default async function RolesPage({
             )}
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground font-medium">Manage the contested positions for this election campaign.</p>
-              </div>
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                {roles.length} Roles Active
-              </Badge>
-            </div>
-            <RolesList
-              roles={roles}
-              electionId={electionId}
-              availableSystems={systems}
-              userRole={userRole}
-            />
-          </div>
+          <RolesList
+            roles={roles as any[]}
+            electionId={electionId}
+            availableSystems={systems}
+            userRole={userRole}
+          />
         )}
       </div>
     </div>

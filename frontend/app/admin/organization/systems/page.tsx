@@ -18,6 +18,29 @@ export default async function AuthorizedSystemsPage() {
   const systems = await db.authorizedSystem.findMany({
     where: { organizationId: session.user.organizationId },
     orderBy: { createdAt: "desc" },
+    include: {
+      approvedBy: {
+        select: {
+          name: true,
+          email: true,
+          image: true,
+        }
+      },
+      updatedBy: {
+        select: {
+          name: true,
+          email: true,
+          image: true,
+        }
+      },
+      electionAccess: {
+        include: {
+          election: {
+            select: { name: true }
+          }
+        }
+      }
+    }
   })
 
   return (

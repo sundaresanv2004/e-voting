@@ -220,7 +220,7 @@ export function ElectionDetailsSheet({
                     </p>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-[10px] text-muted-foreground truncate">{election.createdBy?.email}</p>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{election.createdBy?.email}</p>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p>{election.createdBy?.email}</p>
@@ -253,7 +253,7 @@ export function ElectionDetailsSheet({
                       </p>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="text-[10px] text-muted-foreground truncate">{election.updatedBy?.email}</p>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{election.updatedBy?.email}</p>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           <p>{election.updatedBy?.email}</p>

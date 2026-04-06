@@ -145,7 +145,7 @@ export function MemberDetailsSheet({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <code className="text-sm font-mono tracking-tight text-foreground truncate block min-w-0">
+                        <code className="text-sm font-mono tracking-tight text-foreground truncate block min-w-0 max-w-[150px]">
                           {member.email}
                         </code>
                       </TooltipTrigger>
@@ -299,7 +299,7 @@ export function MemberDetailsSheet({
                             </p>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <p className="text-[10px] text-muted-foreground truncate">{addedBy.email}</p>
+                                <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{addedBy.email}</p>
                               </TooltipTrigger>
                               <TooltipContent side="bottom">
                                 <p>{addedBy.email}</p>
@@ -332,7 +332,7 @@ export function MemberDetailsSheet({
                             </p>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <p className="text-[10px] text-muted-foreground truncate">{updatedBy.email}</p>
+                                <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{updatedBy.email}</p>
                               </TooltipTrigger>
                               <TooltipContent side="bottom">
                                 <p>{updatedBy.email}</p>
