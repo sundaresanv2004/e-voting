@@ -1,0 +1,39 @@
+# ========================
+# Cargo Build Output
+# ========================
+# Compiled files, executables, and incremental build cache
+/target/
+
+# ========================
+# Tauri Generated
+# ========================
+# Auto-generated capability schemas (regenerated on build)
+/gen/schemas
+
+# ========================
+# Environment Variables
+# ========================
+.env
+.env.*
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ========================
+# Code Editors / IDEs
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========================
+# Rust
+# ========================
+**/*.rs.bk
+*.pdb
