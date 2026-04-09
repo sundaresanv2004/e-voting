@@ -28,6 +28,7 @@ import {
   PieChartIcon,
   UserGroupIcon,
   ShieldKeyIcon,
+  UserCircleIcon,
 } from "@hugeicons/core-free-icons"
 
 const ELECTION_COOKIE_KEY = "last_election_id"
@@ -90,6 +91,13 @@ export function AppSidebar({
       url: `/admin/election/${activeElectionId}/roles`,
       icon: (
         <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
+      ),
+    },
+    {
+      title: "Voters",
+      url: `/admin/election/${activeElectionId}/voters`,
+      icon: (
+        <HugeiconsIcon icon={UserCircleIcon} strokeWidth={2} />
       ),
     },
     {

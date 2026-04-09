@@ -18,15 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { deleteOrganizationAction, updateOrganizationAction, updateOrganizationSettingsAction } from "../_actions"
+import { updateOrganizationAction, updateOrganizationSettingsAction } from "../_actions"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   EyeIcon,
   Alert01Icon,
   Delete02Icon,
-  Building01Icon,
-  Building04Icon,
+  Building02Icon,
+  Building05Icon,
   ComputerIcon,
   ShieldKeyIcon,
   Image01Icon,
@@ -87,7 +87,7 @@ export function SettingsContainer({ organization }: SettingsContainerProps) {
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsList className="w-full justify-start">
         <TabsTrigger value="profile" className="gap-1.5">
-          <HugeiconsIcon icon={Building04Icon} className="h-4 w-4" />
+          <HugeiconsIcon icon={Building05Icon} className="h-4 w-4" />
           Profile
         </TabsTrigger>
         <TabsTrigger value="systems" className="gap-1.5">
@@ -175,7 +175,7 @@ function IdentitySection({ initialData }: { initialData: ProfileData }) {
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
-              <HugeiconsIcon icon={Building01Icon} className="h-4 w-4" color="currentColor" />
+              <HugeiconsIcon icon={Building02Icon} className="h-4 w-4" color="currentColor" />
             </div>
             <div>
               <h3 className="text-sm font-semibold">Organization Name & Type</h3>

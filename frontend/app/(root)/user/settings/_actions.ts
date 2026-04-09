@@ -54,10 +54,17 @@ export async function updatePasswordAction(values: any) {
     const validatedFields = SecuritySchema.safeParse(values)
   
     if (!validatedFields.success) {
-      return { error: "Invalid password data" }
+      const error = validatedFields.error.flatten().fieldErrors
+      return { 
+        error: error.newPassword?.[0] || error.confirmPassword?.[0] || error.currentPassword?.[0] || "Invalid password data" 
+      }
     }
   
     const { currentPassword, newPassword } = validatedFields.data
+
+    if (currentPassword === newPassword) {
+      return { error: "New password cannot be the same as the current password" }
+    }
   
     // In a real app, verify current password first
     const user = await db.user.findUnique({

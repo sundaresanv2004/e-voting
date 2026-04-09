@@ -30,7 +30,7 @@ const navItems = [
     label: "Members",
     href: "/admin/organization/members",
     icon: UserGroupIcon,
-    iconColor: "text-blue-600",
+    iconColor: "text-cyan-600",
   },
   {
     key: "systems",

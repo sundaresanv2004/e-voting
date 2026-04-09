@@ -28,7 +28,7 @@ interface ActivityTimelineProps {
 const activityConfig = {
   ELECTION: { icon: MapsIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
   SYSTEM: { icon: LaptopIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-  MEMBER: { icon: UserAdd01Icon, color: "text-blue-600", bg: "bg-blue-500/10" },
+  MEMBER: { icon: UserAdd01Icon, color: "text-cyan-600", bg: "bg-cyan-500/10" },
 }
 
 const statusBadgeStyles: Record<string, string> = {

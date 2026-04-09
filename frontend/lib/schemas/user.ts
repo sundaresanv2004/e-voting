@@ -17,4 +17,7 @@ export const SecuritySchema = z.object({
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+}).refine((data) => data.newPassword !== data.currentPassword, {
+  message: "New password cannot be the same as the current password",
+  path: ["newPassword"],
 })

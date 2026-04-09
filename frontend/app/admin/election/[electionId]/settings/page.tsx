@@ -1,31 +1,50 @@
-import { getElectionSettings } from "./_actions"
-import { SettingsToggle } from "./_components/SettingsToggle"
-import { ShieldKeyIcon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
+import { getElectionData } from "./_actions"
+import ElectionSettingsHero from "./_components/ElectionSettingsHero"
+import { ElectionSettingsContainer } from "./_components/ElectionSettingsContainer"
 
 export default async function ElectionSettingsPage({
-    params
+  params
 }: {
-    params: Promise<{ electionId: string }>
+  params: Promise<{ electionId: string }>
 }) {
-    const electionId = (await params).electionId
-    const settings = await getElectionSettings(electionId)
+  const session = await auth()
+  const electionId = (await params).electionId
 
-    return (
-        <div className="flex-1 space-y-8 p-8 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="space-y-1">
-                <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] opacity-70">
-                    <HugeiconsIcon icon={ShieldKeyIcon} className="w-4 h-4" />
-                    Security & Access
-                </div>
-                <h1 className="text-3xl font-black tracking-tight">Election Settings</h1>
-                <p className="text-muted-foreground text-sm font-medium">
-                    Configure specialized access rules and hardware restrictions for this election.
-                </p>
-            </div>
+  if (!session?.user?.organizationId) redirect("/auth/login")
 
-            <div className="grid grid-cols-1 gap-6">
-            </div>
-        </div>
-    )
+  const election = await getElectionData(electionId)
+
+  if (!election) {
+    redirect("/admin/organization/elections")
+  }
+
+  return (
+    <div className="flex flex-col w-full min-h-screen">
+      <ElectionSettingsHero 
+        title="Election Settings" 
+        subtitle={election.name} 
+      />
+
+      <div className="flex-1 py-10 px-4 md:px-8 w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <ElectionSettingsContainer 
+          election={{
+            id: election.id,
+            name: election.name,
+            code: election.code,
+            startTime: election.startTime,
+            endTime: election.endTime,
+            status: election.status,
+            settings: election.settings ? {
+              requireSystemAuth: election.settings.requireSystemAuth,
+              allSystemsAllowed: election.settings.allSystemsAllowed,
+              authorizeVoters: election.settings.authorizeVoters,
+              verifyDob: election.settings.verifyDob,
+            } : null
+          }} 
+        />
+      </div>
+    </div>
+  )
 }

@@ -65,7 +65,7 @@ export function MetricCards({
         value={totalMembers}
         description="Total members"
         icon={UserGroupIcon}
-        iconClassName="text-blue-600"
+        iconClassName="text-cyan-600"
       />
       <MetricCard
         title="Authorized Systems"
