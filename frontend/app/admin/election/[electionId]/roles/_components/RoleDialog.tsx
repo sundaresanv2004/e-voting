@@ -136,20 +136,20 @@ export function RoleDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden gap-0 bg-card">
-        <DialogHeader className="px-6 py-4 border-b bg-card">
-          <DialogTitle className="font-bold text-xl tracking-tight">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b bg-card relative gap-1 overflow-hidden">
+          <DialogTitle className="font-semibold text-xl tracking-tight">
             {isEdit ? "Edit Election Role" : "Create New Role"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-medium text-muted-foreground/80">
             {isEdit
               ? "Update the details and restrictions for this role."
               : "Define a new position for this election."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden bg-card">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             <div className="space-y-4">
               <Field>
                 <FieldLabel htmlFor="name">Role Name</FieldLabel>
@@ -272,7 +272,7 @@ export function RoleDialog({
             )}
           </div>
 
-          <DialogFooter className="px-6 py-3 border-t bg-muted/5">
+          <DialogFooter className="px-6 py-3 border-t flex flex-row items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
 import {
   PencilEdit01Icon,
   Delete02Icon,
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export type RoleDetails = {
   id: string
@@ -58,19 +60,20 @@ export function RoleDetailsSheet({
   if (!role) return null
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <TooltipProvider delayDuration={300}>
+      <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         className="w-[400px] flex flex-col p-0 bg-card"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <SheetHeader className="p-6 pb-2 text-left">
+        <SheetHeader className="p-6 pb-2">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 flex gap-1.5 items-center px-2 py-0.5">
               <HugeiconsIcon icon={ShieldKeyIcon} className="w-3 h-3" />
               Election Role
             </Badge>
           </div>
-          <SheetTitle className="font-bold text-2xl tracking-tight">{role.name}</SheetTitle>
+          <SheetTitle className="font-semibold text-xl wrap-break-word">{role.name}</SheetTitle>
           <SheetDescription>
             Detailed configuration for this contested position.
           </SheetDescription>
@@ -204,35 +207,112 @@ export function RoleDetailsSheet({
               )}
             </div>
           </div>
+
+          <Separator className="border-dashed" />
+
+          {/* Integrity Logs & Metadata */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium px-1">Integrity Logs</h4>
+            <div className="grid gap-3">
+              {/* Creator Card */}
+              {role.createdBy && (
+                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
+                    <AvatarImage src={role.createdBy.image || ""} alt={role.createdBy.name || "User"} className="object-cover" />
+                    <AvatarFallback className="bg-green-500/5 text-green-600 text-[10px] font-bold">
+                      {role.createdBy.name?.charAt(0) || role.createdBy.email?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-xs text-muted-foreground">Created By</p>
+                    <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                      {role.createdBy.name || "Unknown User"}
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{role.createdBy.email}</p>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{role.createdBy.email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1 shrink-0">
+                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                      Creator
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                      {role.createdAt ? format(new Date(role.createdAt), "MMM d, h:mm a") : "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Updater Card */}
+              {role.updatedBy && (
+                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
+                    <AvatarImage src={role.updatedBy.image || ""} alt={role.updatedBy.name || "User"} className="object-cover" />
+                    <AvatarFallback className="bg-purple-500/5 text-purple-600 text-[10px] font-bold">
+                      {role.updatedBy.name?.charAt(0) || role.updatedBy.email?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-xs text-muted-foreground">Last Modified By</p>
+                    <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                      {role.updatedBy.name || "Unknown User"}
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{role.updatedBy.email}</p>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{role.updatedBy.email}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1 shrink-0">
+                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                      Modified
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                      {role.updatedAt ? format(new Date(role.updatedAt), "MMM d, h:mm a") : "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {(userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF) && (
-          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 sm:flex-row flex-col bg-muted/5 lg:backdrop-blur-sm">
+          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-row">
             <Button
-              variant="destructive"
-              className="w-1/2"
+              variant="outline"
+              className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
               onClick={() => {
                 onOpenChange(false)
                 setTimeout(() => onDelete(role), 300)
               }}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-              Delete Role
+              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+              Delete
             </Button>
             <Button
               variant="outline"
-              className="w-1/2 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
+              className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
               onClick={() => {
                 onOpenChange(false)
                 setTimeout(() => onEdit(role), 300)
               }}
             >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
+              <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
               Edit Role
             </Button>
           </SheetFooter>
         )}
       </SheetContent>
-    </Sheet>
+      </Sheet>
+    </TooltipProvider>
   )
 }

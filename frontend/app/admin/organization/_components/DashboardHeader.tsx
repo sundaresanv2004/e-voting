@@ -30,7 +30,7 @@ export function DashboardHeader({ orgName }: DashboardHeaderProps) {
     <div className="relative overflow-hidden border-b">
       <div className="relative z-10 flex flex-col space-y-4 py-6 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
         <div className="flex items-center gap-4">
-          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-muted text-foreground shadow-sm ring-1 ring-border">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-muted text-primary shadow-sm ring-1 ring-border">
             <HugeiconsIcon icon={Building06Icon} className="h-6 w-6 relative z-10" color="currentColor" />
           </div>
           <div className="space-y-1">
@@ -47,7 +47,11 @@ export function DashboardHeader({ orgName }: DashboardHeaderProps) {
           <Button
             onClick={() => router.push("/admin/organization/elections?new=true")}
           >
-            <HugeiconsIcon icon={PlusSignIcon} className="h-4 w-4" strokeWidth={2.5} />
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="h-4 w-4"
+              strokeWidth={2.5}
+            />
             <span>Create Election</span>
           </Button>
           <Button
@@ -55,7 +59,7 @@ export function DashboardHeader({ orgName }: DashboardHeaderProps) {
             onClick={() => router.push("/admin/organization/members")}
           >
             <HugeiconsIcon icon={UserAdd01Icon} className="h-4 w-4" />
-            <span>Invite Member</span>
+            <span>Add Member</span>
           </Button>
           <Button
             variant="outline"

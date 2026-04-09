@@ -13,9 +13,9 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "@/lib/utils"
 
 const TABS = [
-  { id: "profile", label: "Profile", icon: UserIcon },
-  { id: "security", label: "Security", icon: Settings01Icon },
-  { id: "danger", label: "Danger Zone", icon: Alert01Icon },
+  { id: "profile", label: "Profile", icon: UserIcon, color: "text-blue-600" },
+  { id: "security", label: "Security", icon: Settings01Icon, color: "text-indigo-600" },
+  { id: "danger", label: "Danger Zone", icon: Alert01Icon, color: "text-amber-600" },
 ]
 
 export default function AccountSettingsPage() {
@@ -42,6 +42,7 @@ export default function AccountSettingsPage() {
           title="Account Settings"
           description="Manage your profile, security, and preferences."
           icon={activeTabDetails.icon}
+          color={activeTabDetails.color}
         />
       </div>
 
@@ -57,7 +58,7 @@ export default function AccountSettingsPage() {
                   "flex items-center hover:cursor-pointer gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
                   currentTab === tab.id
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    : cn("text-muted-foreground hover:bg-muted/50 hover:text-foreground")
                 )}
               >
                 <HugeiconsIcon icon={tab.icon} className="h-4 w-4 shrink-0" />

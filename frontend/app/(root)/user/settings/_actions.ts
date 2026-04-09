@@ -24,7 +24,7 @@ export async function updateUserProfileAction(name: string) {
     data: { name: validatedFields.data.name }
   })
 
-  revalidatePath("/admin/user/profile")
+  revalidatePath("/user/settings")
   return { success: "Profile updated successfully" }
 }
 
@@ -40,7 +40,7 @@ export async function updateUserImageAction(image: string | null) {
     data: { image }
   })
 
-  revalidatePath("/admin/user/profile")
+  revalidatePath("/user/settings")
   return { success: "Profile picture updated" }
 }
 
@@ -85,6 +85,7 @@ export async function updatePasswordAction(values: any) {
         data: { password: hashedPassword }
     })
   
+    revalidatePath("/user/settings")
     return { success: "Password updated successfully" }
 }
 
@@ -96,6 +97,15 @@ export async function deleteAccountAction() {
   }
 
   try {
+    // Check if user owns any organization
+    const ownedOrg = await db.organization.findFirst({
+      where: { ownerId: session.user.id }
+    })
+
+    if (ownedOrg) {
+      return { error: "You are an organization owner. Please transfer ownership or delete the organization first." }
+    }
+
     await db.user.delete({
       where: { id: session.user.id }
     })
@@ -115,6 +125,23 @@ export async function leaveOrganizationAction() {
   }
 
   try {
+    // Check if user is the owner of their current organization
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    })
+
+    if (user?.organizationId) {
+      const organization = await db.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { ownerId: true }
+      })
+
+      if (organization?.ownerId === session.user.id) {
+        return { error: "Organization owners cannot leave. Please transfer ownership first." }
+      }
+    }
+
     await db.user.update({
       where: { id: session.user.id },
       data: { 

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { PencilEdit01Icon, Delete02Icon, MoreHorizontalIcon, InformationCircleIcon } from "@hugeicons/core-free-icons"
+import { PencilEdit01Icon, Delete02Icon, MoreHorizontalIcon, ViewIcon } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,20 @@ export type RoleColumn = {
     candidates: number
   }
   candidates?: { id: string; name: string; profileImage: string | null }[]
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  createdBy?: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
+  updatedBy?: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
 }
 
 import { UserRole } from "@prisma/client"
@@ -47,9 +61,9 @@ export const columns = (
       accessorKey: "order",
       header: "Order",
       cell: ({ row }) => (
-        <Badge variant="outline" className="px-2 font-mono">
+        <code className="text-xs bg-muted px-1.5 py-0.5 rounded-full px-2 font-mono">
           {row.original.order}
-        </Badge>
+        </code>
       )
     },
     {
@@ -71,6 +85,18 @@ export const columns = (
       }
     },
     {
+      accessorKey: "_count",
+      header: "Candidates",
+      cell: ({ row }) => {
+        const count = row.original._count?.candidates ?? 0
+        return (
+          <span className="text-sm text-muted-foreground font-medium">
+            {count} {count === 1 ? "Candidate" : "Candidates"}
+          </span>
+        )
+      }
+    },
+    {
       id: "actions",
       cell: ({ row }) => {
         const role = row.original
@@ -79,35 +105,36 @@ export const columns = (
           <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted group">
+                <Button variant="ghost" size="icon">
                   <span className="sr-only">Open menu</span>
-                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40 border shadow-md rounded-xl">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-bold p-2">Actions</DropdownMenuLabel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  Actions
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={() => onView(role)}
-                >
-                  <HugeiconsIcon icon={InformationCircleIcon} className="h-4 w-4" />
-                  <span>View Details</span>
+                <DropdownMenuItem onSelect={() => onView(role)}>
+                  <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
+                  View Details
                 </DropdownMenuItem>
                 {(userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF) && (
                   <>
-                    <DropdownMenuItem
-                      onSelect={() => onEdit(role)}
-                    >
-                      <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" />
-                      <span>Edit Role</span>
+                    <DropdownMenuItem onSelect={() => onEdit(role)}>
+                      <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
+                      Edit Role
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant="destructive"
                       onSelect={() => onDelete(role)}
                     >
-                      <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-                      <span>Delete Role</span>
+                      <HugeiconsIcon
+                        icon={Delete02Icon}
+                        className="h-4 w-4"
+                      />
+                      Delete Role
                     </DropdownMenuItem>
                   </>
                 )}

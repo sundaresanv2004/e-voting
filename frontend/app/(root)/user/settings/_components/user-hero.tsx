@@ -1,11 +1,13 @@
 import type React from "react"
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon, UserCircleIcon } from '@hugeicons/core-free-icons';
+import { cn } from "@/lib/utils"
 
 interface UserHeroProps {
     title?: string;
     description?: string;
     icon?: any;
+    color?: string;
     children?: React.ReactNode;
 }
 
@@ -13,6 +15,7 @@ const UserHero: React.FC<UserHeroProps> = ({
     title = "User Settings", 
     description,
     icon = UserCircleIcon, 
+    color = "text-indigo-600",
     children 
 }) => {
     const currentDate = new Date().toLocaleDateString("en-US", {
@@ -26,7 +29,10 @@ const UserHero: React.FC<UserHeroProps> = ({
         <div className="relative overflow-hidden border-b">
             <div className="relative z-10 flex flex-col space-y-4 py-6 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
                 <div className="flex items-center gap-4">
-                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-muted text-indigo-600 shadow-sm ring-1 ring-border">
+                    <div className={cn(
+                        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-muted shadow-sm ring-1 ring-border",
+                        color
+                    )}>
                         <HugeiconsIcon icon={icon} className="h-6 w-6 relative z-10" color="currentColor" />
                     </div>
                     <div className="space-y-0.5">
