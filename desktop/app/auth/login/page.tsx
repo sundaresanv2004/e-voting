@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { LoginSchema } from "@/lib/schemas/auth"
 import { z } from "zod"
 import { toast } from "sonner"
+import { useAuth } from "@/components/providers/auth-provider"
 
 function LoginForm() {
     const [isPending, startTransition] = useTransition()
@@ -27,6 +28,7 @@ function LoginForm() {
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
     const router = useRouter()
+    const { login } = useAuth()
 
     const {
         register,
@@ -44,18 +46,16 @@ function LoginForm() {
         setError(null)
 
         startTransition(async () => {
-            // Simulated login
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            if (values.email === "test@example.com" && values.password === "password") {
+            try {
+                await login(values.email, values.password)
                 toast.success("Successfully logged in!")
                 if (nextParam) {
                     router.push(nextParam)
                 } else {
                     router.push('/admin/organization')
                 }
-            } else {
-                setError("Invalid email or password (Try test@example.com / password)")
+            } catch (err: any) {
+                setError(err?.detail || "Invalid email or password")
             }
         })
     }
@@ -79,7 +79,7 @@ function LoginForm() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                        <Alert variant="destructive">
+                        <Alert variant="danger">
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
                                 {error}

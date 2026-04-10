@@ -1,24 +1,21 @@
 "use client"
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import SetTheme from "@/components/shared/setTheme";
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Logout01Icon } from '@hugeicons/core-free-icons';
 import { RootNavActions } from "./_components/nav-actions";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-    // Dummy session state
-    const [user, setUser] = useState<{ name: string } | null>(null);
-
-    const login = () => setUser({ name: "Dummy User" });
-    const logout = () => setUser(null);
+    const { user, isAuthenticated, logout } = useAuth();
 
     return (
         <div className="relative min-h-screen">
             <div className="absolute top-4 right-4 z-50 flex items-center gap-1 sm:gap-2">
-                {user ? (
+                {isAuthenticated ? (
                     <>
                         <RootNavActions />
                         <Button

@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -9,7 +10,10 @@ class Settings(BaseSettings):
     VERSION: str = "26.0.1"
     API_V1_STR: str = "/api/v1"
     
-    SECRET_KEY: str = "secret" # Change this in production
+    SECRET_KEY: str = Field(...)
+    CORS_ORIGINS: list[str] = ["http://tauri.localhost", "tauri://localhost", "http://localhost:3000"]
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour inactivity timeout
     
     # Database defaults (will be overridden by .env if present)
     POSTGRES_SERVER: str = "localhost"

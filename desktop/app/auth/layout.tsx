@@ -4,15 +4,16 @@ import SetTheme from "@/components/shared/setTheme"
 import {BackButton} from "@/components/shared/back-button"
 import {BackgroundRippleEffect} from "@/components/ui/background-ripple-effect"
 import {ExternalLink} from "@/components/shared/external-link"
+import {GuestGuard} from "@/components/shared/auth-guard"
 
 export default function AuthLayout({children}: { children: ReactNode }) {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-start md:justify-center px-4 pb-4 pt-16 sm:pt-20 md:p-8 relative overflow-x-hidden overflow-y-auto bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
-            <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-50">
+            <div className="absolute md:fixed top-3 left-3 sm:top-4 sm:left-4 z-50">
                 <BackButton/>
             </div>
-            <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50">
+            <div className="absolute md:fixed top-3 right-3 sm:top-4 sm:right-4 z-50">
                 <SetTheme/>
             </div>
 
@@ -48,7 +49,9 @@ export default function AuthLayout({children}: { children: ReactNode }) {
                 className="fixed inset-0 pointer-events-none opacity-0 dark:opacity-40 bg-linear-to-br from-blue-500/10 via-transparent to-purple-500/10"/>
 
             <div className="w-full max-w-lg relative z-10 flex-1 flex flex-col justify-center">
-                {children}
+                <GuestGuard>
+                    {children}
+                </GuestGuard>
             </div>
 
             <div className="relative z-10 w-full text-center space-y-3 sm:space-y-4 mt-4 sm:mt-6 pb-2">

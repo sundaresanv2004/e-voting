@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { SignupSchema } from "@/lib/schemas/auth"
 import { z } from "zod"
 import { toast } from "sonner"
+import { useAuth } from "@/components/providers/auth-provider"
 
 function SignupForm() {
     const [isPending, startTransition] = useTransition()
@@ -30,6 +31,7 @@ function SignupForm() {
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
     const router = useRouter()
+    const { signup } = useAuth()
 
     const {
         register,
@@ -54,10 +56,17 @@ function SignupForm() {
         setError(null)
 
         startTransition(async () => {
-            // Simulated signup
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            toast.success("Account created successfully (simulated)!");
-            router.push('/auth/login');
+            try {
+                await signup(values.name, values.email, values.password)
+                toast.success("Account created successfully!")
+                if (nextParam) {
+                    router.push(nextParam)
+                } else {
+                    router.push('/admin/organization')
+                }
+            } catch (err: any) {
+                setError(err?.detail || "Failed to create account")
+            }
         })
     }
 

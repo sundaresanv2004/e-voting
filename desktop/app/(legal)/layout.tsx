@@ -114,10 +114,10 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="min-h-screen relative">
-            <div className="absolute lg:fixed top-4 left-4 z-50">
+            <div className="absolute md:fixed top-4 left-4 z-50">
                 <BackButton />
             </div>
-            <div className="absolute lg:fixed top-4 right-4 z-50">
+            <div className="absolute md:fixed top-4 right-4 z-50">
                 <SetTheme />
             </div>
 

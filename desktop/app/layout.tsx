@@ -2,6 +2,7 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/components/providers/auth-provider"
 import { cn } from "@/lib/utils";
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
@@ -27,7 +28,9 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
