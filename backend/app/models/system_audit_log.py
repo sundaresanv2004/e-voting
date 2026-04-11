@@ -13,7 +13,7 @@ class SystemAuditLog(Base):
     
     action = Column(String, nullable=False)
     ipAddress = Column(String, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column("metadata", JSON, nullable=True)
     
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
 

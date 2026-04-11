@@ -5,7 +5,8 @@ from typing import Any
 import random
 import string
 import re
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timezone, timedelta
 
 from app.api import deps
 from app.models.organization import Organization, OrganizationType
@@ -18,7 +19,9 @@ from app.models.user_audit_log import UserAuditLog
 from app.schemas.organization import (
     OrganizationCreate, 
     Organization as OrganizationSchema, 
-    OrganizationVerify
+    OrganizationVerify,
+    OrganizationSetupResponse,
+    SystemResponse
 )
 
 router = APIRouter()
@@ -56,6 +59,7 @@ def _log_audit(
 ) -> None:
     """Log an event to the UserAuditLog table."""
     audit_entry = UserAuditLog(
+        id=str(uuid.uuid4()),
         userId=user_id,
         action=action,
         ipAddress=ip_address,
@@ -74,7 +78,7 @@ def _log_system_audit(
 ) -> None:
     """Log an event to the SystemAuditLog table."""
     audit_entry = SystemAuditLog(
-        id="".join(random.choices(string.ascii_lowercase + string.digits, k=25)),
+        id=str(uuid.uuid4()),
         systemId=system_id,
         action=action,
         triggeredByUserId=triggered_by_user_id,
@@ -83,7 +87,7 @@ def _log_system_audit(
     )
     db.add(audit_entry)
 
-@router.post("/", response_model=OrganizationSchema, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=OrganizationSetupResponse, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     *,
     db: Session = Depends(deps.get_db),
@@ -107,7 +111,7 @@ async def create_organization(
         )
     
     # 1. Generate code and create Organization
-    org_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=25)) 
+    org_id = str(uuid.uuid4())
     org_code = _generate_org_code(org_in.name, db)
     
     organization = Organization(
@@ -120,9 +124,10 @@ async def create_organization(
         updatedByUserId=current_user.id
     )
     db.add(organization)
+    db.flush() # Ensure organization exists for FK constraints
     
     # 2. Create Organization Settings
-    settings_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=25))
+    settings_id = str(uuid.uuid4())
     settings = OrganizationSettings(
         id=settings_id,
         organizationId=organization.id,
@@ -133,7 +138,7 @@ async def create_organization(
     
     # 3. Add user as ADMIN member of the organization
     member = OrganizationMember(
-        id="".join(random.choices(string.ascii_lowercase + string.digits, k=25)),
+        id=str(uuid.uuid4()),
         userId=current_user.id,
         organizationId=organization.id,
         role=OrganizationRole.ADMIN,
@@ -142,8 +147,17 @@ async def create_organization(
     )
     db.add(member)
     
+    # 3b. Update User Role
+    current_user.role = UserRole.ORG_ADMIN
+    
+    # 4. Initialize system_out as None
+    system_out = None
+    
     # 4. If macAddress is provided, authorize this system (Upsert logic to handle re-registration)
     if org_in.macAddress:
+        # Generate a secure system authentication token
+        system_token = "".join(random.choices(string.ascii_letters + string.digits, k=64))
+        
         existing_system = db.query(AuthorizedSystem).filter(
             AuthorizedSystem.macAddress == org_in.macAddress
         ).first()
@@ -152,23 +166,36 @@ async def create_organization(
             system = existing_system
             system.organizationId = organization.id
             system.status = SystemStatus.APPROVED
+            system.authTokenHash = system_token
             system.approvedByUserId = current_user.id
             system.approvedAt = datetime.now(timezone.utc)
             system.updatedByUserId = current_user.id
             system_id = system.id
         else:
-            system_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=25))
+            system_id = str(uuid.uuid4())
             system = AuthorizedSystem(
                 id=system_id,
                 organizationId=organization.id,
                 type=SystemType.ADMIN,
                 macAddress=org_in.macAddress,
                 status=SystemStatus.APPROVED,
+                authTokenHash=system_token,
                 approvedByUserId=current_user.id,
                 approvedAt=datetime.now(timezone.utc),
                 updatedByUserId=current_user.id
             )
             db.add(system)
+        
+        # Calculate expiry (15 days from now for ADMIN terminals by default)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=15)
+        
+        # For the response, we return the raw token so the client can store it
+        system_out = {
+            "id": system_id,
+            "type": system.type,
+            "token": system_token,
+            "expiresAt": expires_at.isoformat()
+        }
         
         # Log system registration and approval
         client_ip = request.client.host if request.client else None
@@ -201,7 +228,11 @@ async def create_organization(
     
     db.commit()
     db.refresh(organization)
-    return organization
+    
+    return {
+        "organization": organization,
+        "system": system_out
+    }
 
 @router.get("/verify/{code}", response_model=OrganizationVerify)
 def verify_organization(

@@ -10,7 +10,7 @@ class UserPermission(Base):
     __tablename__ = "UserPermission"
     
     id = Column(String, primary_key=True)
-    userId = Column(String, ForeignKey("User.id"), nullable=False)
+    userId = Column(String, ForeignKey("User.id", ondelete="CASCADE"), nullable=False)
     permission = Column(Enum(PermissionType), nullable=False)
     isActive = Column(Boolean, default=True, nullable=False)
     expiresAt = Column(DateTime(timezone=True), nullable=True)

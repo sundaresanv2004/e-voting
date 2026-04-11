@@ -18,7 +18,7 @@ export interface AuthUser {
     email: string
     emailVerified: string | null
     image: string | null
-    role: "USER" | "STAFF" | "VIEWER" | "ORG_ADMIN"
+    role: "USER" | "STAFF" | "VIEWER" | "ORG_ADMIN" | "ADMIN"
     organizationId: string | null
     isActive: boolean
     lastLoginAt: string | null
@@ -149,6 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
                 const apiError = err as ApiError
                 setError(apiError.detail || "Signup failed")
+                throw err
+            }
         },
         [resetInactivityTimer],
     )

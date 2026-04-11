@@ -27,7 +27,7 @@ class AuthorizedSystem(Base):
     ipAddress = Column(String, nullable=True)
     macAddress = Column(String, unique=True, index=True, nullable=False)
     
-    status = Column(Enum(SystemStatus), default=SystemStatus.PENDING)
+    status = Column(Enum(SystemStatus), default=SystemStatus.PENDING, nullable=False)
     
     authTokenHash = Column(String, unique=True, nullable=True)
     tokenIssuedAt = Column(DateTime(timezone=True), nullable=True)

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useTransition } from "react"
+import { invoke } from "@tauri-apps/api/core"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserGroupIcon, Alert01Icon, UniversityIcon, Location01Icon } from '@hugeicons/core-free-icons'
 import { useRouter } from "next/navigation"
@@ -19,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { OrganizationSchema, OrganizationFormValues } from "@/lib/schemas/org"
 import { api } from "@/lib/api"
 import { useAuth } from "@/components/providers/auth-provider"
+import { saveSystemData } from "@/lib/store"
 
 export default function OrganizationSetupPage() {
     const { refreshUser } = useAuth()
@@ -44,31 +46,55 @@ export default function OrganizationSetupPage() {
 
         startTransition(async () => {
             try {
-                // In a real Tauri app, we'd fetch the MAC address here using a Rust command
-                // For now, we'll send a placeholder or fetch hostname if available
-                let macAddress = "MOCK-MAC-ADDRESS-123"
-                
+                let macAddress = "UNKNOWN"
                 try {
-                    // Try to get some device info if @tauri-apps/api is available
-                    const { invoke } = await import("@tauri-apps/api/core")
-                    // If you have a custom command, use it here:
-                    // macAddress = await invoke("get_mac_address")
+                    macAddress = await invoke<string>("get_system_mac_address")
                 } catch (e) {
-                    console.warn("Could not fetch system info:", e)
+                    console.error("Failed to fetch hardware identity:", e)
                 }
 
-                const response = await api.post("/organizations/", {
+                interface SetupResponse {
+                    organization: { id: string }
+                    system: { 
+                        id: string
+                        type: "ADMIN" | "VOTE"
+                        token: string
+                        expiresAt: string
+                    }
+                }
+
+                const response = await api.post<SetupResponse>("/organizations/", {
                     ...values,
                     macAddress
                 })
 
-                toast.success("Organization created!")
+                // Save system identity to local store
+                if (response.system && response.organization) {
+                    try {
+                        await saveSystemData({
+                            systemId: response.system.id,
+                            organizationId: response.organization.id,
+                            systemType: response.system.type,
+                            accessToken: response.system.token,
+                            expiresAt: response.system.expiresAt
+                        })
+                    } catch (e) {
+                        console.error("Failed to save terminal identity:", e)
+                        // Don't block redirect, but warn
+                        toast.warning("Organization created, but failed to save terminal identity.")
+                    }
+                }
 
-                // Refresh the local user state to pick up the new organizationId and role
+                toast.success("Organization created successfully!")
+
+                // Refresh the local user state
                 await refreshUser()
-
-                // Navigate to the admin dashboard
-                router.push('/admin/organization')
+                
+                // Navigate to the admin dashboard with a small delay for state settling
+                setTimeout(() => {
+                    router.replace('/admin/organization')
+                }, 1000)
+                
             } catch (err: any) {
                 console.error("Setup error:", err)
                 setError(err.detail || 'An unexpected error occurred. Please try again.')
@@ -85,21 +111,21 @@ export default function OrganizationSetupPage() {
 
             <CardContent className="px-0 md:px-6">
                 <Tabs defaultValue="create" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-muted/50 rounded-xl">
-                        <TabsTrigger value="create" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                        <TabsTrigger value="create" className="flex items-center gap-2">
                             <HugeiconsIcon icon={UniversityIcon} className="w-4 h-4" />
                             Create New
                         </TabsTrigger>
-                        <TabsTrigger value="join" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <TabsTrigger value="join" className="flex items-center gap-2">
                             <HugeiconsIcon icon={UserGroupIcon} className="w-4 h-4" />
                             Join Existing
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="create" className="space-y-4 outline-none">
+                    <TabsContent value="create" className="space-y-4">
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             {error && (
-                                <Alert variant="destructive" className="flex items-center py-3 border-destructive/20 bg-destructive/5 rounded-2xl">
+                                <Alert variant="destructive">
                                     <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                                     <AlertDescription className="text-destructive">
                                         {error}
@@ -134,7 +160,7 @@ export default function OrganizationSetupPage() {
                                             defaultValue={field.value}
                                             disabled={isPending}
                                         >
-                                            <SelectTrigger id="type" className="rounded-xl h-11 border-border/50">
+                                            <SelectTrigger id="type">
                                                 <SelectValue placeholder="Select type" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -152,18 +178,18 @@ export default function OrganizationSetupPage() {
                             </Field>
 
                             <div className="flex justify-center py-2 mb-4">
-                                <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isPending}>
-                                    {isPending && <Spinner className="h-4 w-4 mr-2" />}
+                                <Button type="submit" className="w-full" disabled={isPending}>
+                                    {isPending && <Spinner className="h-4 w-4" />}
                                     {isPending ? "Creating Organization..." : "Create Organization"}
                                 </Button>
                             </div>
                         </form>
                     </TabsContent>
 
-                    <TabsContent value="join" className="py-8 text-center space-y-6 outline-none">
+                    <TabsContent value="join" className="py-4 text-center space-y-6">
                         <div className="flex justify-center">
-                            <div className="p-4 rounded-full bg-muted/50">
-                                <HugeiconsIcon icon={UserGroupIcon} className="w-12 h-12 text-muted-foreground/50" />
+                            <div className="p-4 rounded-full bg-muted">
+                                <HugeiconsIcon icon={UserGroupIcon} className="w-8 h-8 text-muted-foreground/50" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -172,9 +198,9 @@ export default function OrganizationSetupPage() {
                                 To join an existing organization, please contact your election administrator or organization owner.
                             </p>
                         </div>
-                        <Alert className="bg-primary/5 border-primary/10 rounded-2xl">
-                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-primary mb-1" />
-                            <AlertDescription className="text-xs text-primary/80">
+                        <Alert variant={"info"}>
+                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-info" />
+                            <AlertDescription className="text-sm">
                                 Only administrators can add new members to an organization.
                             </AlertDescription>
                         </Alert>

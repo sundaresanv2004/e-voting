@@ -61,7 +61,7 @@ function SignupForm() {
             } catch (err: any) {
                 if (err.message === "NOT_VERIFIED") {
                     const [localPart, domain] = values.email.split("@")
-                    const maskedEmail = localPart.length > 2 
+                    const maskedEmail = localPart.length > 2
                         ? `${localPart.substring(0, 2)}*****${localPart.substring(localPart.length - 2)}@${domain}`
                         : values.email
                     toast.success(`Verification code sent to ${maskedEmail}`)
@@ -96,15 +96,6 @@ function SignupForm() {
             </CardHeader>
 
             <CardContent className="px-0 space-y-4 md:px-6">
-                <OAuthButtons disabled={isPending} />
-
-                <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground rounded-full">Or continue with</span>
-                    </div>
-                </div>
-
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
                     {error && (
                         <Alert variant="danger">

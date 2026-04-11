@@ -20,6 +20,12 @@ class OrganizationUpdate(BaseModel):
     logo: Optional[str] = None
     isActive: Optional[bool] = None
 
+class SystemResponse(BaseModel):
+    id: str
+    type: str
+    token: str
+    expiresAt: str
+
 class Organization(OrganizationBase):
     id: str
     code: str
@@ -32,3 +38,7 @@ class Organization(OrganizationBase):
 class OrganizationVerify(BaseModel):
     exists: bool
     organization: Optional[Organization] = None
+
+class OrganizationSetupResponse(BaseModel):
+    organization: Organization
+    system: Optional[SystemResponse] = None

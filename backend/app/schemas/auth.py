@@ -12,6 +12,8 @@ from pydantic import BaseModel, EmailStr, Field
 
 class UserRole(str, Enum):
     USER = "USER"
+    ORG_ADMIN = "ORG_ADMIN"
+    STAFF = "STAFF"
     ADMIN = "ADMIN"
     VIEWER = "VIEWER"
 
@@ -38,6 +40,7 @@ class UserResponse(BaseModel):
     emailVerified: Optional[datetime] = None
     image: Optional[str] = None
     role: UserRole
+    organizationId: Optional[str] = None
     isActive: bool
     lastLoginAt: Optional[datetime] = None
     createdAt: datetime

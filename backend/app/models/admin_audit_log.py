@@ -23,4 +23,5 @@ class AdminAuditLog(Base):
         Index("ix_adminaudit_entity", "entityType", "entityId"),
         Index("ix_adminaudit_action", "action"),
         Index("ix_adminaudit_org", "organizationId"),
+        Index("ix_adminaudit_created", "createdAt"),
     )

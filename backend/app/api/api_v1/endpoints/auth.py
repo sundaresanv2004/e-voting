@@ -29,6 +29,7 @@ from app.core.security import (
     get_otp_hash,
 )
 from app.models.user import User, UserRole
+from app.models.organization_member import OrganizationMember
 from app.models.user_audit_log import UserAuditLog
 from app.schemas.auth import (
     SignupRequest,
@@ -153,8 +154,18 @@ def _log_audit(
     db.commit()
 
 
-def _build_auth_response(user: User, token: str) -> AuthResponse:
+def _get_user_organization_id(db: Session, user_id: str) -> str | None:
+    """Helper to find the primary/active organization ID for a user."""
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.userId == user_id,
+        OrganizationMember.isActive == True
+    ).first()
+    return membership.organizationId if membership else None
+
+
+def _build_auth_response(user: User, token: str, db: Session) -> AuthResponse:
     """Build a standardized auth response with token and user data."""
+    org_id = _get_user_organization_id(db, user.id)
     return AuthResponse(
         access_token=token,
         token_type="bearer",
@@ -166,6 +177,7 @@ def _build_auth_response(user: User, token: str) -> AuthResponse:
             emailVerified=user.emailVerified,
             image=user.image,
             role=user.role.value if user.role else "USER",
+            organizationId=org_id,
             isActive=user.isActive,
             lastLoginAt=user.lastLoginAt,
             createdAt=user.createdAt,
@@ -225,7 +237,7 @@ async def signup(
     # Generate token
     token = create_access_token(subject=user.id, extra_claims={"tv": user.tokenVersion})
 
-    return _build_auth_response(user, token)
+    return _build_auth_response(user, token, db)
 
 
 @router.post("/verify-email", response_model=OtpResponse)
@@ -476,12 +488,13 @@ async def login(
     # Generate token
     token = create_access_token(subject=user.id, extra_claims={"tv": user.tokenVersion})
 
-    return _build_auth_response(user, token)
+    return _build_auth_response(user, token, db)
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get the current authenticated user's profile."""
+    org_id = _get_user_organization_id(db, current_user.id)
     return UserResponse(
         id=current_user.id,
         name=current_user.name,
@@ -489,6 +502,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         emailVerified=current_user.emailVerified,
         image=current_user.image,
         role=current_user.role.value if current_user.role else "USER",
+        organizationId=org_id,
         isActive=current_user.isActive,
         lastLoginAt=current_user.lastLoginAt,
         createdAt=current_user.createdAt,

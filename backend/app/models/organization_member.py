@@ -12,8 +12,8 @@ class OrganizationMember(Base):
     __tablename__ = "OrganizationMember"
     
     id = Column(String, primary_key=True)
-    userId = Column(String, ForeignKey("User.id"), nullable=False)
-    organizationId = Column(String, ForeignKey("Organization.id"), nullable=False)
+    userId = Column(String, ForeignKey("User.id", ondelete="CASCADE"), nullable=False)
+    organizationId = Column(String, ForeignKey("Organization.id", ondelete="CASCADE"), nullable=False)
     role = Column(Enum(OrganizationRole), nullable=False)
     isActive = Column(Boolean, default=True, nullable=False)
     addedByUserId = Column(String, ForeignKey("User.id"), nullable=False)
