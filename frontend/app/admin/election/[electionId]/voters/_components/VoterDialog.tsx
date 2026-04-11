@@ -136,7 +136,7 @@ export function VoterDialog({
                     {...register("name")}
                   />
                 </div>
-                {errors.name && <FieldError errors={[{ message: errors.name.message }]} />}
+                {errors.name && <FieldError errors={[{ message: errors.name.message as string }]} />}
               </Field>
 
               <Field>
@@ -152,7 +152,7 @@ export function VoterDialog({
                   />
                 </div>
                 <FieldDescription>This ID will be used for authentication at the terminal.</FieldDescription>
-                {errors.uniqueId && <FieldError errors={[{ message: errors.uniqueId.message }]} />}
+                {errors.uniqueId && <FieldError errors={[{ message: errors.uniqueId.message as string }]} />}
               </Field>
 
               <Field>
@@ -167,7 +167,7 @@ export function VoterDialog({
                     {...register("dob")}
                   />
                 </div>
-                {errors.dob && <FieldError errors={[{ message: errors.dob.message }]} />}
+                {errors.dob && <FieldError errors={[{ message: errors.dob.message as string }]} />}
               </Field>
             </div>
 

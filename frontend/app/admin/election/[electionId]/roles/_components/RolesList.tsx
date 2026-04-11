@@ -126,6 +126,7 @@ export function RolesList({ roles, electionId, availableSystems, userRole }: Rol
           }
         )} 
         data={roles} 
+        searchPlaceholder="Search roles by name..."
         onRowClick={handleView}
       />
     </>

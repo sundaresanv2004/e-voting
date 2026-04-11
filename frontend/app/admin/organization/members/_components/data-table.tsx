@@ -39,11 +39,11 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void
 }
 
-export function CandidateDataTable<TData, TValue>({
+export function MemberDataTable<TData, TValue>({
   columns,
   data,
-  emptyMessage = "No candidates found.",
-  searchPlaceholder = "Search candidates name or role...",
+  emptyMessage = "No records found.",
+  searchPlaceholder = "Search...",
   onRowClick
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -56,7 +56,7 @@ export function CandidateDataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
       pagination: {
-        pageSize: 20, // Strict limit of 20 records per page as requested
+        pageSize: 20,
       },
     },
     state: {
@@ -136,10 +136,10 @@ export function CandidateDataTable<TData, TValue>({
       {/* Pagination & Total Records Footer */}
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-muted-foreground">
-          Total {table.getFilteredRowModel().rows.length} candidate(s)
+          Total {table.getFilteredRowModel().rows.length} record(s)
         </div>
         <div className="flex items-center">
-          <div className="flex w-[100px] items-center justify-center text-sm">
+          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
           </div>
           <div className="flex items-center space-x-2">

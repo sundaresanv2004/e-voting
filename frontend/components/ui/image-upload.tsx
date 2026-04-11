@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ImageKitProvider, upload } from "@imagekit/next"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Image01Icon, Loading03Icon, Tick02Icon } from "@hugeicons/core-free-icons"
+import { CloudUploadIcon, Loading03Icon, Tick02Icon } from "@hugeicons/core-free-icons"
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -74,14 +74,16 @@ export function ImageUpload({ value, onChange, disabled, folder, className }: Im
     <ImageKitProvider
       urlEndpoint={urlEndpoint!}
     >
-      <div className="space-y-3">
+      <div className="space-y-3 w-full h-full">
         <div
           className={cn(
-            "relative group rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all duration-200",
-            !className?.includes("aspect-") && "aspect-square",
-            value ? "border-primary/20 bg-primary/5" : "border-muted-foreground/20 hover:border-primary/40 hover:bg-primary/5",
-            disabled && "opacity-50 cursor-not-allowed",
-            isUploading && "border-primary animate-pulse",
+            "relative group rounded-2xl border-2 flex flex-col items-center justify-center overflow-hidden transition-all duration-300 w-full h-full",
+            !className?.includes("aspect-") && "aspect-[3/4] max-h-[350px]",
+            value
+              ? "border-transparent bg-muted/20 shadow-sm"
+              : "border-dashed border-border hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/5",
+            disabled && "opacity-50 cursor-not-allowed hover:bg-transparent hover:border-border hover:shadow-none",
+            isUploading && "border-primary/50 bg-primary/5 scale-[0.98]",
             className
           )}
         >
@@ -92,72 +94,86 @@ export function ImageUpload({ value, onChange, disabled, folder, className }: Im
                 src={value}
                 alt="Uploaded"
                 className={cn(
-                  "h-full w-full object-cover transition-transform duration-500 group-hover:scale-110",
-                  isUploading && "blur-sm grayscale opacity-50"
+                  "h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]",
+                  isUploading && "blur-md grayscale opacity-40 scale-110"
                 )}
               />
               <div className={cn(
                 "absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300",
-                isUploading ? "bg-black/20 opacity-100" : "bg-black/40 opacity-0 group-hover:opacity-100"
+                isUploading
+                  ? "bg-background/80 opacity-100"
+                  : "bg-black/50 opacity-0 group-hover:opacity-100"
               )}>
                 {isUploading ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center animate-spin">
-                      <HugeiconsIcon icon={Loading03Icon} className="w-5 h-5 text-white" />
+                  <div className="flex flex-col items-center gap-3 transform scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-2xl flex items-center justify-center relative overflow-hidden">
+                      <HugeiconsIcon icon={Loading03Icon} className="w-5 h-5 text-primary animate-spin" strokeWidth={2.5} />
                     </div>
-                    <span className="text-[10px] font-black uppercase text-white tracking-widest animate-pulse">Uploading</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse py-1">Processing</span>
                   </div>
                 ) : (
                   <Button
                     type="button"
                     variant="secondary"
-                    size="sm"
-                    className="rounded-xl h-8 text-[10px] font-bold shadow-xl border-none"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
                     disabled={disabled}
                   >
-                    Change Image
+                    Replace Image
                   </Button>
                 )}
               </div>
               {!isUploading && (
-                <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300">
-                  <HugeiconsIcon icon={Tick02Icon} className="w-3.5 h-3.5" strokeWidth={3} />
+                <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300 z-10 border border-white/20">
+                  <HugeiconsIcon icon={Tick02Icon} className="w-4 h-4" strokeWidth={3} />
                 </div>
               )}
             </>
           ) : (
             <div
               className={cn(
-                "flex flex-col items-center gap-4 p-6 text-center cursor-pointer transition-all duration-300 border-none w-full h-full justify-center",
-                !disabled && !isUploading && "active:scale-95"
+                "flex flex-col items-center gap-5 text-center cursor-pointer transition-all duration-300 border-none w-full h-full justify-center relative p-6",
+                !disabled && !isUploading && "active:scale-[0.98]"
               )}
               onClick={() => !disabled && !isUploading && fileInputRef.current?.click()}
             >
+              {/* Subtle background glow on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
               <div className={cn(
-                "h-16 w-16 rounded-[2rem] flex items-center justify-center transition-all duration-500",
-                isUploading ? "bg-primary/20 scale-110" : "bg-muted group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground"
+                "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-500 z-10",
+                isUploading
+                  ? "bg-primary/10 shadow-inner scale-110"
+                  : "bg-background shadow-sm border border-border/50 group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:shadow-xl group-hover:shadow-primary/10 group-hover:-translate-y-2"
               )}>
                 {isUploading ? (
-                  <div className="relative">
-                    <HugeiconsIcon icon={Loading03Icon} className="w-8 h-8 animate-spin text-primary" />
-                    <div className="absolute inset-0 w-8 h-8 rounded-full border-2 border-primary/30 border-t-transparent animate-spin-slow" />
-                  </div>
+                  <>
+                    <HugeiconsIcon icon={Loading03Icon} className="w-5 h-5 animate-spin text-primary relative z-10" strokeWidth={2.5} />
+                    <div className="absolute inset-0 rounded-[24px] border border-primary/30 animate-ping opacity-20 duration-1000" />
+                  </>
                 ) : (
-                  <HugeiconsIcon icon={Image01Icon} className="w-8 h-8" />
+                  <div className="relative">
+                    <HugeiconsIcon icon={CloudUploadIcon} className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" strokeWidth={1.5} />
+                  </div>
                 )}
               </div>
-              <div className="space-y-1">
-                <p className="text-[11px] font-black uppercase tracking-widest text-foreground">
-                  {isUploading ? "Taking a moment..." : "Click to upload"}
+
+              <div className="space-y-1.5 relative z-10 flex flex-col items-center w-full">
+                <p className="text-sm font-bold text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
+                  {isUploading ? "Uploading file..." : "Click to select a file"}
                 </p>
-                <p className="text-[10px] text-muted-foreground font-medium opacity-60 italic">
-                  {isUploading ? "Optimizing & Securing your file" : "JPG, PNG, GIF up to 10MB"}
+                <p className="text-[11px] text-muted-foreground font-medium max-w-[200px] leading-relaxed">
+                  {isUploading
+                    ? "Securing & optimizing your image"
+                    : "Supports PNG, JPEG, SVG & GIF files up to 10MB"}
                 </p>
               </div>
+
               {isUploading && (
-                <div className="w-24 h-1 bg-muted rounded-full overflow-hidden mt-2 border-none">
-                  <div className="h-full bg-primary animate-progress-indeterminate border-none" />
+                <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden mt-2 relative z-10">
+                  <div className="h-full bg-primary animate-progress-indeterminate rounded-full" />
                 </div>
               )}
             </div>

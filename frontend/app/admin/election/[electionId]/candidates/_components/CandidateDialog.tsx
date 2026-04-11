@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert01Icon, Image01Icon, InformationCircleIcon, CloudUploadIcon, Link01Icon } from "@hugeicons/core-free-icons"
+import { Alert01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { ImageUpload } from "@/components/ui/image-upload"
 
@@ -17,15 +17,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectGroup,
+  SelectLabel,
   SelectValue,
 } from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Field,
   FieldLabel,
@@ -114,7 +114,7 @@ export function CandidateDialog({
         onOpenChange(false)
       } else {
         const errorMsg = result.error || "Something went wrong"
-        
+
         if (typeof errorMsg === "object") {
           Object.entries(errorMsg).forEach(([key, messages]) => {
             setError(key as keyof CandidateFormValues, {
@@ -138,38 +138,38 @@ export function CandidateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden gap-0 bg-card rounded-2xl border shadow-2xl">
-        <DialogHeader className="px-6 py-6 border-b bg-muted/5">
-          <DialogTitle className="text-xl font-bold tracking-tight">
-            {isEditing ? "Edit Candidate Profile" : "Register New Candidate"}
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b bg-card relative gap-1 overflow-hidden">
+          <DialogTitle className="font-semibold text-xl tracking-tight">
+            {isEditing ? "Edit Candidate" : "Register New Candidate"}
           </DialogTitle>
-          <DialogDescription className="text-sm font-medium opacity-70">
+          <DialogDescription className="text-sm font-medium text-muted-foreground/80">
             {isEditing
-              ? "Update candidate metadata and assigned administrative role."
-              : "Onboard a new candidate into this specific election campaign."}
+              ? "Update the details for this candidate."
+              : "Add a new candidate to this election."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="max-h-[60vh]">
-            <div className="px-6 py-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden bg-card">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="space-y-4">
               {availableRoles.length === 0 && (
                 <div className="rounded-2xl bg-orange-500/5 p-4 border border-orange-500/20 flex gap-3 text-orange-600 animate-in fade-in zoom-in-95 duration-300">
                   <HugeiconsIcon icon={Alert01Icon} className="h-5 w-5 shrink-0 mt-0.5" color="currentColor" />
                   <div className="space-y-1">
-                    <p className="text-sm font-black uppercase tracking-wider">No active roles</p>
+                    <p className="text-sm font-bold">No active roles</p>
                     <p className="text-xs font-medium opacity-80 leading-relaxed">
-                      You must define at least one Election Role before adding any candidates to this campaign.
+                      You must define at least one Election Role before adding any candidates.
                     </p>
                   </div>
                 </div>
               )}
 
               <Field>
-                <FieldLabel htmlFor="name">Candidate Full Name</FieldLabel>
+                <FieldLabel htmlFor="name">Candidate Name</FieldLabel>
                 <Input
                   id="name"
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g., John Doe"
                   {...register("name")}
                   disabled={isPending}
                 />
@@ -177,78 +177,82 @@ export function CandidateDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="role">Election Role Assignment</FieldLabel>
-                <Select 
-                  onValueChange={(val) => setValue("electionRoleId", val)} 
-                  value={watch("electionRoleId")} 
+                <FieldLabel htmlFor="role">Election Role</FieldLabel>
+                <Select
+                  onValueChange={(val) => setValue("electionRoleId", val)}
+                  value={watch("electionRoleId")}
                   disabled={isPending}
                 >
-                  <SelectTrigger id="role" className="w-full h-11 rounded-xl border-muted-foreground/20 bg-background/50">
-                    <SelectValue placeholder="Assign an active role" />
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-muted-foreground/20 shadow-xl">
-                    {availableRoles.map((role) => (
-                      <SelectItem key={role.id} value={role.id} className="focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer py-2.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-sm">{role.name}</span>
-                          <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground opacity-50">Priority Order: {role.order}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Election Roles</SelectLabel>
+                      {availableRoles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
+                <FieldDescription>Determines which position this candidate is contesting for.</FieldDescription>
                 {errors.electionRoleId && <FieldError errors={[{ message: errors.electionRoleId.message }]} />}
               </Field>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Field>
-                  <FieldLabel>Profile Image</FieldLabel>
-                  <ImageUpload
-                    value={profileImage || ""}
-                    onChange={(val) => setValue("profileImage", val)}
-                    disabled={isPending}
-                    folder="candidates/profiles"
-                  />
-                  {errors.profileImage && <FieldError errors={[{ message: errors.profileImage.message }]} />}
-                </Field>
-
-                <Field>
-                  <FieldLabel>Election Symbol</FieldLabel>
-                  <ImageUpload
-                    value={symbolImage || ""}
-                    onChange={(val) => setValue("symbolImage", val)}
-                    disabled={isPending}
-                    folder="candidates/symbols"
-                  />
-                  {errors.symbolImage && <FieldError errors={[{ message: errors.symbolImage.message }]} />}
-                </Field>
-              </div>
-
-              {serverError && (
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-destructive/10 text-destructive text-sm border border-destructive/20 animate-in fade-in slide-in-from-top-1 duration-200 shadow-sm">
-                  <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span className="font-semibold tracking-tight">{serverError}</span>
+              <div className="pt-2 space-y-4">
+                <div className="flex items-center justify-between pl-1">
+                  <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest opacity-60">
+                    Media
+                  </p>
                 </div>
-              )}
-            </div>
-          </ScrollArea>
 
-          <DialogFooter className="px-6 py-4 border-t bg-muted/10 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Field>
+                    <FieldLabel>Profile Image</FieldLabel>
+                    <ImageUpload
+                      value={profileImage || ""}
+                      onChange={(val) => setValue("profileImage", val)}
+                      disabled={isPending}
+                      folder="candidates/profiles"
+                    />
+                    {errors.profileImage && <FieldError errors={[{ message: errors.profileImage.message }]} />}
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>Election Symbol</FieldLabel>
+                    <ImageUpload
+                      value={symbolImage || ""}
+                      onChange={(val) => setValue("symbolImage", val)}
+                      disabled={isPending}
+                      folder="candidates/symbols"
+                    />
+                    {errors.symbolImage && <FieldError errors={[{ message: errors.symbolImage.message }]} />}
+                  </Field>
+                </div>
+              </div>
+            </div>
+
+            {serverError && (
+              <FieldError className="flex items-start gap-3 p-4 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in slide-in-from-top-1 duration-200">
+                <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 mt-0.5 shrink-0" />
+                <span className="font-medium text-xs">{serverError}</span>
+              </FieldError>
+            )}
+          </div>
+
+          <DialogFooter className="px-6 py-3 border-t flex flex-row items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
-              className="rounded-xl border-muted-foreground/20 hover:bg-muted font-bold text-[11px] uppercase tracking-wider"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Discard Changes
+              Cancel
             </Button>
-            <Button
-              type="submit"
-              className="rounded-xl font-bold text-[11px] uppercase tracking-wider shadow-md active:scale-95 transition-all"
-              disabled={isPending || availableRoles.length === 0}
-            >
-              {isPending ? "Processing..." : isEditing ? "Update Candidate" : "Register Candidate"}
+            <Button type="submit" disabled={isPending || availableRoles.length === 0}>
+              {isPending ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Register Candidate")}
             </Button>
           </DialogFooter>
         </form>

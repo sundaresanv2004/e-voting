@@ -48,9 +48,7 @@ export function CandidateExport({ data, electionName }: CandidateExportProps) {
         "Election Role": candidate.role.name,
         "Status": "Active", // Standard status for now
         "Created At": new Date(candidate.createdAt).toLocaleString(),
-        "Last Updated": new Date(candidate.updatedAt).toLocaleString(),
-        "Role ID": candidate.electionRoleId,
-        "Candidate ID": candidate.id
+        "Last Updated": new Date(candidate.updatedAt).toLocaleString()
       }))
 
       const worksheet = utils.json_to_sheet(exportData)
@@ -85,34 +83,18 @@ export function CandidateExport({ data, electionName }: CandidateExportProps) {
           {isExporting ? "Generating..." : "Export Data"}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 border shadow-xl rounded-2xl p-1 lg:backdrop-blur-md">
-        <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black p-3 opacity-60">
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
           Choose Format
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="mx-1" />
-        <DropdownMenuItem
-          className="gap-3 cursor-pointer focus:bg-primary/5 focus:text-primary py-3 px-3 rounded-xl transition-colors"
-          onClick={() => handleExport("xlsx")}
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-600">
-            <HugeiconsIcon icon={TableIcon} className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="font-bold text-sm">Excel Spreadsheet</span>
-            <span className="text-[10px] opacity-60 font-medium">Download as .xlsx file</span>
-          </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+          <HugeiconsIcon icon={TableIcon} className="h-4 w-4" />
+          <span>Excel Spreadsheet</span>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          className="gap-3 cursor-pointer focus:bg-primary/5 focus:text-primary py-3 px-3 rounded-xl transition-colors"
-          onClick={() => handleExport("csv")}
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
-            <HugeiconsIcon icon={File02Icon} className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="font-bold text-sm">CSV Text File</span>
-            <span className="text-[10px] opacity-60 font-medium">Download as .csv file</span>
-          </div>
+        <DropdownMenuItem onClick={() => handleExport("csv")}>
+          <HugeiconsIcon icon={File02Icon} className="h-4 w-4" />
+          <span>CSV File</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

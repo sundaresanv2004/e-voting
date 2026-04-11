@@ -114,22 +114,6 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
-
-  --animate-cell-ripple: cell-ripple var(--duration, 200ms) ease-out none 1 var(--delay, 0ms);
-
-  @keyframes cell-ripple {
-    0% {
-      opacity: 0.4;
-    }
-
-    50% {
-      opacity: 0.8;
-    }
-
-    100% {
-      opacity: 0.4;
-    }
-  }
 }
 
 @layer base {
@@ -141,28 +125,5 @@
     }
   html {
     @apply font-sans;
-    scrollbar-width: thin;
-    scrollbar-color: var(--muted-foreground) transparent;
     }
-
-  /* Thin webkit scrollbars (Chrome, Safari, Edge, Tauri WebView) */
-  *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background: var(--muted-foreground);
-    border-radius: 10px;
-    border: 1px solid transparent;
-    background-clip: content-box;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background: var(--primary);
-  }
 }

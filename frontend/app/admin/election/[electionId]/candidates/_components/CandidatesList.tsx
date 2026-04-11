@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteCandidate } from "../_actions"
 import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 import type { RoleColumn } from "../../roles/_components/columns"
 
 interface CandidatesListProps {
@@ -89,7 +90,7 @@ export function CandidatesList({ candidates, electionId, availableRoles, userRol
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -101,8 +102,9 @@ export function CandidatesList({ candidates, electionId, availableRoles, userRol
             <AlertDialogAction 
               onClick={handleDelete} 
               disabled={isPending}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
             >
+              {isPending && <Spinner className="mr-2" color="currentColor" />}
               {isPending ? "Deleting..." : "Delete Candidate"}
             </AlertDialogAction>
           </AlertDialogFooter>

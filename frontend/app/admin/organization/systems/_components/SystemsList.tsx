@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { SystemDetailsSheet } from "./SystemDetailsSheet"
 import { updateSystemStatusAction } from "../_actions"
 import { columns, type System } from "./columns"
-import { ElectionDataTable } from "../../elections/_components/data-table"
+import { SystemDataTable } from "./data-table"
 
 interface SystemsListProps {
   initialSystems: System[]
@@ -75,10 +75,11 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
         onOpenChange={setIsSheetOpen}
       />
 
-      <ElectionDataTable
+      <SystemDataTable
         columns={columns(openDetails, handleStatusUpdate, isUpdating)}
         data={initialSystems}
         emptyMessage="No systems found."
+        searchPlaceholder="Search systems by name or hostname..."
         onRowClick={openDetails}
       />
     </>

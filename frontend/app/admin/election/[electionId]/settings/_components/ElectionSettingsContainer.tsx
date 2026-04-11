@@ -268,7 +268,7 @@ function AccessSection({ election }: { election: any }) {
                 iconColor="text-purple-600"
                 iconBg="bg-purple-500/10"
                 checked={settings?.requireSystemAuth ?? true}
-                onCheckedChange={(v) => handleToggle("requireSystemAuth", v)}
+                onCheckedChange={(v: boolean) => handleToggle("requireSystemAuth", v)}
                 disabled={isPending}
             />
             <ToggleCard 
@@ -278,7 +278,7 @@ function AccessSection({ election }: { election: any }) {
                 iconColor="text-emerald-600"
                 iconBg="bg-emerald-500/10"
                 checked={!settings?.allSystemsAllowed}
-                onCheckedChange={(v) => handleToggle("allSystemsAllowed", !v)}
+                onCheckedChange={(v: boolean) => handleToggle("allSystemsAllowed", !v)}
                 disabled={isPending}
             />
         </div>
@@ -311,7 +311,7 @@ function VerificationSection({ election }: { election: any }) {
                 iconColor="text-blue-600"
                 iconBg="bg-blue-500/10"
                 checked={settings?.authorizeVoters ?? false}
-                onCheckedChange={(v) => handleToggle("authorizeVoters", v)}
+                onCheckedChange={(v: boolean) => handleToggle("authorizeVoters", v)}
                 disabled={isPending}
             />
             <ToggleCard 
@@ -321,7 +321,7 @@ function VerificationSection({ election }: { election: any }) {
                 iconColor="text-amber-600"
                 iconBg="bg-amber-500/10"
                 checked={settings?.verifyDob ?? false}
-                onCheckedChange={(v) => handleToggle("verifyDob", v)}
+                onCheckedChange={(v: boolean) => handleToggle("verifyDob", v)}
                 disabled={isPending}
             />
         </div>

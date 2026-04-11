@@ -1,6 +1,4 @@
-# ========================
-# Dependencies
-# ========================
+# dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,112 +8,29 @@
 !.yarn/releases
 !.yarn/versions
 
-# ========================
-# Next.js
-# ========================
+# testing
+/coverage
+
+# next.js
 /.next/
 /out/
 
-# ========================
-# Production / Build
-# ========================
+# production
 /build
-/dist
 
-# ========================
-# Testing
-# ========================
-/coverage
-
-# ========================
-# Environment Variables
-# ========================
-.env
-.env.*
-.env.local
-.env.development
-.env.development.local
-.env.test
-.env.test.local
-.env.production
-.env.production.local
-
-# ========================
-# OS Files
-# ========================
+# misc
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+*.pem
 
-# ========================
-# Code Editors / IDEs
-# ========================
-# VSCode / Antigravity
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# JetBrains (WebStorm, IntelliJ, RustRover)
-.idea/
-*.iml
-*.iws
-*.ipr
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Vim / Neovim
-*.swp
-*.swo
-*~
-.netrwhist
-tags
-
-# Emacs
-*~
-\#*\#
-.#*
-
-# ========================
-# Debug Logs
-# ========================
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-# ========================
-# TypeScript
-# ========================
+# env files
+.env*.local
+
+# typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# ========================
-# Security / Secrets
-# ========================
-*.pem
-*.key
-*.cert
-*.crt
-*.p12
-*.jks
-
-# ========================
-# Misc
-# ========================
-*.log
-*.pid
-*.seed
-*.pid.lock
-.eslintcache
-.stylelintcache

@@ -79,7 +79,8 @@ export const columns = (
   currentUserId?: string
 ): ColumnDef<Member>[] => [
     {
-      accessorKey: "user",
+      id: "user",
+      accessorFn: (row) => `${row.name || ""} ${row.email}`,
       header: "Member",
       cell: ({ row }) => {
         const member = row.original

@@ -37,8 +37,8 @@ export type VoterDetails = {
   image: string | null
   dob: Date | null
   electionId: string
-  ballot?: { id: string } | null
-  createdAt?: string | Date
+  ballot?: { id: string; createdAt: string | Date } | null
+  createdAt: string | Date
   updatedAt?: string | Date
   additionalDetails?: any
 }

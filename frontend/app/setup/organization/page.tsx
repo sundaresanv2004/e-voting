@@ -163,8 +163,8 @@ export default function OrganizationSetupPage() {
                             </p>
                         </div>
                         <Alert variant={"info"}>
-                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-muted-foreground pb-1" />
-                            <AlertDescription className="text-xs">
+                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-muted-foreground" />
+                            <AlertDescription className="text-sm">
                                 Only administrators can add new members to an organization.
                             </AlertDescription>
                         </Alert>

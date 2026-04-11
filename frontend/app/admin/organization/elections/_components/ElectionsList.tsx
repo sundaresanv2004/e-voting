@@ -78,6 +78,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
           }
         )} 
         data={elections} 
+        searchPlaceholder="Search elections by name or code..."
         onRowClick={handleView}
       />
     </>

@@ -22,7 +22,7 @@ export default function ResultsHero({
     )}>
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-        <HugeiconsIcon icon={ChartBarLineIcon} size={180} variant="twotone" />
+        <HugeiconsIcon icon={ChartBarLineIcon} size={180} />
       </div>
       
       <div className="relative z-10 space-y-2">

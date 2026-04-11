@@ -38,6 +38,20 @@ export type RoleDetails = {
     candidates: number
   }
   candidates?: { id: string; name: string; profileImage: string | null }[]
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  createdBy?: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
+  updatedBy?: {
+    id: string
+    name: string | null
+    email: string
+    image: string | null
+  }
 }
 
 interface RoleDetailsSheetProps {

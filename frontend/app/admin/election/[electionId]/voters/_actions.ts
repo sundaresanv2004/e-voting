@@ -20,7 +20,7 @@ async function getAuthorizedUser(electionId: string) {
     select: { role: true, organizationId: true }
   })
 
-  if (!user || (user.role !== UserRole.ORG_ADMIN && user.role !== UserRole.STAFF)) {
+  if (!user || !user.organizationId || (user.role !== UserRole.ORG_ADMIN && user.role !== UserRole.STAFF)) {
     throw new Error("Only admins and staff can manage voters")
   }
 

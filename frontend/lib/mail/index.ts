@@ -20,7 +20,7 @@ export const sendPasswordResetConfirmationEmail = async (email: string) => {
     const html = PasswordResetConfirmationTemplate()
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <reset@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "reset@yourdomain.com"}>`,
       to: email,
       subject: "Password Reset Successful - E-Voting",
       html
@@ -45,7 +45,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
     const html = PasswordResetTemplate(resetLink)
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <reset@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "reset@yourdomain.com"}>`,
       to: email,
       subject: "Reset your password - E-Voting",
       html
@@ -68,7 +68,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     const html = VerificationTemplate(token)
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <verify@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "verify@yourdomain.com"}>`,
       to: email,
       subject: "Verify your email - E-Voting System",
       html
@@ -91,7 +91,7 @@ export const sendWelcomeEmail = async (email: string, name: string) => {
     const html = WelcomeTemplate(name)
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <welcome@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "welcome@yourdomain.com"}>`,
       to: email,
       subject: "Welcome to E-Voting System!",
       html
@@ -114,7 +114,7 @@ export const sendOrgInvitationEmail = async (email: string, name: string, orgNam
     const html = OrgInvitationTemplate(name, orgName, role)
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <invite@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "invite@yourdomain.com"}>`,
       to: email,
       subject: `You've been added to ${orgName} - E-Voting`,
       html
@@ -137,7 +137,7 @@ export const sendElectionAssignmentEmail = async (email: string, name: string, o
     const html = ElectionAssignmentTemplate(name, orgName, electionName, role, electionId)
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "E-Voting <updates@yourdomain.com>",
+      from: `E-Voting <${process.env.EMAIL_FROM || "updates@yourdomain.com"}>`,
       to: email,
       subject: `New Assignment: ${electionName} - ${orgName}`,
       html

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ElectionDataTable } from "../../elections/_components/data-table"
+import { MemberDataTable } from "./data-table"
 import { columns, type Member } from "./columns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MemberDetailsSheet } from "./member-details-sheet"
@@ -61,10 +61,11 @@ export function MembersList({ initialMembers, orgCreatorId, currentUserId }: Mem
           </div>
         </div>
       ) : (
-        <ElectionDataTable
+        <MemberDataTable
           columns={columns(handleView, handleEdit, handleRemoveInitiate, orgCreatorId, currentUserId)}
           data={members}
           emptyMessage="No members found matching your search."
+          searchPlaceholder="Search members by name or email..."
           onRowClick={handleView}
         />
       )}

@@ -1,1 +1,0 @@
-# Database setup and sessions
