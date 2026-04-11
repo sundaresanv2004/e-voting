@@ -21,4 +21,4 @@ class Organization(Base):
     createdByUserId = Column(String, ForeignKey("User.id"), nullable=False)
     updatedByUserId = Column(String, ForeignKey("User.id"), nullable=False)
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
-    updatedAt = Column(DateTime(timezone=True), onupdate=func.now())
+    updatedAt = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

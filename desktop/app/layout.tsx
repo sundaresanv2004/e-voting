@@ -3,6 +3,7 @@ import { Toaster } from "sonner"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/providers/auth-provider"
+import { ServerStatusGuard } from "@/components/shared/server-status-guard"
 import { cn } from "@/lib/utils";
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
@@ -29,7 +30,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <ServerStatusGuard>
+              {children}
+            </ServerStatusGuard>
           </AuthProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>

@@ -15,4 +15,12 @@ class AdminAuditLog(Base):
     oldValues = Column(JSON, nullable=True)
     newValues = Column(JSON, nullable=True)
     ipAddress = Column(String, nullable=True)
-    createdAt = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    userAgent = Column(String, nullable=True)
+    createdAt = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_adminaudit_user", "userId"),
+        Index("ix_adminaudit_entity", "entityType", "entityId"),
+        Index("ix_adminaudit_action", "action"),
+        Index("ix_adminaudit_org", "organizationId"),
+    )

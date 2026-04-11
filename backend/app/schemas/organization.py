@@ -10,12 +10,21 @@ class OrganizationType(str, Enum):
 class OrganizationBase(BaseModel):
     name: str
     type: OrganizationType
-    code: str
-    isActive: bool = True
+
+class OrganizationCreate(OrganizationBase):
+    macAddress: Optional[str] = None
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[OrganizationType] = None
+    logo: Optional[str] = None
+    isActive: Optional[bool] = None
 
 class Organization(OrganizationBase):
     id: str
+    code: str
     logo: Optional[str] = None
+    isActive: bool = True
 
     class Config:
         from_attributes = True

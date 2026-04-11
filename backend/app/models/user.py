@@ -3,7 +3,7 @@ User model — mirrors the Prisma User schema with additional security fields.
 Table name matches Prisma's convention ("User") to share the same database.
 """
 import enum
-from sqlalchemy import (Boolean, Column, String, DateTime, Enum, Integer)
+from sqlalchemy import (Boolean, Column, String, DateTime, Enum, Integer, ForeignKey)
 from sqlalchemy.sql import func
 
 from app.db.base_class import Base
@@ -11,6 +11,8 @@ from app.db.base_class import Base
 
 class UserRole(str, enum.Enum):
     USER = "USER"
+    ORG_ADMIN = "ORG_ADMIN"
+    STAFF = "STAFF"
     ADMIN = "ADMIN"
     VIEWER = "VIEWER"
 

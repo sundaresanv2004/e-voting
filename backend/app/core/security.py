@@ -1,6 +1,8 @@
 """
 Security utilities for password hashing (Argon2) and JWT token management.
 """
+import hmac
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -66,3 +68,15 @@ def decode_access_token(token: str) -> dict:
         settings.SECRET_KEY,
         algorithms=[settings.JWT_ALGORITHM],
     )
+
+
+def get_otp_hash(otp: str) -> str:
+    """
+    Generate an HMAC-SHA256 hash of the OTP using the SECRET_KEY.
+    Used for securing short-lived codes without the overhead of Argon2/Bcrypt.
+    """
+    return hmac.new(
+        settings.SECRET_KEY.encode(),
+        otp.encode(),
+        hashlib.sha256
+    ).hexdigest()

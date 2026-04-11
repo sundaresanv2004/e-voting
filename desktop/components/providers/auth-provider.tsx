@@ -39,6 +39,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>
     signup: (name: string, email: string, password: string) => Promise<void>
     logout: () => void
+    refreshUser: () => Promise<void>
     error: string | null
     clearError: () => void
 }
@@ -61,14 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const clearError = useCallback(() => setError(null), [])
 
     // Logout: clear in-memory token and user state
-    const logout = useCallback(() => {
-        api.setToken(null)
-        setUser(null)
-        setError(null)
+    const logout = useCallback(async () => {
+        try {
+            await api.post("/auth/logout")
+        } catch (err) {
+            console.error("[Auth] Logout cleanup failed on server:", err)
+        } finally {
+            api.setToken(null)
+            setUser(null)
+            setError(null)
 
-        if (inactivityTimer.current) {
-            clearTimeout(inactivityTimer.current)
-            inactivityTimer.current = null
+            if (inactivityTimer.current) {
+                clearTimeout(inactivityTimer.current)
+                inactivityTimer.current = null
+            }
         }
     }, [])
 
@@ -95,10 +102,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     email,
                     password,
                 })
+                
+                // Check if email is verified
+                if (!data.user.emailVerified) {
+                    // Do not authenticate yet, just notify the UI
+                    const error = new Error("NOT_VERIFIED")
+                    ;(error as any).email = data.user.email
+                    throw error
+                }
+
                 api.setToken(data.access_token)
                 setUser(data.user)
                 resetInactivityTimer()
             } catch (err) {
+                if (err instanceof Error && err.message === "NOT_VERIFIED") {
+                    throw err
+                }
                 const apiError = err as ApiError
                 setError(apiError.detail || "Login failed")
                 throw err
@@ -117,17 +136,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     email,
                     password,
                 })
-                api.setToken(data.access_token)
-                setUser(data.user)
-                resetInactivityTimer()
+                
+                // After signup, we always require verification
+                // So we don't set the token/user here yet
+                const error = new Error("NOT_VERIFIED")
+                ;(error as any).email = data.user.email
+                throw error
+
             } catch (err) {
+                if (err instanceof Error && err.message === "NOT_VERIFIED") {
+                    throw err
+                }
                 const apiError = err as ApiError
                 setError(apiError.detail || "Signup failed")
-                throw err
-            }
         },
         [resetInactivityTimer],
     )
+
+    const refreshUser = useCallback(async () => {
+        try {
+            const userData = await api.get<AuthUser>("/auth/me")
+            setUser(userData)
+        } catch (err) {
+            console.error("[Auth] User refresh failed:", err)
+        }
+    }, [])
 
     // On mount: check if token exists in memory (e.g. after hot reload in dev)
     useEffect(() => {
@@ -187,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 login,
                 signup,
                 logout,
+                refreshUser,
                 error,
                 clearError,
             }}

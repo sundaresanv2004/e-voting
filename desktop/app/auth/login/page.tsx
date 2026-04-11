@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { LoginSchema } from "@/lib/schemas/auth"
@@ -55,6 +54,15 @@ function LoginForm() {
                     router.push('/admin/organization')
                 }
             } catch (err: any) {
+                if (err.message === "NOT_VERIFIED") {
+                    const [localPart, domain] = values.email.split("@")
+                    const maskedEmail = localPart.length > 2 
+                        ? `${localPart.substring(0, 2)}*****${localPart.substring(localPart.length - 2)}@${domain}`
+                        : values.email
+                    toast.info(`Verification code sent to ${maskedEmail}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+                    return
+                }
                 setError(err?.detail || "Invalid email or password")
             }
         })
@@ -79,7 +87,7 @@ function LoginForm() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                        <Alert variant="danger">
+                        <Alert variant="destructive">
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
                                 {error}
@@ -136,13 +144,18 @@ function LoginForm() {
                 </form>
             </CardContent>
 
-            <CardFooter className="flex justify-center border-t border-border/50 pb-4 px-0 md:px-6">
+            <CardFooter className="flex flex-col items-center gap-2 border-t border-border/50 pb-4 px-0 md:px-6">
                 <p className="text-sm text-muted-foreground">
                     Don&apos;t have an account?{" "}
                     <Link href={`/auth/signup${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-primary font-medium hover:underline">
                         Sign up
                     </Link>
                 </p>
+                <Button variant="ghost" size="sm" asChild className="text-[10px] sm:text-xs opacity-40 hover:opacity-100 h-7">
+                    <Link href="loading">
+                        Preview Loading UI
+                    </Link>
+                </Button>
             </CardFooter>
         </Card>
     )

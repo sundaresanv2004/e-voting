@@ -24,7 +24,7 @@ import { useAuth } from "@/components/providers/auth-provider"
 
 function SignupForm() {
     const [isPending, startTransition] = useTransition()
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<React.ReactNode | null>(null)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -58,14 +58,32 @@ function SignupForm() {
         startTransition(async () => {
             try {
                 await signup(values.name, values.email, values.password)
-                toast.success("Account created successfully!")
-                if (nextParam) {
-                    router.push(nextParam)
-                } else {
-                    router.push('/admin/organization')
-                }
             } catch (err: any) {
-                setError(err?.detail || "Failed to create account")
+                if (err.message === "NOT_VERIFIED") {
+                    const [localPart, domain] = values.email.split("@")
+                    const maskedEmail = localPart.length > 2 
+                        ? `${localPart.substring(0, 2)}*****${localPart.substring(localPart.length - 2)}@${domain}`
+                        : values.email
+                    toast.success(`Verification code sent to ${maskedEmail}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+                    return
+                }
+
+                const detail = err?.detail || "Failed to create account"
+                if (detail.includes("already exists")) {
+                    setError(
+                        <span>
+                            An account with this email already exists.{" "}
+                            <Button variant="link" asChild className="p-0 h-auto font-bold underline text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 transition-colors">
+                                <Link href="/auth/login">
+                                    Log in here
+                                </Link>
+                            </Button>
+                        </span>
+                    )
+                } else {
+                    setError(detail)
+                }
             }
         })
     }
@@ -89,9 +107,9 @@ function SignupForm() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
                     {error && (
-                        <Alert variant="destructive">
-                            <HugeiconsIcon icon={Alert01Icon} className="w-8 h-8 text-destructive mb-1" />
-                            <AlertDescription className="text-sm text-destructive">
+                        <Alert variant="danger">
+                            <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
+                            <AlertDescription className="text-sm">
                                 {error}
                             </AlertDescription>
                         </Alert>

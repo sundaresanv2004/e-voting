@@ -7,18 +7,26 @@ Security measures:
 - Audit logging for all auth events
 - JWT tokens with configurable expiry
 """
+import hmac
 import uuid
+import random
+import string
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+from jose import jwt
 
 from app.api.deps import get_db, get_current_user, security_scheme
 from app.core.config import settings
+from app.models.otp_verification import OtpVerification, OtpPurpose
+from app.schemas.otp import OtpVerifyRequest, OtpResendRequest, OtpResponse
+from app.services.email import send_verification_email, send_welcome_email
 from app.core.security import (
     get_password_hash,
     verify_password,
     create_access_token,
+    get_otp_hash,
 )
 from app.models.user import User, UserRole
 from app.models.user_audit_log import UserAuditLog
@@ -34,6 +42,89 @@ router = APIRouter()
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 15
+OTP_EXPIRY_MINUTES = 10
+OTP_WINDOW_MINUTES = 15
+MAX_OTP_REQUESTS_PER_WINDOW = 3
+
+
+def _generate_otp(length: int = 6) -> str:
+    """Generate a random numeric OTP."""
+    return "".join(random.choices(string.digits, k=length))
+
+
+async def _send_verification_email(email: str, otp: str) -> None:
+    """
+    Send verification email using the Resend service.
+    """
+    print(f"[EmailService] Attempting to send OTP to {email}...")
+    await send_verification_email(email, otp)
+    print(f"[EmailService] Successfully sent OTP to {email}")
+
+
+async def _send_welcome_email(email: str, name: str) -> None:
+    """
+    Send welcome email using the Resend service.
+    """
+    print(f"[EmailService] Attempting to send welcome email to {email}...")
+    await send_welcome_email(email, name)
+    print(f"[EmailService] Successfully sent welcome email to {email}")
+
+
+def _get_or_create_otp(db: Session, user_id: str, purpose: OtpPurpose, ip: str | None = None) -> str:
+    """
+    Check rate limits, then generate and store a new OTP.
+    Ensures only one active OTP exists per user per purpose.
+    """
+    now = datetime.now(timezone.utc)
+    
+    # Check for existing OTP to enforce rate limits
+    otp_row = db.query(OtpVerification).filter(
+        OtpVerification.userId == user_id,
+        OtpVerification.purpose == purpose
+    ).first()
+
+    if otp_row:
+        # Check window for request-rate limiting
+        window_end = otp_row.windowStart + timedelta(minutes=OTP_WINDOW_MINUTES)
+        if now < window_end:
+            if otp_row.requestCount >= MAX_OTP_REQUESTS_PER_WINDOW:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Too many verification requests. Please try again in {int((window_end - now).total_seconds() / 60) + 1} minutes."
+                )
+            otp_row.requestCount += 1
+        else:
+            # Window expired, reset window and count
+            otp_row.windowStart = now
+            otp_row.requestCount = 1
+    
+    # Generate new OTP
+    otp = _generate_otp()
+    otp_hash = get_otp_hash(otp)
+    
+    if otp_row:
+        # Update existing row
+        otp_row.otpHash = otp_hash
+        otp_row.expiresAt = now + timedelta(minutes=OTP_EXPIRY_MINUTES)
+        otp_row.attempts = 0
+        otp_row.isUsed = False
+        otp_row.ipAddress = ip
+    else:
+        # Create new row
+        otp_row = OtpVerification(
+            id=_generate_cuid(),
+            userId=user_id,
+            purpose=purpose,
+            otpHash=otp_hash,
+            expiresAt = now + timedelta(minutes=OTP_EXPIRY_MINUTES),
+            ipAddress=ip,
+            windowStart=now,
+            requestCount=1
+        )
+        db.add(otp_row)
+    
+    db.commit()
+    return otp
 
 
 def _generate_cuid() -> str:
@@ -83,7 +174,7 @@ def _build_auth_response(user: User, token: str) -> AuthResponse:
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def signup(
+async def signup(
     payload: SignupRequest,
     request: Request,
     db: Session = Depends(get_db),
@@ -124,14 +215,159 @@ def signup(
         metadata={"email": user.email},
     )
 
+    # Generate and "send" OTP
+    otp = _get_or_create_otp(db, user.id, OtpPurpose.EMAIL_VERIFICATION, request.client.host if request.client else None)
+    await _send_verification_email(user.email, otp)
+    
+    # Send welcome email
+    await _send_welcome_email(user.email, user.name)
+
     # Generate token
     token = create_access_token(subject=user.id, extra_claims={"tv": user.tokenVersion})
 
     return _build_auth_response(user, token)
 
 
+@router.post("/verify-email", response_model=OtpResponse)
+def verify_email_otp(
+    payload: OtpVerifyRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Verify email with a 6-digit OTP."""
+    # Since user is not logged in, we must have email in payload or we can't find them
+    if not payload.email:
+        raise HTTPException(status_code=400, detail="Email is required for verification")
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.emailVerified:
+        return OtpResponse(message="Email already verified", success=True)
+
+    # Fetch active OTP for this user
+    otp_row = db.query(OtpVerification).filter(
+        OtpVerification.userId == user.id,
+        OtpVerification.purpose == OtpPurpose.EMAIL_VERIFICATION
+    ).first()
+
+    if not otp_row:
+        raise HTTPException(status_code=404, detail="No active verification code found")
+
+    # Check expiration
+    now = datetime.now(timezone.utc)
+    if now > otp_row.expiresAt:
+        _log_audit(
+            db,
+            action="OTP_EXPIRED",
+            user_id=user.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            metadata={"purpose": otp_row.purpose, "expired_at": str(otp_row.expiresAt)}
+        )
+        raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+
+    # Check attempts
+    if otp_row.attempts >= otp_row.maxAttempts:
+        # Max out the request count to force them to wait for the rate-limit window
+        otp_row.requestCount = MAX_OTP_REQUESTS_PER_WINDOW
+        db.commit()
+        
+        _log_audit(
+            db,
+            action="OTP_MAX_ATTEMPTS_REACHED",
+            user_id=user.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            metadata={"purpose": "EMAIL_VERIFICATION"}
+        )
+        # Calculate remaining time for the message
+        window_end = otp_row.windowStart + timedelta(minutes=OTP_WINDOW_MINUTES)
+        remaining_minutes = max(1, int((window_end - now).total_seconds() / 60) + 1)
+        
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, 
+            detail=f"Too many failed attempts. Please try again in {remaining_minutes} minutes."
+        )
+
+    # Verify hash
+    submitted_hash = get_otp_hash(payload.code)
+    print(f"[OTP Debug] Verifying user {user.email}")
+    print(f"[OTP Debug] Submitted: {payload.code} -> {submitted_hash}")
+    print(f"[OTP Debug] Stored Hash: {otp_row.otpHash}")
+    
+    if not hmac.compare_digest(submitted_hash, otp_row.otpHash):
+        otp_row.attempts += 1
+        db.commit()
+        
+        print(f"[OTP Debug] Verification FAILED. Attempt {otp_row.attempts}/{otp_row.maxAttempts}")
+        
+        _log_audit(
+            db,
+            action="OTP_VERIFY_FAILED",
+            user_id=user.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            metadata={"purpose": otp_row.purpose, "attempts": otp_row.attempts}
+        )
+        remaining = otp_row.maxAttempts - otp_row.attempts
+        detail = "Invalid verification code. Please try again."
+            
+        raise HTTPException(status_code=400, detail=detail)
+
+    # Success!
+    print(f"[OTP Debug] Verification SUCCESS for {user.email}")
+    user.emailVerified = datetime.now(timezone.utc)
+    db.delete(otp_row)  # Consume the OTP
+    db.commit()
+
+    _log_audit(
+        db,
+        action="EMAIL_VERIFIED",
+        user_id=user.id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+
+    return OtpResponse(message="Email verified successfully", success=True)
+
+
+@router.post("/resend-verification", response_model=OtpResponse)
+async def resend_verification_otp(
+    payload: OtpResendRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Regenerate and resend the verification code."""
+    if not payload.email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.emailVerified:
+        return OtpResponse(message="Email already verified", success=True)
+
+    # _get_or_create_otp handles the rate limiting logic internally
+    otp = _get_or_create_otp(db, user.id, OtpPurpose.EMAIL_VERIFICATION, request.client.host if request.client else None)
+    await _send_verification_email(user.email, otp)
+
+    _log_audit(
+        db,
+        action="OTP_RESENT",
+        user_id=user.id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        metadata={"purpose": "EMAIL_VERIFICATION"}
+    )
+
+    return OtpResponse(message="Verification code resent", success=True)
+
+
 @router.post("/login", response_model=AuthResponse)
-def login(
+async def login(
     payload: LoginRequest,
     request: Request,
     db: Session = Depends(get_db),
@@ -139,6 +375,7 @@ def login(
     """
     Authenticate with email and password.
     Implements brute-force protection with account locking.
+    Automatically triggers email verification if account is unverified.
     """
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -230,6 +467,11 @@ def login(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
+
+    # If user is not verified, trigger a verification email
+    if not user.emailVerified:
+        otp = _get_or_create_otp(db, user.id, OtpPurpose.EMAIL_VERIFICATION, request.client.host if request.client else None)
+        await _send_verification_email(user.email, otp)
 
     # Generate token
     token = create_access_token(subject=user.id, extra_claims={"tv": user.tokenVersion})

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "evoting"
     SQLALCHEMY_DATABASE_URI: str | None = None
+    
+    RESEND_API_KEY: str | None = None
+    EMAIL_FROM: str = "no-reply@evoting.sundaresan.dev"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

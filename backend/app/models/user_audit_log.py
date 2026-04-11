@@ -12,4 +12,10 @@ class UserAuditLog(Base):
     ipAddress = Column(String, nullable=True)
     userAgent = Column(String, nullable=True)
     metadata_ = Column("metadata", JSON, nullable=True)
-    createdAt = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    createdAt = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_useraudit_user", "userId"),
+        Index("ix_useraudit_action", "action"),
+        Index("ix_useraudit_created", "createdAt"),
+    )
