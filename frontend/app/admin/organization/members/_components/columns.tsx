@@ -11,6 +11,9 @@ import {
   UserIcon,
   Mail01Icon,
   ViewIcon,
+  ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserRole } from "@prisma/client"
@@ -58,7 +61,7 @@ export type Member = {
   }[]
 }
 
-function getRoleBadgeStyle(role: UserRole) {
+export function getRoleBadgeStyle(role: UserRole) {
   switch (role) {
     case UserRole.ORG_ADMIN:
       return "bg-indigo-50/50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 shadow-none"
@@ -71,6 +74,16 @@ function getRoleBadgeStyle(role: UserRole) {
   }
 }
 
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") {
+    return <HugeiconsIcon icon={ArrowUp01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  if (isSorted === "desc") {
+    return <HugeiconsIcon icon={ArrowDown01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+}
+
 export const columns = (
   onView: (member: Member) => void,
   onEdit: (member: Member) => void,
@@ -81,7 +94,18 @@ export const columns = (
     {
       id: "user",
       accessorFn: (row) => `${row.name || ""} ${row.email}`,
-      header: "Member",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Member
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => {
         const member = row.original
         return (
@@ -112,6 +136,8 @@ export const columns = (
     },
     {
       accessorKey: "role",
+      filterFn: "equals",
+      enableColumnFilter: true,
       header: "Organization Role",
       cell: ({ row }) => {
         const role = row.getValue("role") as UserRole
@@ -158,7 +184,18 @@ export const columns = (
     },
     {
       accessorKey: "createdAt",
-      header: "Joined On",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Joined On
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground font-semibold">
           {format(new Date(row.getValue("createdAt")), "MMM d, yyyy")}

@@ -27,12 +27,13 @@ const authenticator = async () => {
 interface ImageUploadProps {
   value?: string
   onChange: (value: string) => void
+  onUploadingChange?: (isUploading: boolean) => void
   disabled?: boolean
   folder?: string
   className?: string
 }
 
-export function ImageUpload({ value, onChange, disabled, folder, className }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, onUploadingChange, disabled, folder, className }: ImageUploadProps) {
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -43,6 +44,7 @@ export function ImageUpload({ value, onChange, disabled, folder, className }: Im
     }
 
     setIsUploading(true)
+    onUploadingChange?.(true)
     try {
       const auth = await authenticator();
       const res = await upload({
@@ -54,10 +56,12 @@ export function ImageUpload({ value, onChange, disabled, folder, className }: Im
         ...auth
       });
       setIsUploading(false)
+      onUploadingChange?.(false)
       onChange(res.url || "")
       toast.success("Image uploaded successfully!")
     } catch (err) {
       setIsUploading(false)
+      onUploadingChange?.(false)
       console.error("Upload error", err)
       toast.error("Failed to upload image")
     }

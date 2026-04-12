@@ -83,3 +83,34 @@ export async function updateSystemStatusAction(
     return { success: false, error: "Failed to update system status" }
   }
 }
+
+export async function syncSystemExpirations(organizationId: string) {
+  const session = await auth()
+  if (!session?.user?.organizationId || session.user.organizationId !== organizationId) {
+    throw new Error("Unauthorized")
+  }
+
+  try {
+    const result = await db.authorizedSystem.updateMany({
+      where: {
+        organizationId: organizationId,
+        status: SystemStatus.APPROVED,
+        tokenExpiresAt: { lte: new Date() },
+      },
+      data: {
+        status: SystemStatus.EXPIRED,
+        secretToken: null,
+        tokenExpiresAt: null,
+      },
+    })
+    
+    if (result.count > 0) {
+      revalidatePath("/admin/organization/systems")
+    }
+    
+    return { success: true, expiredCount: result.count }
+  } catch (error) {
+    console.error("[SYNC_SYSTEM_EXPIRATIONS]", error)
+    return { success: false, error: "Failed to sync system expirations" }
+  }
+}

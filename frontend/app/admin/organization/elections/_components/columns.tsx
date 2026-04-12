@@ -8,6 +8,9 @@ import {
   PencilEdit01Icon,
   Delete02Icon,
   ViewIcon,
+  ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Button } from "@/components/ui/button"
@@ -22,7 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { type Election } from "./election-details-sheet"
 
-function getStatusColor(status: string) {
+export function getStatusColor(status: string) {
   switch (status) {
     case "ACTIVE":
       return "bg-green-500/10 text-green-600 border-green-500/20"
@@ -30,9 +33,21 @@ function getStatusColor(status: string) {
       return "bg-blue-500/10 text-blue-600 border-blue-500/20"
     case "COMPLETED":
       return "bg-gray-500/10 text-gray-600 border-gray-500/20"
+    case "PAUSED":
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20"
     default:
       return "bg-secondary text-secondary-foreground"
   }
+}
+
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") {
+    return <HugeiconsIcon icon={ArrowUp01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  if (isSorted === "desc") {
+    return <HugeiconsIcon icon={ArrowDown01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
 }
 
 export const columns = (
@@ -42,7 +57,18 @@ export const columns = (
 ): ColumnDef<Election>[] => [
     {
       accessorKey: "name",
-      header: "Election Name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Election Name
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => <span className="font-semibold">{row.getValue("name")}</span>,
     },
     {
@@ -56,6 +82,8 @@ export const columns = (
     },
     {
       accessorKey: "status",
+      filterFn: "equals",
+      enableColumnFilter: true,
       header: "Status",
       cell: ({ row }) => {
         const status = row.getValue("status") as string
@@ -64,7 +92,18 @@ export const columns = (
     },
     {
       accessorKey: "startTime",
-      header: "Start Date",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Start Date
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground font-medium">
           {format(new Date(row.getValue("startTime")), "MMM d, yyyy · h:mm a")}
@@ -73,7 +112,18 @@ export const columns = (
     },
     {
       accessorKey: "endTime",
-      header: "End Date",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            End Date
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground font-medium">
           {format(new Date(row.getValue("endTime")), "MMM d, yyyy · h:mm a")}

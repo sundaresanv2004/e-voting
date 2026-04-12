@@ -6,6 +6,8 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
   flexRender,
 } from "@tanstack/react-table"
@@ -21,6 +23,13 @@ import {
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -30,6 +39,8 @@ import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { getStatusColor } from "./columns"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -47,6 +58,7 @@ export function ElectionDataTable<TData, TValue>({
   onRowClick
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [sorting, setSorting] = React.useState<SortingState>([])
 
   const table = useReactTable({
     data,
@@ -54,6 +66,7 @@ export function ElectionDataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
         pageSize: 20,
@@ -61,14 +74,16 @@ export function ElectionDataTable<TData, TValue>({
     },
     state: {
       globalFilter,
+      sorting,
     },
     onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
   })
 
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="flex items-center">
+      {/* Table Controls (Search & Filters) */}
+      <div className="flex items-center gap-4">
         <InputGroup className="max-w-sm w-full">
           <InputGroupAddon>
             <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
@@ -79,6 +94,36 @@ export function ElectionDataTable<TData, TValue>({
             onChange={(event) => setGlobalFilter(event.target.value)}
           />
         </InputGroup>
+
+        {table.getColumn("status") && (
+          <Select
+            value={(table.getColumn("status")?.getFilterValue() as string) ?? "ALL"}
+            onValueChange={(value) =>
+              table.getColumn("status")?.setFilterValue(value === "ALL" ? "" : value)
+            }
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL" className="font-medium p-2">
+                All Statuses
+              </SelectItem>
+              <SelectItem value="UPCOMING" className="p-2">
+                <Badge variant="outline" className={getStatusColor("UPCOMING")}>UPCOMING</Badge>
+              </SelectItem>
+              <SelectItem value="ACTIVE" className="p-2">
+                <Badge variant="outline" className={getStatusColor("ACTIVE")}>ACTIVE</Badge>
+              </SelectItem>
+              <SelectItem value="COMPLETED" className="p-2">
+                <Badge variant="outline" className={getStatusColor("COMPLETED")}>COMPLETED</Badge>
+              </SelectItem>
+              <SelectItem value="PAUSED" className="p-2">
+                <Badge variant="outline" className={getStatusColor("PAUSED")}>PAUSED</Badge>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Data Table */}

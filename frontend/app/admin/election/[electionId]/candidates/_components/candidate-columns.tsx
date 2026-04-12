@@ -3,7 +3,16 @@
 import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { PencilEdit01Icon, Delete02Icon, MoreHorizontalIcon, ViewIcon } from "@hugeicons/core-free-icons"
+import { 
+  PencilEdit01Icon, 
+  Delete02Icon, 
+  MoreHorizontalIcon, 
+  ViewIcon,
+  ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+} from "@hugeicons/core-free-icons"
+import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -42,6 +51,16 @@ export type CandidateColumn = {
   }
 }
 
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") {
+    return <HugeiconsIcon icon={ArrowUp01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  if (isSorted === "desc") {
+    return <HugeiconsIcon icon={ArrowDown01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+}
+
 export const columns = (
   userRole: string,
   onView: (candidate: CandidateColumn) => void,
@@ -50,7 +69,18 @@ export const columns = (
 ): ColumnDef<CandidateColumn>[] => [
   {
     accessorKey: "name",
-    header: "Candidate",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+        >
+          Candidate
+          <SortIcon isSorted={column.getIsSorted()} />
+        </Button>
+      )
+    },
     cell: ({ row }) => {
       const candidate = row.original
       return (
@@ -68,7 +98,19 @@ export const columns = (
   },
   {
     accessorKey: "role",
-    header: "Contesting Role",
+    accessorFn: (row) => row.role.name,
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+        >
+          Contesting Role
+          <SortIcon isSorted={column.getIsSorted()} />
+        </Button>
+      )
+    },
     cell: ({ row }) => (
       <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto">
         {row.original.role.name}
@@ -79,10 +121,33 @@ export const columns = (
     accessorKey: "status",
     header: "Status",
     cell: () => (
-      <span className="text-sm text-muted-foreground font-medium">
+      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
         Active
-      </span>
+      </Badge>
     )
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+        >
+          Created At
+          <SortIcon isSorted={column.getIsSorted()} />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const date = row.getValue("createdAt")
+      return (
+        <span className="text-sm text-muted-foreground font-medium">
+          {format(new Date(date as string | Date), "MMM d, yyyy")}
+        </span>
+      )
+    }
   },
   {
     id: "actions",

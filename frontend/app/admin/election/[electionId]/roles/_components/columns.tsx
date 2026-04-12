@@ -3,7 +3,15 @@
 import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { PencilEdit01Icon, Delete02Icon, MoreHorizontalIcon, ViewIcon } from "@hugeicons/core-free-icons"
+import { 
+  PencilEdit01Icon, 
+  Delete02Icon, 
+  MoreHorizontalIcon, 
+  ViewIcon,
+  ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,6 +52,16 @@ export type RoleColumn = {
 
 import { UserRole } from "@prisma/client"
 
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") {
+    return <HugeiconsIcon icon={ArrowUp01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  if (isSorted === "desc") {
+    return <HugeiconsIcon icon={ArrowDown01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+}
+
 export const columns = (
   electionId: string,
   availableSystems: { id: string; name: string | null }[],
@@ -54,12 +72,34 @@ export const columns = (
 ): ColumnDef<RoleColumn>[] => [
     {
       accessorKey: "name",
-      header: "Role Name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Role Name
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>
     },
     {
       accessorKey: "order",
-      header: "Order",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Order
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <code className="text-xs bg-muted px-1.5 py-0.5 rounded-full px-2 font-mono">
           {row.original.order}
@@ -86,7 +126,18 @@ export const columns = (
     },
     {
       accessorKey: "_count",
-      header: "Candidates",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50 text-nowrap"
+          >
+            Candidates
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => {
         const count = row.original._count?.candidates ?? 0
         return (

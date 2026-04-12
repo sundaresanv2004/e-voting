@@ -6,6 +6,8 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
   flexRender,
 } from "@tanstack/react-table"
@@ -30,6 +32,16 @@ import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { getSystemStatusBadgeStyle } from "./columns"
+import { SystemStatus } from "@prisma/client"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -47,6 +59,7 @@ export function SystemDataTable<TData, TValue>({
   onRowClick
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [sorting, setSorting] = React.useState<SortingState>([])
 
   const table = useReactTable({
     data,
@@ -54,6 +67,7 @@ export function SystemDataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
         pageSize: 20,
@@ -61,14 +75,16 @@ export function SystemDataTable<TData, TValue>({
     },
     state: {
       globalFilter,
+      sorting,
     },
     onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
   })
 
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="flex items-center">
+      {/* Table Controls */}
+      <div className="flex items-center gap-4">
         <InputGroup className="max-w-sm w-full">
           <InputGroupAddon>
             <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
@@ -79,6 +95,33 @@ export function SystemDataTable<TData, TValue>({
             onChange={(event) => setGlobalFilter(event.target.value)}
           />
         </InputGroup>
+
+        {table.getColumn("status") && (
+          <Select
+            value={(table.getColumn("status")?.getFilterValue() as string) ?? "ALL"}
+            onValueChange={(value) =>
+              table.getColumn("status")?.setFilterValue(value === "ALL" ? "" : value)
+            }
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL" className="font-medium p-2">
+                All Statuses
+              </SelectItem>
+              {Object.values(SystemStatus)
+                .filter((status) => status !== SystemStatus.SUSPENDED)
+                .map((status) => (
+                  <SelectItem key={status} value={status} className="p-2">
+                    <Badge variant="outline" className={`font-black uppercase tracking-widest text-[9px] py-0 px-2 h-5 ${getSystemStatusBadgeStyle(status)}`}>
+                      {status}
+                    </Badge>
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Data Table */}
@@ -138,8 +181,8 @@ export function SystemDataTable<TData, TValue>({
         <div className="flex-1 text-sm text-muted-foreground">
           Total {table.getFilteredRowModel().rows.length} record(s)
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+        <div className="flex items-center">
+          <div className="flex w-[100px] items-center justify-center text-sm">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
           </div>
           <div className="flex items-center space-x-2">

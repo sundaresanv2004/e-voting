@@ -3,35 +3,25 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import SystemsHero from "./_components/SystemsHero"
 import { SystemsList } from "./_components/SystemsList"
-import { SystemStatus } from "@prisma/client"
+import { syncSystemExpirations } from "./_actions"
 
 export default async function AuthorizedSystemsPage() {
   const session = await auth()
-  if (!session?.user?.organizationId) redirect("/setup/organization")
+  const orgId = session?.user?.organizationId
+  if (!orgId) redirect("/setup/organization")
 
-  // Auto-expire systems that have passed their 30-day authorization window
-  await db.authorizedSystem.updateMany({
-    where: {
-      organizationId: session.user.organizationId,
-      status: SystemStatus.APPROVED,
-      tokenExpiresAt: { lte: new Date() },
-    },
-    data: {
-      status: SystemStatus.EXPIRED,
-      secretToken: null,
-      tokenExpiresAt: null,
-    },
-  })
+  // Auto-expire systems that have passed their 30-day authorization window via Action
+  await syncSystemExpirations(orgId)
 
   const organization = await db.organization.findUnique({
-    where: { id: session.user.organizationId },
+    where: { id: orgId },
     select: { code: true }
   })
 
   if (!organization) redirect("/setup/organization")
 
   const systems = await db.authorizedSystem.findMany({
-    where: { organizationId: session.user.organizationId },
+    where: { organizationId: orgId },
     orderBy: { createdAt: "desc" },
     include: {
       approvedBy: {

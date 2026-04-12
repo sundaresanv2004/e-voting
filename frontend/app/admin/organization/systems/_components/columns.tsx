@@ -11,6 +11,9 @@ import {
   Alert01Icon,
   Clock01Icon,
   ViewIcon,
+  ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SystemStatus } from "@prisma/client"
@@ -61,6 +64,27 @@ export type System = {
   } | null
 }
 
+export function getSystemStatusBadgeStyle(status: SystemStatus) {
+  switch (status) {
+    case "APPROVED": return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+    case "PENDING": return "bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse"
+    case "REJECTED": return "bg-red-500/10 text-red-600 border-red-500/20"
+    case "REVOKED": return "bg-zinc-500/10 text-zinc-600 border-zinc-500/20"
+    case "EXPIRED": return "bg-orange-500/10 text-orange-600 border-orange-500/20"
+    default: return ""
+  }
+}
+
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") {
+    return <HugeiconsIcon icon={ArrowUp01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  if (isSorted === "desc") {
+    return <HugeiconsIcon icon={ArrowDown01Icon} className="ml-2 h-3.5 w-3.5 text-foreground" />
+  }
+  return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+}
+
 export const columns = (
   onView: (system: System) => void,
   onStatusUpdate: (systemId: string, status: SystemStatus) => void,
@@ -68,12 +92,34 @@ export const columns = (
 ): ColumnDef<System>[] => [
     {
       accessorKey: "name",
-      header: "System Name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            System Name
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => <span className="font-semibold">{row.original.name || "Unnamed PC"}</span>,
     },
     {
       accessorKey: "hostName",
-      header: "Hostname",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Hostname
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <span className="text-muted-foreground whitespace-nowrap">
           {row.getValue("hostName") || "-"}
@@ -82,7 +128,18 @@ export const columns = (
     },
     {
       accessorKey: "createdAt",
-      header: "Added",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Added
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground font-medium text-nowrap">
           {format(new Date(row.getValue("createdAt")), "MMM d, yyyy")}
@@ -91,7 +148,18 @@ export const columns = (
     },
     {
       accessorKey: "updatedAt",
-      header: "Last Updated",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 font-bold text-foreground hover:bg-muted/50"
+          >
+            Last Updated
+            <SortIcon isSorted={column.getIsSorted()} />
+          </Button>
+        )
+      },
       cell: ({ row }) => (
         <div className="flex flex-col">
           <span className="text-sm text-foreground font-medium text-nowrap">
@@ -107,45 +175,16 @@ export const columns = (
     },
     {
       accessorKey: "status",
+      filterFn: "equals",
+      enableColumnFilter: true,
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.status
-        if (status === "APPROVED") {
-          return (
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-              APPROVED
-            </Badge>
-          )
-        }
-        if (status === "PENDING") {
-          return (
-            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse">
-              PENDING
-            </Badge>
-          )
-        }
-        if (status === "REJECTED") {
-          return (
-            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
-              REJECTED
-            </Badge>
-          )
-        }
-        if (status === "REVOKED") {
-          return (
-            <Badge variant="outline" className="bg-zinc-500/10 text-zinc-600 border-zinc-500/20">
-              REVOKED
-            </Badge>
-          )
-        }
-        if (status === "EXPIRED") {
-          return (
-            <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
-              EXPIRED
-            </Badge>
-          )
-        }
-        return <Badge variant="outline">{status}</Badge>
+        return (
+          <Badge variant="outline" className={getSystemStatusBadgeStyle(status) || undefined}>
+            {status}
+          </Badge>
+        )
       },
     },
     {

@@ -64,6 +64,8 @@ export function CandidateDialog({
   initialData
 }: CandidateDialogProps) {
   const [isPending, setIsPending] = React.useState(false)
+  const [isProfileUploading, setIsProfileUploading] = React.useState(false)
+  const [isSymbolUploading, setIsSymbolUploading] = React.useState(false)
   const [serverError, setServerError] = React.useState<string | null>(null)
 
   const {
@@ -214,6 +216,7 @@ export function CandidateDialog({
                     <ImageUpload
                       value={profileImage || ""}
                       onChange={(val) => setValue("profileImage", val)}
+                      onUploadingChange={setIsProfileUploading}
                       disabled={isPending}
                       folder="candidates/profiles"
                     />
@@ -225,6 +228,7 @@ export function CandidateDialog({
                     <ImageUpload
                       value={symbolImage || ""}
                       onChange={(val) => setValue("symbolImage", val)}
+                      onUploadingChange={setIsSymbolUploading}
                       disabled={isPending}
                       folder="candidates/symbols"
                     />
@@ -251,8 +255,16 @@ export function CandidateDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || availableRoles.length === 0}>
-              {isPending ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Register Candidate")}
+            <Button 
+              type="submit" 
+              disabled={isPending || isProfileUploading || isSymbolUploading || availableRoles.length === 0}
+            >
+              {isPending 
+                ? (isEditing ? "Saving..." : "Creating...") 
+                : (isProfileUploading || isSymbolUploading)
+                  ? "Uploading Media..."
+                  : (isEditing ? "Save Changes" : "Register Candidate")
+              }
             </Button>
           </DialogFooter>
         </form>
