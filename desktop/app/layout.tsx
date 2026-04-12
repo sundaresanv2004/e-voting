@@ -1,12 +1,11 @@
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
-
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/ui/theme-provider"
 import { cn } from "@/lib/utils";
 
-const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
-const spaceGrotesk = Space_Grotesk({subsets:['latin'],variable:'--font-sans'})
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-sans' })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
