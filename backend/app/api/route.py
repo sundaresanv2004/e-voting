@@ -1,6 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints.v1 import organization
-from app.api.endpoints import health
+from app.api.endpoints.v1 import organization, health
 from app.core.config import settings
 
 api_router = APIRouter()

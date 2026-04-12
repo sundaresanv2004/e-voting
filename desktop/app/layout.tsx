@@ -2,6 +2,7 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/ui/theme-provider"
 import { cn } from "@/lib/utils";
+import { AppGuard } from "@/components/shared/app-guard";
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
@@ -24,7 +25,11 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", spaceGrotesk.variable, geistHeading.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppGuard>
+            {children}
+          </AppGuard>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -2,17 +2,13 @@
 
 import type { ReactNode } from "react"
 import SetTheme from "@/components/shared/setTheme"
-import { BackButton } from "@/components/shared/back-button"
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
-import { openExternalUrl } from "@/lib/utils/external-url"
 
-export default function AuthLayout({children}: { children: ReactNode }) {
+export default function PendingLayout({children}: { children: ReactNode }) {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
-            <div className="absolute top-4 left-4 z-50">
-                <BackButton/>
-            </div>
+            
             <div className="absolute top-4 right-4 z-50">
                 <SetTheme/>
             </div>
@@ -53,19 +49,6 @@ export default function AuthLayout({children}: { children: ReactNode }) {
             </div>
 
             <div className="relative z-10 w-full text-center space-y-4 mt-0 sm:mt-6">
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <button onClick={() => openExternalUrl("/terms")} className="hover:text-primary transition-colors cursor-pointer">
-                        Terms & Conditions
-                    </button>
-                    <span className="text-muted-foreground/40">•</span>
-                    <button onClick={() => openExternalUrl("/privacy")} className="hover:text-primary transition-colors cursor-pointer">
-                        Privacy Policy
-                    </button>
-                    <span className="text-muted-foreground/40">•</span>
-                    <button onClick={() => openExternalUrl("mailto:contact@sundaresan.dev")} className="hover:text-primary transition-colors cursor-pointer">
-                        Help Center
-                    </button>
-                </div>
                 <div className="text-[10px] text-muted-foreground/60">
                     © {new Date().getFullYear()} E-Voting. All rights reserved.
                 </div>

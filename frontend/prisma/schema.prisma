@@ -300,7 +300,7 @@ model AuthorizedSystem {
   name             String?
   hostName         String?
   ipAddress        String?
-  macAddress       String?      @unique
+  macAddress       String?
   status           SystemStatus @default(PENDING)
   secretToken      String?      @unique
   tokenExpiresAt   DateTime?
