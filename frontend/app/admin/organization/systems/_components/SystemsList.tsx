@@ -8,6 +8,8 @@ import { SystemStatus } from "@prisma/client"
 import { toast } from "sonner"
 
 import { SystemDetailsSheet } from "./SystemDetailsSheet"
+import { EditSystemDialog } from "./EditSystemDialog"
+import { DeleteSystemDialog } from "./DeleteSystemDialog"
 import { updateSystemStatusAction } from "../_actions"
 import { columns, type System } from "./columns"
 import { SystemDataTable } from "./data-table"
@@ -18,16 +20,29 @@ interface SystemsListProps {
 
 export function SystemsList({ initialSystems }: SystemsListProps) {
   const router = useRouter()
+  const [systems, setSystems] = React.useState(initialSystems)
   const [selectedSystem, setSelectedSystem] = React.useState<System | null>(null)
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   const [isUpdating, setIsUpdating] = React.useState<string | null>(null)
+
+  // Edit dialog state
+  const [systemToEdit, setSystemToEdit] = React.useState<System | null>(null)
+  const [isEditOpen, setIsEditOpen] = React.useState(false)
+
+  // Delete dialog state
+  const [systemToDelete, setSystemToDelete] = React.useState<System | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+
+  // Sync local state when server revalidates
+  React.useEffect(() => {
+    setSystems(initialSystems)
+  }, [initialSystems])
 
   // Real-time Polling: Refresh every 10 seconds
   React.useEffect(() => {
     const interval = setInterval(() => {
       router.refresh()
     }, 10000)
-
     return () => clearInterval(interval)
   }, [router])
 
@@ -53,7 +68,17 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
     setIsSheetOpen(true)
   }
 
-  if (initialSystems.length === 0) {
+  const handleEdit = (system: System) => {
+    setSystemToEdit(system)
+    setIsEditOpen(true)
+  }
+
+  const handleDelete = (system: System) => {
+    setSystemToDelete(system)
+    setIsDeleteOpen(true)
+  }
+
+  if (systems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] rounded-[2rem] border border-dashed border-muted-foreground/20 p-8 text-center bg-muted/5">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4 shadow-sm border border-muted-foreground/10">
@@ -73,11 +98,34 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
         system={selectedSystem}
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      <EditSystemDialog
+        system={systemToEdit}
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open)
+          if (!open) router.refresh()
+        }}
+      />
+
+      <DeleteSystemDialog
+        system={systemToDelete}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        onSuccess={() => {
+          if (systemToDelete) {
+            setSystems((prev) => prev.filter((s) => s.id !== systemToDelete.id))
+            setIsSheetOpen(false)
+          }
+        }}
       />
 
       <SystemDataTable
-        columns={columns(openDetails, handleStatusUpdate, isUpdating)}
-        data={initialSystems}
+        columns={columns(openDetails, handleEdit, handleDelete, handleStatusUpdate, isUpdating)}
+        data={systems}
         emptyMessage="No systems found."
         searchPlaceholder="Search systems by name or hostname..."
         onRowClick={openDetails}

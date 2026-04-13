@@ -111,7 +111,6 @@ export function SystemDataTable<TData, TValue>({
                 All Statuses
               </SelectItem>
               {Object.values(SystemStatus)
-                .filter((status) => status !== SystemStatus.SUSPENDED)
                 .map((status) => (
                   <SelectItem key={status} value={status} className="p-2">
                     <Badge variant="outline" className={`font-black uppercase tracking-widest text-[9px] py-0 px-2 h-5 ${getSystemStatusBadgeStyle(status)}`}>

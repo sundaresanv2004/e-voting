@@ -31,3 +31,6 @@ class SystemVerifyResponse(BaseModel):
     valid: bool
     status: str
     message: str
+    systemName: Optional[str] = None
+    organizationName: Optional[str] = None
+    organizationLogo: Optional[str] = None

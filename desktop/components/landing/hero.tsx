@@ -11,6 +11,7 @@ import {
     ShieldKeyIcon,
     Building04Icon,
     LinkSquare01Icon,
+    Layout01Icon,
 } from '@hugeicons/core-free-icons';
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { CheckmarkCircle01Icon } from "@hugeicons/core-free-icons"
 
 export default function Hero() {
     const [isApproved, setIsApproved] = useState(false);
+    const [localStatus, setLocalStatus] = useState<string | null>(null);
     const [orgName, setOrgName] = useState("");
     const [orgLogo, setOrgLogo] = useState<string | null>(null);
     const router = useRouter();
@@ -31,6 +33,7 @@ export default function Hero() {
         const checkConnection = async () => {
             const status = await plainGet<string>("systemStatus");
             const token = await secureGet("secretToken");
+            setLocalStatus(status);
 
             if (status === "APPROVED" && token) {
                 setIsApproved(true);
@@ -114,13 +117,26 @@ export default function Hero() {
                             {isApproved ? (
                                 <>
                                     <Button
+                                        onClick={() => {
+                                            const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000";
+                                            openExternalUrl(`${baseUrl}/admin/organization`);
+                                        }}
                                         size="lg"
                                         className="group w-full sm:w-auto"
-                                        onClick={() => router.push("/vote")}
                                     >
-                                        <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-5 h-5" strokeWidth={2} />
-                                        Start Voting
+                                        <HugeiconsIcon icon={Layout01Icon} className="w-5 h-5" strokeWidth={2} />
+                                        Dashboard
                                         <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                                    </Button>
+
+                                    <Button
+                                        onClick={() => router.push("/vote")}
+                                        size="lg"
+                                        variant="outline"
+                                        className="group w-full sm:w-auto"
+                                    >
+                                        Vote Now
+                                        <HugeiconsIcon icon={CheckmarkBadge01Icon} strokeWidth={2} className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
                                     </Button>
                                 </>
                             ) : (

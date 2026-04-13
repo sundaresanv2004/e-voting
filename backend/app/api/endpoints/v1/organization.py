@@ -147,7 +147,7 @@ def get_system_status(system_id: str, db: Session = Depends(get_db)):
         message="Current system status retrieved.",
         secretToken=system.secretToken if system.status == SystemStatus.APPROVED else None,
         organizationName=system.organization.name if system.status == SystemStatus.APPROVED else None,
-        organizationLogo=settings.logoUrl if settings and system.status == SystemStatus.APPROVED else None,
+        organizationLogo=system.organization.logo if system.status == SystemStatus.APPROVED else None,
         tokenExpiresAt=system.tokenExpiresAt.isoformat() if system.tokenExpiresAt else None
     )
 
@@ -226,7 +226,14 @@ def verify_system(request: SystemVerifyRequest, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    return SystemVerifyResponse(valid=True, status="APPROVED", message="Terminal verified successfully.")
+    return SystemVerifyResponse(
+        valid=True, 
+        status="APPROVED", 
+        message="Terminal verified successfully.",
+        systemName=system.name,
+        organizationName=system.organization.name,
+        organizationLogo=system.organization.logo
+    )
 
 @router.delete("/systems/{system_id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancel_system_connection(system_id: str, db: Session = Depends(get_db)):

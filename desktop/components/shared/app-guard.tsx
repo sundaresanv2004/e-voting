@@ -61,137 +61,119 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
         }
 
         const secretToken = await secureGet("secretToken");
-        const tokenExists = !!secretToken;
         const systemId = await secureGet("systemId");
         let systemStatus = await plainGet<string>("systemStatus");
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-        // 1. FAST EXIT for Public/Auth routes when no system is registered
-        if (!systemId && !tokenExists) {
+        // 1. Unregistered (No System ID)
+        if (!systemId) {
             if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/auth") || pathname.startsWith("/loading-demo")) {
                 setIsChecking(false);
                 return;
             }
+            router.replace("/");
+            setIsChecking(false);
+            return;
         }
 
-        // 2. CLOUD TRUTH: If we have an ID, we MUST check the cloud status FIRST
-        if (systemId) {
-            try {
-                const res = await fetch(`${apiUrl}/api/v1/organizations/systems/${systemId}/status`);
-                if (res.status === 404) {
-                    await secureReset();
-                    router.replace("/auth/connect");
-                    setIsChecking(false);
-                    return;
-                }
-
-                const sData = await res.json();
-                
-                // Keep local status in sync with cloud
-                if (sData.status !== systemStatus) {
-                    await plainSave("systemStatus", sData.status);
-                    systemStatus = sData.status;
-                }
-
-                // Handle Revoked/Rejected (Forbidden Paths)
-                if (sData.status === "REVOKED" || sData.status === "REJECTED" || sData.status === "SUSPENDED") {
-                    toast.error(`Terminal has been ${sData.status.toLowerCase()}.`);
-                    await secureReset();
-                    router.replace("/auth/connect");
-                    setIsChecking(false);
-                    return;
-                }
-
-                // Handle PENDING (Must go to pending page)
-                if (sData.status === "PENDING") {
-                    if (pathname !== PENDING_ROUTE) {
-                        router.replace(PENDING_ROUTE);
-                        setIsChecking(false);
-                        return;
-                    }
-                }
-
-                // Handle APPROVED (Check for token)
-                if (sData.status === "APPROVED") {
-                    if (!tokenExists) {
-                        // We have no token locally but cloud says approved?
-                        // Go to pending page so it can poll and securely retrieve/save the token
-                        if (pathname !== PENDING_ROUTE) {
-                            router.replace(PENDING_ROUTE);
-                            setIsChecking(false);
-                            return;
-                        }
-                    } else {
-                        // We have a token! Now do Deep Verification (MAC + Expiry)
-                        try {
-                            let macAddress = null;
-                            try {
-                                const { invoke } = await import('@tauri-apps/api/core');
-                                const sysInfo: any = await invoke('get_system_info');
-                                macAddress = sysInfo.macAddress;
-                            } catch (e) { /* ignore */ }
-
-                            const vRes = await fetch(`${apiUrl}/api/v1/organizations/systems/verify`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ systemId, secretToken, macAddress })
-                            });
-
-                            if (vRes.ok) {
-                                const vData = await vRes.json();
-                                if (!vData.valid) {
-                                    if (vData.status === "EXPIRED") {
-                                        toast.error("Session expired. Re-approval required.");
-                                        await plainSave("systemStatus", "EXPIRED");
-                                        await secureDelete("secretToken");
-                                        systemStatus = "EXPIRED";
-                                        router.replace(PENDING_ROUTE);
-                                        setIsChecking(false);
-                                        return;
-                                    } else {
-                                        toast.error("Security verification failed.");
-                                        await secureReset();
-                                        router.replace("/auth/connect");
-                                        setIsChecking(false);
-                                        return;
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Deep verification failed", e);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Cloud status check failed", e);
-            }
-        }
-
-        // 3. Already on a safe route? Exit early
-        if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/auth") || pathname.startsWith("/loading-demo")) {
-            // If approved and verified, but on auth page, go to home
-            if (tokenExists && systemStatus === "APPROVED" && (pathname.startsWith("/auth") || pathname === PENDING_ROUTE)) {
-                router.replace("/");
+        // 2. Negative States (Do not network verify, stay locally disabled)
+        if (systemStatus === "REJECTED" || systemStatus === "REVOKED" || systemStatus === "SUSPENDED") {
+            if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/auth") || pathname.startsWith("/loading-demo")) {
+                setIsChecking(false);
                 return;
+            }
+            router.replace("/");
+            setIsChecking(false);
+            return;
+        }
+
+        // 3. Waiting States (Rely on pending page's polling)
+        if (systemStatus === "PENDING" || systemStatus === "EXPIRED") {
+            if (pathname !== PENDING_ROUTE) {
+                router.replace(PENDING_ROUTE);
             }
             setIsChecking(false);
             return;
         }
 
-        // 4. Fallback Logic
-        if (tokenExists && systemStatus === "APPROVED") {
-            if (pathname === PENDING_ROUTE || pathname.startsWith("/auth")) {
+        // 4. Active State (Deep verification)
+        if (systemStatus === "APPROVED") {
+            if (!secretToken) {
+                if (pathname !== PENDING_ROUTE) {
+                    router.replace(PENDING_ROUTE);
+                }
+                setIsChecking(false);
+                return;
+            }
+
+            try {
+                let macAddress = null;
+                try {
+                    const { invoke } = await import('@tauri-apps/api/core');
+                    const sysInfo: any = await invoke('get_system_info');
+                    macAddress = sysInfo.macAddress;
+                } catch (e) { /* ignore */ }
+
+                const vRes = await fetch(`${apiUrl}/api/v1/organizations/systems/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ systemId, secretToken, macAddress })
+                });
+
+                if (vRes.ok) {
+                    const vData = await vRes.json();
+                    if (vData.valid) {
+                        // Sync data locally
+                        if (vData.systemName) await plainSave("systemName", vData.systemName);
+                        if (vData.organizationName) await plainSave("organizationName", vData.organizationName);
+                        if (vData.organizationLogo) await plainSave("organizationLogo", vData.organizationLogo);
+
+                        if (pathname.startsWith("/auth") || pathname === PENDING_ROUTE) {
+                            router.replace("/");
+                        }
+                        setIsChecking(false);
+                        return;
+                    } else {
+                        // Invalid. Update status locally.
+                        const newStatus = vData.status;
+                        await plainSave("systemStatus", newStatus);
+                        
+                        if (newStatus === "EXPIRED") {
+                            await secureDelete("secretToken");
+                            toast.error("Session expired. Re-approval required.");
+                            router.replace(PENDING_ROUTE);
+                        } else if (newStatus === "REJECTED" || newStatus === "REVOKED" || newStatus === "SUSPENDED") {
+                            toast.error(`Terminal has been ${newStatus.toLowerCase()}.`);
+                            router.replace("/");
+                        } else {
+                            // NOT_FOUND or MAC_MISMATCH, consider it revoked
+                            await plainSave("systemStatus", "REVOKED");
+                            toast.error(`Security verification failed: ${vData.message}`);
+                            router.replace("/");
+                        }
+                        setIsChecking(false);
+                        return;
+                    }
+                } 
+            } catch (e) {
+                console.error("Deep verification failed", e);
+            }
+            
+            // Fallback for valid states after a network/app error
+            if (pathname.startsWith("/auth") || pathname === PENDING_ROUTE) {
                 router.replace("/");
             }
-        } else if (systemId && (systemStatus === "PENDING" || systemStatus === "APPROVED" || systemStatus === "EXPIRED")) {
-            if (pathname !== PENDING_ROUTE) {
-                router.replace(PENDING_ROUTE);
-            }
-        } else {
-            router.replace("/auth/connect");
+            setIsChecking(false);
+            return;
         }
 
+        // 5. Fallback catch-all
+        if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/auth")) {
+            setIsChecking(false);
+            return;
+        }
+        router.replace("/");
         setIsChecking(false);
     };
 

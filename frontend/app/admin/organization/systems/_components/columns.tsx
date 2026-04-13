@@ -14,6 +14,8 @@ import {
   ArrowUpDownIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
+  PencilEdit01Icon,
+  Delete02Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SystemStatus } from "@prisma/client"
@@ -71,6 +73,7 @@ export function getSystemStatusBadgeStyle(status: SystemStatus) {
     case "REJECTED": return "bg-red-500/10 text-red-600 border-red-500/20"
     case "REVOKED": return "bg-zinc-500/10 text-zinc-600 border-zinc-500/20"
     case "EXPIRED": return "bg-orange-500/10 text-orange-600 border-orange-500/20"
+    case "SUSPENDED": return "bg-purple-500/10 text-purple-600 border-purple-500/20"
     default: return ""
   }
 }
@@ -87,6 +90,8 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
 
 export const columns = (
   onView: (system: System) => void,
+  onEdit: (system: System) => void,
+  onDelete: (system: System) => void,
   onStatusUpdate: (systemId: string, status: SystemStatus) => void,
   isUpdating: string | null
 ): ColumnDef<System>[] => [
@@ -210,18 +215,22 @@ export const columns = (
                   <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onEdit(system)} className="gap-2 cursor-pointer">
+                  <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
+                  Edit System
+                </DropdownMenuItem>
                 {system.status === "PENDING" && (
                   <>
-                    <DropdownMenuItem 
-                      onClick={() => onStatusUpdate(system.id, SystemStatus.APPROVED)} 
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.APPROVED)}
                       className="flex items-center gap-2 text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 cursor-pointer"
                     >
                       <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4" color="currentColor" />
                       Approve Hardware
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onStatusUpdate(system.id, SystemStatus.REJECTED)} 
+                    <DropdownMenuItem
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.REJECTED)}
                       className="flex items-center gap-2 text-red-600 focus:text-red-700 focus:bg-red-500/10 cursor-pointer"
                     >
                       <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" color="currentColor" />
@@ -230,23 +239,37 @@ export const columns = (
                   </>
                 )}
                 {system.status === "APPROVED" && (
-                  <DropdownMenuItem 
-                    onClick={() => onStatusUpdate(system.id, SystemStatus.REVOKED)} 
-                    className="flex items-center gap-2 text-orange-600 focus:text-orange-700 focus:bg-orange-500/10 cursor-pointer"
-                  >
-                    <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" color="currentColor" />
-                    Revoke Access
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.REVOKED)}
+                      className="flex items-center gap-2 text-orange-600 focus:text-orange-700 focus:bg-orange-500/10 cursor-pointer"
+                    >
+                      <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" color="currentColor" />
+                      Revoke Access
+                    </DropdownMenuItem>
+                  </>
                 )}
-                {(system.status === "REJECTED" || system.status === "REVOKED" || system.status === "EXPIRED") && (
-                  <DropdownMenuItem 
-                    onClick={() => onStatusUpdate(system.id, SystemStatus.PENDING)} 
-                    className="flex items-center gap-2 text-blue-600 focus:text-blue-700 focus:bg-blue-500/10 cursor-pointer"
-                  >
-                    <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4" color="currentColor" />
-                    Restore to Pending
-                  </DropdownMenuItem>
+                {system.status === "EXPIRED" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.PENDING)}
+                      className="flex items-center gap-2 text-blue-600 focus:text-blue-700 focus:bg-blue-500/10 cursor-pointer"
+                    >
+                      <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4" color="currentColor" />
+                      Restore to Pending
+                    </DropdownMenuItem>
+                  </>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(system)}
+                  variant="destructive"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" color="currentColor" />
+                  Delete System
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

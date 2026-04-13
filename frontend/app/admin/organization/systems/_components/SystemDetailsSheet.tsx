@@ -3,18 +3,19 @@
 import * as React from "react"
 import { format, formatDistanceToNow } from "date-fns"
 import {
-  CheckmarkCircle02Icon,
-  Cancel01Icon,
-  Alert01Icon,
+  PencilEdit01Icon,
+  Delete02Icon,
   Calendar01Icon,
   Clock01Icon,
   FingerPrintIcon,
   ComputerIcon,
   GlobeIcon,
   Shield01Icon,
-  ViewIcon,
   Activity01Icon,
   CheckListIcon,
+  CheckmarkCircle02Icon,
+  Cancel01Icon,
+  Alert01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SystemStatus } from "@prisma/client"
@@ -41,6 +42,8 @@ interface SystemDetailsSheetProps {
   system: System | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onEdit?: (system: System) => void
+  onDelete?: (system: System) => void
 }
 
 function getStatusBadgeStyle(status: SystemStatus) {
@@ -54,6 +57,8 @@ function getStatusBadgeStyle(status: SystemStatus) {
       return "bg-red-50/50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 shadow-none"
     case SystemStatus.EXPIRED:
       return "bg-orange-50/50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20 shadow-none"
+    case SystemStatus.SUSPENDED:
+      return "bg-purple-50/50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20 shadow-none"
     default:
       return "bg-secondary text-secondary-foreground"
   }
@@ -70,6 +75,8 @@ function getStatusDot(status: SystemStatus) {
       return "bg-red-500"
     case SystemStatus.EXPIRED:
       return "bg-orange-500"
+    case SystemStatus.SUSPENDED:
+      return "bg-purple-500"
     default:
       return "bg-secondary"
   }
@@ -79,6 +86,8 @@ export function SystemDetailsSheet({
   system,
   open,
   onOpenChange,
+  onEdit,
+  onDelete,
 }: SystemDetailsSheetProps) {
   const [isPending, setIsPending] = React.useState(false)
 
@@ -351,49 +360,84 @@ export function SystemDetailsSheet({
             </div>
           </div>
 
-          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-row shrink-0">
-            {system.status === SystemStatus.PENDING ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
-                  disabled={isPending}
-                  onClick={() => handleStatusUpdate(SystemStatus.REJECTED)}
-                >
-                  <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                  Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors"
-                  disabled={isPending}
-                  onClick={() => handleStatusUpdate(SystemStatus.APPROVED)}
-                >
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                  Approve
-                </Button>
-              </>
-            ) : system.status === SystemStatus.APPROVED ? (
-              <Button
-                variant="outline"
-                className="w-full bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
-                disabled={isPending}
-                onClick={() => handleStatusUpdate(SystemStatus.REVOKED)}
-              >
-                <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                Revoke Authorization
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
-                disabled={isPending}
-                onClick={() => handleStatusUpdate(SystemStatus.PENDING)}
-              >
-                <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                Restore to Pending
-              </Button>
+          <SheetFooter className="mt-auto border-t py-4 px-6 bg-muted/5 lg:backdrop-blur-sm shrink-0 flex flex-col gap-2">
+            {/* Status action buttons — only shown when the status has an action */}
+            {(system.status === SystemStatus.PENDING ||
+              system.status === SystemStatus.APPROVED ||
+              system.status === SystemStatus.EXPIRED) && (
+              <div className="flex gap-2 w-full">
+                {system.status === SystemStatus.PENDING ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                      disabled={isPending}
+                      onClick={() => handleStatusUpdate(SystemStatus.REJECTED)}
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                      Reject
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors"
+                      disabled={isPending}
+                      onClick={() => handleStatusUpdate(SystemStatus.APPROVED)}
+                    >
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                      Approve
+                    </Button>
+                  </>
+                ) : system.status === SystemStatus.APPROVED ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                    disabled={isPending}
+                    onClick={() => handleStatusUpdate(SystemStatus.REVOKED)}
+                  >
+                    <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                    Revoke Authorization
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
+                    disabled={isPending}
+                    onClick={() => handleStatusUpdate(SystemStatus.PENDING)}
+                  >
+                    <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                    Restore to Pending
+                  </Button>
+                )}
+              </div>
             )}
+
+            {/* Edit & Delete */}
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                disabled={isPending}
+                onClick={() => {
+                  onOpenChange(false)
+                  setTimeout(() => onDelete?.(system), 300)
+                }}
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
+                disabled={isPending}
+                onClick={() => {
+                  onOpenChange(false)
+                  setTimeout(() => onEdit?.(system), 300)
+                }}
+              >
+                <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Edit System
+              </Button>
+            </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>
