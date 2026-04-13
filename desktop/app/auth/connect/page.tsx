@@ -14,14 +14,14 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { OrganizationConnectSchema, OrganizationConnectValues } from "@/lib/schemas/organization"
 import { openExternalUrl } from "@/lib/utils/external-url"
-import { secureGet, secureSave, plainSave } from "@/lib/utils/secure-storage"
+import { toast } from "sonner"
+import { useTerminal } from "@/components/shared/terminal-context"
 
 function OrganizationConnectForm() {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
-    const searchParams = useSearchParams()
-    const nextParam = searchParams.get("next")
     const router = useRouter()
+    const { refresh } = useTerminal()
 
     const {
         register,
@@ -35,52 +35,33 @@ function OrganizationConnectForm() {
         }
     })
 
+    // Check for rejection error in URL
+    const searchParams = useSearchParams()
+    useEffect(() => {
+        if (searchParams.get("error") === "rejected") {
+            setError("Your terminal connection request was rejected by the administrator. Please try again or contact support.")
+        }
+    }, [searchParams])
+
     // User submits connection request
     const onSubmit = (values: OrganizationConnectValues) => {
         setError(null)
-
         startTransition(async () => {
             try {
-                // Get system information from Rust
-                let sysInfo = { macAddress: null, hostName: null, ipAddress: null };
-                try {
-                    const { invoke } = await import('@tauri-apps/api/core');
-                    sysInfo = await invoke('get_system_info');
-                } catch (e) {
-                    console.error("Failed to get system info", e);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const result = await (window as any).electron.terminal.register(values);
+                if (result.success) {
+                    // Force refresh terminal state so routing guard knows we are PENDING
+                    await refresh();
+
+                    toast.success(`Your terminal "${values.systemName}" is now awaiting admin approval.`)
+                    router.push("/verify/pending")
+                } else {
+                    setError(result.error || "Please check your organization code and try again.")
                 }
-
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-                const res = await fetch(`${apiUrl}/api/v1/organizations/connect-system`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        ...values,
-                        ...sysInfo
-                    })
-                });
-
-                const data = await res.json();
-                if (!res.ok) {
-                    setError(data.detail || "Failed to connect. Please check your details.");
-                    return;
-                }
-
-                if (data.success && data.systemId) {
-                    // Secure Storage (Sensitive)
-                    await secureSave("systemId", data.systemId);
-
-                    // Plain Storage (Metadata for instant UI/Status checks)
-                    await plainSave("systemStatus", "PENDING");
-                    await plainSave("systemName", values.systemName);
-                    await plainSave("hostName", sysInfo.hostName);
-                    await plainSave("firstConnectedAt", new Date().toISOString());
-
-                    router.push(`/pending${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ""}`);
-                }
-            } catch (err) {
-                console.error("Connection error:", err);
-                setError("An unexpected error occurred indicating the backend server might be unreachable.");
+            } catch (e) {
+                setError("An internal error occurred during registration.")
+                console.error(e)
             }
         })
     }

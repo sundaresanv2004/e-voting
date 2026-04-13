@@ -1,63 +1,82 @@
 {
-  "name": "desktop",
+  "name": "e-voting",
   "version": "0.0.1",
-  "type": "module",
+  "main": "electron/main.js",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && NODE_ENV=development electron .\"",
+    "electron:build": "next build && electron-builder",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@base-ui/react": "^1.3.0",
+    "@base-ui/react": "^1.4.0",
+    "@hookform/resolvers": "^5.2.2",
     "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.6",
-    "@tauri-apps/api": "^2.1.1",
-    "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-store": "^2.3.1",
-    "@tauri-apps/plugin-stronghold": "^2.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "electron-store": "^8.1.0",
     "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.38.0",
     "input-otp": "^1.4.2",
-    "next": "16.1.7",
+    "lucide-react": "^1.8.0",
+    "next": "^16.2.3",
     "next-themes": "^0.4.6",
+    "node-machine-id": "^1.1.12",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.4",
+    "react-hook-form": "^7.72.1",
     "react-resizable-panels": "^4.10.0",
-    "recharts": "^3.8.0",
+    "recharts": "^3.8.1",
     "shadcn": "^4.2.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2",
-    "react-hook-form": "^7.54.2",
-    "@hookform/resolvers": "^4.1.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.2.1",
-    "@tauri-apps/cli": "^2.10.1",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.1.2",
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-is-dev": "^3.0.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.1.7",
     "postcss": "^8",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.yourelection.app",
+    "productName": "E-Voting",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    }
   }
 }

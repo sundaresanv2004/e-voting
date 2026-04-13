@@ -4,11 +4,10 @@ import type { ReactNode } from "react"
 import SetTheme from "@/components/shared/setTheme"
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
 
-export default function PendingLayout({children}: { children: ReactNode }) {
+export default function VerifyLayout({children}: { children: ReactNode }) {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
-            
             <div className="absolute top-4 right-4 z-50">
                 <SetTheme/>
             </div>

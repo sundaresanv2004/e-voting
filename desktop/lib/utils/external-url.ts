@@ -1,5 +1,5 @@
 /**
- * Gracefully opens an external URL using Tauri's opener plugin if available,
+ * Gracefully opens an external URL using Electron's shell via preload script,
  * falling back to window.open for browser environments.
  */
 export async function openExternalUrl(path: string) {
@@ -8,9 +8,9 @@ export async function openExternalUrl(path: string) {
 
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tauri = (window as any).__TAURI__;
-        if (tauri?.opener?.openUrl) {
-            await tauri.opener.openUrl(url);
+        const electron = (window as any).electron;
+        if (electron?.openExternal) {
+            electron.openExternal(url);
         } else {
             window.open(url, "_blank", "noopener,noreferrer");
         }

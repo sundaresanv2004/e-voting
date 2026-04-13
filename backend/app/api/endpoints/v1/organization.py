@@ -1,3 +1,4 @@
+from time import sleep
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -42,19 +43,29 @@ def connect_system(request: SystemConnectRequest, db: Session = Depends(get_db))
             if s.organizationId == org.id:
                 # SAME ORGANIZATION: Re-registration or Resume
                 existing_org_system = s
-                # Always reset to PENDING as requested (e.g. IP change or re-install)
+                old_status = s.status
+                
+                # Always reset to PENDING as requested
                 s.status = SystemStatus.PENDING
                 s.name = request.systemName
                 s.hostName = request.hostName
                 s.ipAddress = request.ipAddress
                 s.updatedAt = datetime.datetime.utcnow()
                 
-                # Log the re-registration
+                # Logic: Log differently if it was a rejection vs a simple resume
+                event_name = "CONNECTION_RETRIED_AFTER_REJECTION" if old_status == SystemStatus.REJECTED else "CONNECTION_RESUMED"
+                
+                # Log the retry/resume with full audit context
                 db.add(SystemLog(
                     id=str(uuid.uuid4()),
                     systemId=s.id,
-                    event="CONNECTION_RESUMED",
-                    metadata_={"ip": request.ipAddress, "hostname": request.hostName, "orgCode": request.organizationCode}
+                    event=event_name,
+                    metadata_={
+                        "ip": request.ipAddress, 
+                        "hostname": request.hostName, 
+                        "orgCode": request.organizationCode,
+                        "previous_status": old_status.value if hasattr(old_status, 'value') else str(old_status)
+                    }
                 ))
             else:
                 # DIFFERENT ORGANIZATION: Hardware Migration
@@ -130,7 +141,6 @@ def connect_system(request: SystemConnectRequest, db: Session = Depends(get_db))
 
 @router.get("/systems/{system_id}/status", response_model=SystemStatusResponse)
 def get_system_status(system_id: str, db: Session = Depends(get_db)):
-    # ... existing code ...
     system = db.query(AuthorizedSystem).filter(AuthorizedSystem.id == system_id).first()
     
     if not system:
@@ -146,6 +156,7 @@ def get_system_status(system_id: str, db: Session = Depends(get_db)):
         status=system.status.value,
         message="Current system status retrieved.",
         secretToken=system.secretToken if system.status == SystemStatus.APPROVED else None,
+        systemName=system.name if system.status == SystemStatus.APPROVED else None,
         organizationName=system.organization.name if system.status == SystemStatus.APPROVED else None,
         organizationLogo=system.organization.logo if system.status == SystemStatus.APPROVED else None,
         tokenExpiresAt=system.tokenExpiresAt.isoformat() if system.tokenExpiresAt else None
@@ -179,6 +190,14 @@ def revoke_system(system_id: str, db: Session = Depends(get_db)):
 
 @router.post("/systems/verify", response_model=SystemVerifyResponse)
 def verify_system(request: SystemVerifyRequest, db: Session = Depends(get_db)):
+    # Guard: if no secretToken provided, this is a PENDING/unverified terminal
+    # Look up by systemId and return the actual current status — never run the token query
+    if not request.secretToken:
+        system_check = db.query(AuthorizedSystem).filter(AuthorizedSystem.id == request.systemId).first()
+        if system_check:
+            return SystemVerifyResponse(valid=False, status=system_check.status.value, message="No token provided. Terminal not yet approved.")
+        return SystemVerifyResponse(valid=False, status="NOT_FOUND", message="System record not found.")
+
     # Find the system by ID and Secret Token
     system = db.query(AuthorizedSystem).filter(
         AuthorizedSystem.id == request.systemId,
@@ -240,20 +259,14 @@ def cancel_system_connection(system_id: str, db: Session = Depends(get_db)):
     system = db.query(AuthorizedSystem).filter(AuthorizedSystem.id == system_id).first()
     
     if not system:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="System not found."
-        )
+        # If it's already gone, just return success
+        return None
 
-    # Security check: Only allow cancelling PENDING requests via this route
-    if system.status != SystemStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only pending requests can be cancelled."
-        )
+    # Explicitly delete any logs tied to this system first to prevent IntegrityError
+    # since SQLite/Postgres might reject deletion if ON DELETE CASCADE is not strictly enforced at DB level
+    db.query(SystemLog).filter(SystemLog.systemId == system_id).delete(synchronize_session=False)
 
-    # Note: Logs will be cascade deleted if you preferred, 
-    # but here we just delete the system as requested.
+    # We can safely delete the system request if the user is cancelling it.
     db.delete(system)
     db.commit()
     return None

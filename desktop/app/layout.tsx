@@ -1,8 +1,11 @@
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
+
 import "./globals.css"
 import { ThemeProvider } from "@/components/ui/theme-provider"
+import { TerminalProvider } from "@/components/shared/terminal-context"
+import { RootContent } from "@/components/shared/root-content"
+import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils";
-import { AppGuard } from "@/components/shared/app-guard";
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
@@ -12,6 +15,11 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata = {
+  title: "E-Voting",
+  description: "Secure Electronic Voting Terminal",
+}
 
 export default function RootLayout({
   children,
@@ -26,9 +34,10 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <AppGuard>
-            {children}
-          </AppGuard>
+          <TerminalProvider>
+            <RootContent>{children}</RootContent>
+            <Toaster position="top-right" richColors />
+          </TerminalProvider>
         </ThemeProvider>
       </body>
     </html>

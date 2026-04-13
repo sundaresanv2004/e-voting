@@ -30,11 +30,10 @@ export function BackendDownDialog({ isOpen, onRetry, type = "backend", isRetryin
 
     const handleExit = async () => {
         try {
-            const { exit } = await import('@tauri-apps/plugin-process');
-            await exit(0);
+            // Close the Electron window properly
+            window.close();
         } catch (e) {
             console.error("Failed to exit app", e);
-            window.close();
         }
     }
 
@@ -48,13 +47,13 @@ export function BackendDownDialog({ isOpen, onRetry, type = "backend", isRetryin
                     <AlertDialogMedia>
                         <HugeiconsIcon
                             icon={isInternet ? WifiError02Icon : CloudOffIcon}
-                            className="size-8 text-destructive"
+                            className="w-8 h-8 text-destructive"
                         />
                     </AlertDialogMedia>
-                    <AlertDialogTitle>
+                    <AlertDialogTitle className="text-center">
                         {isInternet ? "No Internet Connection" : "Server Unreachable"}
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogDescription className="text-center">
                         {isInternet
                             ? "It looks like you're offline. Please check your Wi-Fi or mobile data and try again to continue."
                             : (
@@ -72,7 +71,7 @@ export function BackendDownDialog({ isOpen, onRetry, type = "backend", isRetryin
                         }
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
+                <AlertDialogFooter className="sm:justify-center">
                     {isInternet ? (
                         <Button variant="outline" onClick={handleExit} disabled={isRetrying}>
                             Exit App

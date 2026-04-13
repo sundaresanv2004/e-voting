@@ -11,43 +11,15 @@ import {
     ShieldKeyIcon,
     Building04Icon,
     LinkSquare01Icon,
-    Layout01Icon,
 } from '@hugeicons/core-free-icons';
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-
 import { openExternalUrl } from "@/lib/utils/external-url"
-import { secureGet, plainGet } from "@/lib/utils/secure-storage"
-import { CheckmarkCircle01Icon } from "@hugeicons/core-free-icons"
 
 export default function Hero() {
-    const [isApproved, setIsApproved] = useState(false);
-    const [localStatus, setLocalStatus] = useState<string | null>(null);
-    const [orgName, setOrgName] = useState("");
-    const [orgLogo, setOrgLogo] = useState<string | null>(null);
-    const router = useRouter();
-
-    useEffect(() => {
-        const checkConnection = async () => {
-            const status = await plainGet<string>("systemStatus");
-            const token = await secureGet("secretToken");
-            setLocalStatus(status);
-
-            if (status === "APPROVED" && token) {
-                setIsApproved(true);
-                setOrgName(await plainGet<string>("organizationName") || "Organization Home");
-                setOrgLogo(await plainGet<string>("organizationLogo"));
-            }
-        };
-        checkConnection();
-    }, []);
-
     return (
         <div
             className="relative min-h-screen flex items-center justify-center overflow-hidden bg-linear-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900">
-
             <div
                 className="absolute inset-0 opacity-80 dark:opacity-60"
                 style={{
@@ -87,83 +59,53 @@ export default function Hero() {
                         <div
                             className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-primary/20 to-primary/10 dark:from-blue-500/25 dark:to-blue-600/15 border border-primary/40 dark:border-blue-500/50 rounded-full backdrop-blur-xl hover:backdrop-blur-2xl transition-all duration-300 hover:from-primary/25 hover:to-primary/15 dark:hover:from-blue-500/35 dark:hover:to-blue-600/25">
                             <div className="w-2 h-2 bg-green-500 dark:bg-green-300 rounded-full animate-pulse" />
-                            <span className="text-xs font-semibold text-primary/90 dark:text-blue-300">
-                                {isApproved ? "Authorization Verified" : "Secure Digital Elections"}
-                            </span>
+                            <span className="text-xs font-semibold text-primary/90 dark:text-blue-300">Secure Digital Elections</span>
                         </div>
 
                         <div className="space-y-2 sm:space-y-3">
                             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground dark:text-white tracking-tight leading-tight">
-                                {isApproved ? "Welcome to" : "Modernize"}
+                                Modernize
                             </h1>
                             <div className="inline-block">
                                 <span
                                     className="block bg-linear-to-r from-primary via-primary to-primary/70 dark:from-blue-400 dark:via-blue-300 dark:to-cyan-300 bg-clip-text text-transparent text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-                                    {isApproved ? orgName : "Your Elections"}
+                                    Your Elections
                                 </span>
                             </div>
                         </div>
 
                         <p className="text-sm sm:text-base md:text-lg text-muted-foreground dark:text-gray-300 max-w-xl lg:max-w-none leading-relaxed font-medium">
-                            {isApproved
-                                ? `This terminal is securely connected to ${orgName}. You can now proceed to the dashboard or start a voting session.`
-                                : "Replace manual processes with a secure, transparent, and efficient digital voting system. Perfect for schools, colleges, and organizations."
-                            }
+                            Replace manual processes with a secure, transparent, and efficient digital voting system.
+                            Perfect for schools,
+                            colleges, and organizations.
                         </p>
 
                         <div
                             className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-4">
+                            <Button
+                                size="lg"
+                                className="group w-full sm:w-auto cursor-pointer"
+                                onClick={() => openExternalUrl(process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000")}
+                            >
+                                <HugeiconsIcon icon={Building04Icon} className="w-5 h-5" strokeWidth={2} />
+                                Create Organisation
+                                <HugeiconsIcon icon={ArrowRight01Icon}
+                                    strokeWidth={2}
+                                    className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300"
+                                />
+                            </Button>
 
-                            {isApproved ? (
-                                <>
-                                    <Button
-                                        onClick={() => {
-                                            const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000";
-                                            openExternalUrl(`${baseUrl}/admin/organization`);
-                                        }}
-                                        size="lg"
-                                        className="group w-full sm:w-auto"
-                                    >
-                                        <HugeiconsIcon icon={Layout01Icon} className="w-5 h-5" strokeWidth={2} />
-                                        Dashboard
-                                        <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                                    </Button>
-
-                                    <Button
-                                        onClick={() => router.push("/vote")}
-                                        size="lg"
-                                        variant="outline"
-                                        className="group w-full sm:w-auto"
-                                    >
-                                        Vote Now
-                                        <HugeiconsIcon icon={CheckmarkBadge01Icon} strokeWidth={2} className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        size="lg"
-                                        className="group w-full sm:w-auto cursor-pointer"
-                                        onClick={() => openExternalUrl("/")}
-                                    >
-                                        <HugeiconsIcon icon={Building04Icon} className="w-5 h-5" strokeWidth={2} />
-                                        Create Organisation
-                                        <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                                    </Button>
-
-                                    <Button
-                                        asChild
-                                        size="lg"
-                                        variant="outline"
-                                        className="group w-full sm:w-auto"
-                                    >
-                                        <Link href="/auth/connect">
-                                            <HugeiconsIcon icon={LinkSquare01Icon} className="w-5 h-5" strokeWidth={2} />
-                                            Connect Organisation
-                                        </Link>
-                                    </Button>
-                                </>
-                            )}
+                            <Button
+                                asChild
+                                size="lg"
+                                variant="outline"
+                                className="group w-full sm:w-auto"
+                            >
+                                <Link href="/auth/connect">
+                                    <HugeiconsIcon icon={LinkSquare01Icon} className="w-5 h-5" strokeWidth={2} />
+                                    Connect Organisation
+                                </Link>
+                            </Button>
                         </div>
 
                         <div
@@ -205,25 +147,14 @@ export default function Hero() {
                                 className="absolute -inset-6 lg:-inset-12 bg-linear-to-tl from-accent/20 via-transparent to-primary/15 dark:from-cyan-500/30 dark:via-transparent dark:to-blue-500/25 rounded-full blur-2xl opacity-60 animate-pulse [animation-delay:1s]" />
 
                             <div className="relative">
-                                {isApproved && orgLogo ? (
-                                    <Image
-                                        src={orgLogo}
-                                        alt={orgName}
-                                        width={512}
-                                        height={512}
-                                        className="w-full h-auto object-contain drop-shadow-2xl dark:brightness-110 rounded-2xl p-8"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <Image
-                                        src={HeroImage}
-                                        placeholder="blur"
-                                        alt="Digital voting illustration"
-                                        className="w-full h-auto object-contain drop-shadow-2xl dark:drop-shadow-lg dark:brightness-110"
-                                        priority
-                                        unoptimized
-                                    />
-                                )}
+                                <Image
+                                    src={HeroImage}
+                                    placeholder="blur"
+                                    alt="Digital voting illustration"
+                                    className="w-full h-auto object-contain drop-shadow-2xl dark:drop-shadow-lg dark:brightness-110"
+                                    priority
+                                    unoptimized
+                                />
                             </div>
                         </div>
                     </div>

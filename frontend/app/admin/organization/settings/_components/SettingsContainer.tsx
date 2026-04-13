@@ -236,17 +236,45 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
     }
   }
 
+  const handleRemoveLogo = async () => {
+    setLogo("")
+    setIsPending(true)
+    try {
+      const result = await updateOrganizationAction(initialData.name, initialData.type, "")
+      if (result.success) toast.success("Logo removed")
+      else toast.error(result.error || "Failed to remove logo")
+    } catch {
+      toast.error("Operation failed")
+    } finally {
+      setIsPending(false)
+    }
+  }
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
-            <HugeiconsIcon icon={Image01Icon} className="h-4 w-4" color="currentColor" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+              <HugeiconsIcon icon={Image01Icon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Organization Logo</h3>
+              <p className="text-[12px] text-muted-foreground">Your logo appears on voting screens, public portals, and official documents.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold">Organization Logo</h3>
-            <p className="text-[12px] text-muted-foreground">Your logo appears on voting screens, public portals, and official documents.</p>
-          </div>
+          {logo && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRemoveLogo}
+              disabled={isPending}
+              className="text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/20 h-8 gap-2"
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="h-3.5 w-3.5" />
+              Remove
+            </Button>
+          )}
         </div>
         <div className="w-full max-w-2xl">
           <ImageUpload

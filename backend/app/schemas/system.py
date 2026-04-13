@@ -18,13 +18,14 @@ class SystemStatusResponse(BaseModel):
     status: str
     message: str
     secretToken: Optional[str] = None
+    systemName: Optional[str] = None
     organizationName: Optional[str] = None
     organizationLogo: Optional[str] = None
     tokenExpiresAt: Optional[str] = None
 
 class SystemVerifyRequest(BaseModel):
     systemId: str
-    secretToken: str
+    secretToken: Optional[str] = None
     macAddress: Optional[str] = None
 
 class SystemVerifyResponse(BaseModel):
