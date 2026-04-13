@@ -67,12 +67,30 @@ function getSecretToken() {
 
 app.setName('E-Voting');
 
+/**
+ * Downloads a logo from a URL and caches it as a Base64 string in the store.
+ */
+async function cacheLogo(url) {
+  if (!url) return;
+  try {
+    const response = await fetch(url);
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    const mimeType = response.headers.get('content-type') || 'image/png';
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+    store.set('organizationLogoCache', dataUrl);
+  } catch (e) {
+    console.error("Failed to cache logo:", e);
+  }
+}
+
 // Phase 3: Registration & Verification Logic
 ipcMain.handle('terminal:get-identity', async () => {
   return {
     systemId: store.get('systemId'),
     systemName: store.get('systemName'),
     organizationName: store.get('organizationName'),
+    organizationLogo: store.get('organizationLogoCache') || store.get('organizationLogo'),
     machineId: machineIdSync(),
     hasToken: !!store.get('secretToken')
   };
@@ -144,6 +162,9 @@ ipcMain.handle('terminal:logout', async () => {
         store.delete('secretToken');
         store.delete('terminalStatus');
         store.delete('organizationName');
+        store.delete('organizationLogo');
+        store.delete('organizationLogoCache');
+        store.delete('systemName');
         store.set('terminalStatus', 'UNREGISTERED');
         
         if (mainWindow) {
@@ -166,8 +187,19 @@ function startStatusPolling(systemId) {
                 if (data.status === 'APPROVED' && data.secretToken) {
                     saveSecretToken(data.secretToken);
                     store.set('terminalStatus', 'APPROVED');
+                    const oldLogoUrl = store.get('organizationLogo');
                     store.set('organizationLogo', data.organizationLogo);
                     
+                    if (data.organizationLogo) {
+                        // Only re-cache if URL changed or cache is missing
+                        if (data.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
+                            cacheLogo(data.organizationLogo);
+                        }
+                    } else {
+                        // Logo was removed from server, clear local cache
+                        store.delete('organizationLogoCache');
+                    }
+
                     if (mainWindow) {
                         mainWindow.webContents.send('terminal:status-updated', 'APPROVED');
                     }
@@ -205,6 +237,8 @@ ipcMain.handle('terminal:cancel-registration', async () => {
         store.delete('systemId');
         store.delete('systemName');
         store.delete('organizationName');
+        store.delete('organizationLogo');
+        store.delete('organizationLogoCache');
         store.delete('secretToken');
         store.set('terminalStatus', 'UNREGISTERED');
         
@@ -221,6 +255,8 @@ ipcMain.handle('terminal:reset-registration-state', async () => {
     store.delete('systemId');
     store.delete('systemName');
     store.delete('organizationName');
+    store.delete('organizationLogo');
+    store.delete('organizationLogoCache');
     store.delete('secretToken');
     store.set('terminalStatus', 'UNREGISTERED');
     
@@ -237,10 +273,10 @@ ipcMain.handle('terminal:verify-handshake', async () => {
 
     if (!systemId) return { success: false, status: 'UNREGISTERED' };
 
-    // 2. If PENDING, start polling for approval
-    if (status === 'PENDING') {
+    // 2. If PENDING, EXPIRED, or REVOKED, start polling for approval/renewal/restores
+    if (status === 'PENDING' || status === 'EXPIRED' || status === 'REVOKED') {
         startStatusPolling(systemId);
-        return { success: true, status: 'PENDING' };
+        return { success: true, status };
     }
 
     // 3. If REJECTED, there's nothing to poll, we stay in REJECTED state
@@ -268,9 +304,21 @@ ipcMain.handle('terminal:verify-handshake', async () => {
                 if (result.valid) {
                     store.set('terminalStatus', 'APPROVED');
                     // Update cache with fresh data
+                    const oldLogoUrl = store.get('organizationLogo');
                     store.set('organizationName', result.organizationName);
                     store.set('organizationLogo', result.organizationLogo);
                     store.set('systemName', result.systemName);
+
+                    // Background cache the image for offline usage
+                    if (result.organizationLogo) {
+                        // Only re-cache if URL changed or cache is missing
+                        if (result.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
+                            cacheLogo(result.organizationLogo);
+                        }
+                    } else {
+                        // Logo was removed from server, clear local cache
+                        store.delete('organizationLogoCache');
+                    }
                     return { success: true, status: 'APPROVED' };
                 } else {
                     // VERIFICATION FAILED - Be precise about the new status
@@ -285,10 +333,18 @@ ipcMain.handle('terminal:verify-handshake', async () => {
                         store.set('terminalStatus', 'REVOKED');
                         // We keep the systemId but clear the secretToken as it's no longer valid
                         store.delete('secretToken');
+                        startStatusPolling(systemId);
+                    } else if (serverStatus === 'EXPIRED') {
+                        store.set('terminalStatus', 'EXPIRED');
+                        startStatusPolling(systemId);
                     } else {
                         // Fallback for missing/deleted records
                         store.delete('systemId');
                         store.delete('secretToken');
+                        store.delete('systemName');
+                        store.delete('organizationName');
+                        store.delete('organizationLogo');
+                        store.delete('organizationLogoCache');
                         store.set('terminalStatus', 'UNREGISTERED');
                     }
                     return { success: false, status: store.get('terminalStatus') };

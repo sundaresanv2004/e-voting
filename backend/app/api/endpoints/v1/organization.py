@@ -1,5 +1,4 @@
-from time import sleep
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.system import SystemConnectRequest, SystemConnectResponse, SystemStatusResponse, SystemVerifyRequest, SystemVerifyResponse
@@ -55,7 +54,6 @@ def connect_system(request: SystemConnectRequest, db: Session = Depends(get_db))
                 # Logic: Log differently if it was a rejection vs a simple resume
                 event_name = "CONNECTION_RETRIED_AFTER_REJECTION" if old_status == SystemStatus.REJECTED else "CONNECTION_RESUMED"
                 
-                # Log the retry/resume with full audit context
                 db.add(SystemLog(
                     id=str(uuid.uuid4()),
                     systemId=s.id,
@@ -69,11 +67,11 @@ def connect_system(request: SystemConnectRequest, db: Session = Depends(get_db))
                 ))
             else:
                 # DIFFERENT ORGANIZATION: Hardware Migration
-                if s.status != SystemStatus.SUSPENDED:
+                # Only suspend if it was active/pending to avoid messing with REVOKED/EXPIRED history
+                if s.status in [SystemStatus.APPROVED, SystemStatus.PENDING]:
                     s.status = SystemStatus.SUSPENDED
                     s.updatedAt = datetime.datetime.utcnow()
                     
-                    # Log the suspension in the OLD organization's record
                     db.add(SystemLog(
                         id=str(uuid.uuid4()),
                         systemId=s.id,
@@ -189,7 +187,7 @@ def revoke_system(system_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/systems/verify", response_model=SystemVerifyResponse)
-def verify_system(request: SystemVerifyRequest, db: Session = Depends(get_db)):
+def verify_system(request: SystemVerifyRequest, fastapi_request: Request, db: Session = Depends(get_db)):
     # Guard: if no secretToken provided, this is a PENDING/unverified terminal
     # Look up by systemId and return the actual current status — never run the token query
     if not request.secretToken:
@@ -241,7 +239,10 @@ def verify_system(request: SystemVerifyRequest, db: Session = Depends(get_db)):
         id=str(uuid.uuid4()),
         systemId=system.id,
         event="VERIFICATION_SUCCESS",
-        metadata_={"mac": request.macAddress}
+        metadata_={
+            "mac": request.macAddress,
+            "ip": fastapi_request.client.host if fastapi_request.client else "unknown"
+        }
     ))
     db.commit()
 

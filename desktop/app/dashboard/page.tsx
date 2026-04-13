@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-linear-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900">
 
             <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                <AlertDialogContent className="max-w-sm rounded-2xl border-white/10 backdrop-blur-xl">
+                <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Unregister Terminal?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -60,10 +60,10 @@ export default function DashboardPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
                             onClick={handleLogout}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                            variant={"destructive"}
                             disabled={isLoggingOut}
                         >
                             {isLoggingOut ? "Unregistering..." : "Unregister"}
@@ -111,19 +111,17 @@ export default function DashboardPage() {
             {/* Main content */}
             <div className="relative z-10 w-full max-w-7xl cursor-default mx-auto px-4 sm:px-6 pt-20 pb-8 sm:pb-12 lg:py-16 pointer-events-none">
 
-                {/* Organisation Logo — as in reference */}
+                {/* Organisation Logo */}
                 {terminal.organizationLogo && (
                     <div className="flex justify-center mb-8 pointer-events-auto">
-                        <div className="h-20 px-6 bg-white/5 dark:bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl flex items-center justify-center overflow-hidden">
-                            <Image
-                                src={terminal.organizationLogo}
-                                alt={terminal.organizationName}
-                                width={160}
-                                height={60}
-                                className="h-12 w-auto object-contain brightness-110 contrast-125"
-                                unoptimized
-                            />
-                        </div>
+                        <Image
+                            src={terminal.organizationLogo}
+                            alt={terminal.organizationName}
+                            width={300}
+                            height={120}
+                            className="h-20 w-auto object-contain drop-shadow-xl"
+                            unoptimized
+                        />
                     </div>
                 )}
 
@@ -174,8 +172,7 @@ export default function DashboardPage() {
                                 size="lg"
                                 variant="outline"
                                 className="group w-full sm:w-auto"
-                                disabled={isLoggingOut}
-                                onClick={() => router.push("/vote")}
+                                onClick={() => router.push("/auth/vote")}
                             >
                                 Vote
                                 <HugeiconsIcon icon={CheckmarkBadge01Icon} strokeWidth={2} className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />

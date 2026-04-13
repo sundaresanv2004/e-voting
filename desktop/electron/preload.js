@@ -17,7 +17,9 @@ contextBridge.exposeInMainWorld('electron', {
     cancelRegistration: () => ipcRenderer.invoke('terminal:cancel-registration'),
     resetRegistrationState: () => ipcRenderer.invoke('terminal:reset-registration-state'),
     onStatusUpdate: (callback) => {
-        ipcRenderer.on('terminal:status-updated', (event, status) => callback(status));
+        const listener = (_event, status) => callback(status);
+        ipcRenderer.on('terminal:status-updated', listener);
+        return () => ipcRenderer.removeListener('terminal:status-updated', listener);
     }
   }
 });

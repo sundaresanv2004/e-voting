@@ -254,11 +254,18 @@ export const columns = (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => onStatusUpdate(system.id, SystemStatus.PENDING)}
-                      className="flex items-center gap-2 text-blue-600 focus:text-blue-700 focus:bg-blue-500/10 cursor-pointer"
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.APPROVED)}
+                      className="flex items-center gap-2 text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 cursor-pointer"
                     >
-                      <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4" color="currentColor" />
-                      Restore to Pending
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4" color="currentColor" />
+                      Approve Hardware
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onStatusUpdate(system.id, SystemStatus.REJECTED)}
+                      className="flex items-center gap-2 text-red-600 focus:text-red-700 focus:bg-red-500/10 cursor-pointer"
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" color="currentColor" />
+                      Reject Hardware
                     </DropdownMenuItem>
                   </>
                 )}

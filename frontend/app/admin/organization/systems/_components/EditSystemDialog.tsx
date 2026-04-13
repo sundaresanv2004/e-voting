@@ -53,7 +53,7 @@ function getAvailableTransitions(current: SystemStatus): SystemStatus[] {
     case SystemStatus.APPROVED:
       return [SystemStatus.APPROVED, SystemStatus.REVOKED, SystemStatus.PENDING]
     case SystemStatus.EXPIRED:
-      return [SystemStatus.EXPIRED, SystemStatus.PENDING]
+      return [SystemStatus.EXPIRED, SystemStatus.APPROVED, SystemStatus.REJECTED]
     default:
       return []
   }
@@ -186,7 +186,7 @@ export function EditSystemDialog({ system, open, onOpenChange }: EditSystemDialo
                   {system?.status === SystemStatus.APPROVED &&
                     "Revoke to disable access, or move back to Pending to re-evaluate."}
                   {system?.status === SystemStatus.EXPIRED &&
-                    "Restore to Pending to allow the terminal to re-authenticate."}
+                    "Approve this hardware to restore its access and allow it to initialize a session."}
                 </FieldDescription>
               </Field>
             </>

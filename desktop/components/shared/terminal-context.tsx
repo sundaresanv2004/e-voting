@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-export type SystemStatus = "APPROVED" | "PENDING" | "REJECTED" | "REVOKED" | "UNREGISTERED" | "INITIAL";
+export type SystemStatus = "APPROVED" | "PENDING" | "REJECTED" | "REVOKED" | "UNREGISTERED" | "EXPIRED" | "INITIAL";
 
 interface TerminalState {
     systemId: string | null;
@@ -97,9 +97,12 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
 
         const electron = (window as any).electron;
         if (electron?.terminal?.onStatusUpdate) {
-            electron.terminal.onStatusUpdate((newStatus: SystemStatus) => {
+            const unsub = electron.terminal.onStatusUpdate((newStatus: SystemStatus) => {
                 setTerminal(prev => ({ ...prev, systemStatus: newStatus }));
             });
+            return () => {
+                if (unsub) unsub();
+            }
         }
     }, []);
 
@@ -112,16 +115,21 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
         const isVerifyPage = pathname.startsWith('/verify');
         
         if (terminal.systemStatus === "UNREGISTERED") {
-            if (isVerifyPage) {
+            if (!isAuthPage && !isHomePage) {
                 router.replace('/auth/connect');
             }
             return;
         } else if (terminal.systemStatus === "REVOKED" && pathname !== '/verify/revoked') {
             router.replace('/verify/revoked');
+        } else if (terminal.systemStatus === "EXPIRED" && pathname !== '/verify/expired') {
+            router.replace('/verify/expired');
         } else if ((terminal.systemStatus === "PENDING" || terminal.systemStatus === "REJECTED") && pathname !== '/verify/pending') {
             router.replace('/verify/pending');
-        } else if (terminal.systemStatus === "APPROVED" && (isAuthPage || isHomePage || isVerifyPage)) {
-            router.replace('/dashboard');
+        } else if (terminal.systemStatus === "APPROVED") {
+            const isConnectPage = pathname === '/auth/connect';
+            if (isConnectPage || isHomePage || isVerifyPage) {
+                router.replace('/dashboard');
+            }
         }
     }, [terminal.systemStatus, pathname, loading, networkError, router]);
 

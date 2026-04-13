@@ -11,6 +11,8 @@ import {
     AlertDialogHeader,
     AlertDialogMedia,
     AlertDialogTitle,
+    AlertDialogOverlay,
+    AlertDialogPortal,
 } from '@/components/ui/alert-dialog'
 import { BackendDownDialog } from './backend-down-dialog'
 
@@ -43,26 +45,29 @@ export function GlobalLoader({ status, onRetry, networkErrorType = "backend", is
 
     return (
         <AlertDialog open={true}>
-            <AlertDialogContent
-                onEscapeKeyDown={(e) => e.preventDefault()}
-                size="sm"
-            >
-                <AlertDialogHeader>
-                    <AlertDialogMedia>
-                        <div className="relative flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                                <HugeiconsIcon icon={Shield01Icon} className="w-7 h-7 text-primary" />
+            <AlertDialogPortal>
+                <AlertDialogOverlay className="bg-black/20 backdrop-blur-md" />
+                <AlertDialogContent
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                    size="sm"
+                >
+                    <AlertDialogHeader>
+                        <AlertDialogMedia>
+                            <div className="relative flex items-center justify-center">
+                                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <HugeiconsIcon icon={Shield01Icon} className="w-7 h-7 text-primary" />
+                                </div>
+                                <Spinner className="absolute -top-1 -right-1 h-5 w-5 text-primary" />
                             </div>
-                            <Spinner className="absolute -top-1 -right-1 h-5 w-5 text-primary" />
-                        </div>
-                    </AlertDialogMedia>
-                    <AlertDialogTitle>Securing your session</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {status === 'loading' && "Connecting to the secure e-voting server..."}
-                        {status === 'verifying' && "Verifying terminal identity..."}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-            </AlertDialogContent>
+                        </AlertDialogMedia>
+                        <AlertDialogTitle>Securing your session</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {status === 'loading' && "Connecting to the secure e-voting server..."}
+                            {status === 'verifying' && "Verifying terminal identity..."}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                </AlertDialogContent>
+            </AlertDialogPortal>
         </AlertDialog>
     )
 }

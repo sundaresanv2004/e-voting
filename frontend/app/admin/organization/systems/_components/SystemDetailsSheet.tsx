@@ -366,7 +366,7 @@ export function SystemDetailsSheet({
               system.status === SystemStatus.APPROVED ||
               system.status === SystemStatus.EXPIRED) && (
               <div className="flex gap-2 w-full">
-                {system.status === SystemStatus.PENDING ? (
+                {(system.status === SystemStatus.PENDING || system.status === SystemStatus.EXPIRED) ? (
                   <>
                     <Button
                       variant="outline"
@@ -387,7 +387,7 @@ export function SystemDetailsSheet({
                       Approve
                     </Button>
                   </>
-                ) : system.status === SystemStatus.APPROVED ? (
+                ) : system.status === SystemStatus.APPROVED && (
                   <Button
                     variant="outline"
                     className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
@@ -396,16 +396,6 @@ export function SystemDetailsSheet({
                   >
                     <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
                     Revoke Authorization
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
-                    disabled={isPending}
-                    onClick={() => handleStatusUpdate(SystemStatus.PENDING)}
-                  >
-                    <HugeiconsIcon icon={Clock01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                    Restore to Pending
                   </Button>
                 )}
               </div>

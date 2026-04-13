@@ -36,13 +36,13 @@ export async function updateSystemStatusAction(
       if (status === SystemStatus.APPROVED) {
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
-        
+
         // Generate or refresh token with 30-day expiry
         if (!oldSystem.secretToken) {
           updateData.secretToken = crypto.randomUUID()
           secretGenerated = true
         }
-        updateData.tokenExpiresAt = addDays(new Date(), 30)
+        updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED) {
         // Clear token on revocation
         updateData.secretToken = null
@@ -50,9 +50,9 @@ export async function updateSystemStatusAction(
       }
 
       const system = await tx.authorizedSystem.update({
-        where: { 
+        where: {
           id: systemId,
-          organizationId: orgId 
+          organizationId: orgId
         },
         data: updateData
       })
@@ -63,9 +63,9 @@ export async function updateSystemStatusAction(
           entityType: "AuthorizedSystem",
           entityId: systemId,
           userId: userId!,
-          metadata: { 
-            before: oldSystem.status, 
-            after: status, 
+          metadata: {
+            before: oldSystem.status,
+            after: status,
             name: oldSystem.name,
             secretGenerated,
             expiresAt: updateData.tokenExpiresAt
@@ -84,7 +84,7 @@ export async function updateSystemStatusAction(
   }
 }
 
-export async function syncSystemExpirations(organizationId: string) {
+export async function syncSystemExpirations(organizationId: string, shouldRevalidate: boolean = true) {
   const session = await auth()
   if (!session?.user?.organizationId || session.user.organizationId !== organizationId) {
     throw new Error("Unauthorized")
@@ -103,11 +103,11 @@ export async function syncSystemExpirations(organizationId: string) {
         tokenExpiresAt: null,
       },
     })
-    
-    if (result.count > 0) {
+
+    if (result.count > 0 && shouldRevalidate) {
       revalidatePath("/admin/organization/systems")
     }
-    
+
     return { success: true, expiredCount: result.count }
   } catch (error) {
     console.error("[SYNC_SYSTEM_EXPIRATIONS]", error)
@@ -150,7 +150,7 @@ export async function editSystemAction(
         if (!oldSystem.secretToken) {
           updateData.secretToken = crypto.randomUUID()
         }
-        updateData.tokenExpiresAt = addDays(new Date(), 30)
+        updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (
         (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) &&
         oldSystem.status === SystemStatus.APPROVED

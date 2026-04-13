@@ -10,8 +10,8 @@ export default async function AuthorizedSystemsPage() {
   const orgId = session?.user?.organizationId
   if (!orgId) redirect("/setup/organization")
 
-  // Auto-expire systems that have passed their 30-day authorization window via Action
-  await syncSystemExpirations(orgId)
+  // Auto-expire systems that have passed their authorization window via Action (skip revalidate to avoid render error)
+  await syncSystemExpirations(orgId, false)
 
   const organization = await db.organization.findUnique({
     where: { id: orgId },
