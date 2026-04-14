@@ -183,10 +183,6 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
         select: { name: true, electionRoleId: true }
       })
 
-      await tx.candidate.delete({
-        where: { id: candidateId }
-      })
-
       await tx.adminAuditLog.create({
         data: {
           action: "CANDIDATE_REMOVED",
@@ -197,6 +193,10 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
           status: AuditStatus.SUCCESS,
           metadata: { candidateId, name: candidateData?.name, electionRoleId: candidateData?.electionRoleId },
         }
+      })
+
+      await tx.candidate.delete({
+        where: { id: candidateId }
       })
     })
 

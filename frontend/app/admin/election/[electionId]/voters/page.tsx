@@ -70,7 +70,7 @@ export default async function VotersPage({
             </div>
             <h2 className="text-lg font-semibold mb-1 tracking-tight">Register Voters</h2>
             <p className="text-sm text-muted-foreground max-w-sm mb-6 leading-relaxed">
-              Add the people who are eligible to vote in <span className="font-bold text-foreground">{election.name}</span>. You can add them one by one or import via CSV (coming soon).
+              Add the people who are eligible to vote in <span className="font-bold text-foreground">{election.name}</span>. You can add them one by one or import them in bulk via CSV or Excel.
             </p>
             {canManage ? (
               <div className="flex items-center gap-3">

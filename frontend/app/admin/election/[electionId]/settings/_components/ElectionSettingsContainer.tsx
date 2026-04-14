@@ -43,7 +43,6 @@ interface ElectionSettingsContainerProps {
       requireSystemAuth: boolean
       allSystemsAllowed: boolean
       authorizeVoters: boolean
-      verifyDob: boolean
     } | null
   }
 }
@@ -312,16 +311,6 @@ function VerificationSection({ election }: { election: any }) {
                 iconBg="bg-blue-500/10"
                 checked={settings?.authorizeVoters ?? false}
                 onCheckedChange={(v: boolean) => handleToggle("authorizeVoters", v)}
-                disabled={isPending}
-            />
-            <ToggleCard 
-                title="Birthday Verification"
-                description="Require voters to provide their Date of Birth for identity verification."
-                icon={Calendar02Icon}
-                iconColor="text-amber-600"
-                iconBg="bg-amber-500/10"
-                checked={settings?.verifyDob ?? false}
-                onCheckedChange={(v: boolean) => handleToggle("verifyDob", v)}
                 disabled={isPending}
             />
         </div>

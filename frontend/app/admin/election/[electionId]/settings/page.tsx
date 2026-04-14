@@ -40,7 +40,6 @@ export default async function ElectionSettingsPage({
               requireSystemAuth: election.settings.requireSystemAuth,
               allSystemsAllowed: election.settings.allSystemsAllowed,
               authorizeVoters: election.settings.authorizeVoters,
-              verifyDob: election.settings.verifyDob,
             } : null
           }} 
         />

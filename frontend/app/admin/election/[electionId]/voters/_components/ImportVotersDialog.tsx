@@ -216,7 +216,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                     <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-xs font-bold border-blue-500/20">unique_id</Badge>
                     <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-xs font-bold border-blue-500/20">name</Badge>
                   </div>
-                  <p><strong>Optional:</strong> <Badge variant="secondary" className="font-mono text-[10px] font-bold">dob</Badge> (YYYY-MM-DD).</p>
+                  <p>All other columns in your file will be saved as additional details for the voter.</p>
                 </div>
               </div>
 

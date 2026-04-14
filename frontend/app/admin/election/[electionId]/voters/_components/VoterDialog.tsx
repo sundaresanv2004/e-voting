@@ -57,7 +57,6 @@ export function VoterDialog({
     defaultValues: {
       name: initialData?.name ?? "",
       uniqueId: initialData?.uniqueId ?? "",
-      dob: initialData?.dob ?? null,
       image: initialData?.image ?? null,
       additionalDetails: initialData?.additionalDetails ?? {},
     }
@@ -69,7 +68,6 @@ export function VoterDialog({
       reset({
         name: initialData?.name ?? "",
         uniqueId: initialData?.uniqueId ?? "",
-        dob: initialData?.dob ?? null,
         image: initialData?.image ?? null,
         additionalDetails: initialData?.additionalDetails ?? {},
       })
@@ -155,20 +153,6 @@ export function VoterDialog({
                 {errors.uniqueId && <FieldError errors={[{ message: errors.uniqueId.message as string }]} />}
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="dob">Date of Birth (Optional)</FieldLabel>
-                <div className="relative">
-                  <HugeiconsIcon icon={Calendar02Icon} className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="dob"
-                    type="date"
-                    disabled={isPending}
-                    className="pl-10"
-                    {...register("dob")}
-                  />
-                </div>
-                {errors.dob && <FieldError errors={[{ message: errors.dob.message as string }]} />}
-              </Field>
             </div>
 
             {serverError && (

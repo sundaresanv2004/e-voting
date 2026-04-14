@@ -35,6 +35,7 @@ import {
 import { OrganizationCodeDialog } from "../../systems/_components/OrganizationCodeDialog"
 import { DeleteOrganizationDialog } from "./delete-organization-dialog"
 import { TransferOwnershipDialog } from "./TransferOwnershipDialog"
+import { Spinner } from "@/components/ui/spinner"
 
 
 interface SettingsContainerProps {
@@ -205,8 +206,9 @@ function IdentitySection({ initialData }: { initialData: ProfileData }) {
         </div>
         <div className="flex items-center justify-between px-6 py-3 bg-muted/40 border-t text-[13px] text-muted-foreground">
           <span>Please use 32 characters at maximum.</span>
-          <Button type="submit" disabled={isPending || !hasChanges} size="sm">
-            {isPending ? "Saving..." : "Save"}
+          <Button type="submit" disabled={isPending || !hasChanges} size="sm" className="relative group overflow-hidden">
+            {isPending && <Spinner className="mr-2 h-4 w-4" color="currentColor" />}
+            <span>{isPending ? "Saving..." : "Save"}</span>
           </Button>
         </div>
       </div>
@@ -271,8 +273,8 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
               disabled={isPending}
               className="text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/20 h-8 gap-2"
             >
-              <HugeiconsIcon icon={Delete02Icon} className="h-3.5 w-3.5" />
-              Remove
+              {isPending ? <Spinner className="h-3.5 w-3.5" color="currentColor" /> : <HugeiconsIcon icon={Delete02Icon} className="h-3.5 w-3.5" />}
+              {isPending ? "Removing..." : "Remove"}
             </Button>
           )}
         </div>

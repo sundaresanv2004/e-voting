@@ -104,7 +104,7 @@ export function TransferOwnershipDialog({ open, onOpenChange }: TransferOwnershi
         // Optionally redirect or refresh the page since permissions changed
         window.location.reload()
       } else {
-        toast.error(res.error || "Failed to transfer ownership")
+        toast.error((res as any).error || "Failed to transfer ownership")
       }
     } catch (err) {
       toast.error("An unexpected error occurred")
@@ -246,14 +246,14 @@ export function TransferOwnershipDialog({ open, onOpenChange }: TransferOwnershi
                 </div>
                 <p className="text-xs text-amber-900/80 dark:text-amber-100/80 leading-relaxed font-medium">
                   By clicking confirm, you will transfer <strong className="font-bold">Ownership</strong> of this organization.
-                  You will lose administrative control over high-level settings, billing, and organizational deletion.
+                  You will lose administrative control over high-level settings and organizational deletion.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-muted/20 flex flex-row items-center justify-between gap-3">
+        <DialogFooter className="px-6 py-4 border-t flex flex-row items-center justify-between gap-3">
           {step === "selection" ? (
             <Button onClick={() => onOpenChange(false)} disabled={isPending} variant="outline">
               Cancel
@@ -269,7 +269,14 @@ export function TransferOwnershipDialog({ open, onOpenChange }: TransferOwnershi
               onClick={handleTransfer}
               disabled={isPending}
             >
-              {isPending ? <Spinner /> : "Confirm & Transfer"}
+              {isPending ? (
+                <>
+                  <Spinner className="h-4 w-4" />
+                  <span>Transferring...</span>
+                </>
+              ) : (
+                "Confirm & Transfer"
+              )}
             </Button>
           )}
         </DialogFooter>

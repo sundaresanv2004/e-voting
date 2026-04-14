@@ -6,7 +6,7 @@ import { columns } from "./columns"
 import { ElectionDetailsSheet, type Election } from "./election-details-sheet"
 import { ElectionDialog } from "./election-dialog"
 import { DeleteElectionDialog } from "./delete-election-dialog"
-import { deleteElection } from "../_actions"
+import { deleteElection, toggleElectionStatus } from "../_actions"
 import { toast } from "sonner"
 
 interface ElectionsListProps {
@@ -34,7 +34,21 @@ export function ElectionsList({ elections }: ElectionsListProps) {
     setIsEditDialogOpen(true)
   }
 
-  // Removed handleDelete logic as it's now handled in DeleteElectionDialog component
+  const handleToggleStatus = async (electionId: string) => {
+    setIsPending(true)
+    try {
+      const res = await toggleElectionStatus(electionId)
+      if (res.success) {
+        toast.success(`Election status updated to ${res.status}`)
+      } else {
+        toast.error(res.error || "Failed to update status")
+      }
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsPending(false)
+    }
+  }
 
   return (
     <>
@@ -75,7 +89,8 @@ export function ElectionsList({ elections }: ElectionsListProps) {
           (election) => {
             setElectionToDelete(election)
             setIsDeleteDialogOpen(true)
-          }
+          },
+          handleToggleStatus
         )} 
         data={elections} 
         searchPlaceholder="Search elections by name or code..."

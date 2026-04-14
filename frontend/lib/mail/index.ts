@@ -7,6 +7,8 @@ import { PasswordResetTemplate } from "./templates/password-reset"
 import { PasswordResetConfirmationTemplate } from "./templates/password-reset-confirmation"
 import { LoginNotificationTemplate } from "./templates/login-notification"
 import { OrganizationCreatedTemplate } from "./templates/org-created"
+import { OwnershipTransferredTemplate } from "./templates/ownership-transferred"
+import { ElectionCreatedNotificationTemplate } from "./templates/election-created"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -194,6 +196,71 @@ export const sendOrgCreatedEmail = async (email: string, name: string, orgName: 
     return { success: true }
   } catch (error) {
     console.error("Failed to send organization created email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendOwnershipTransferredEmail = async (email: string, name: string, orgName: string, previousOwnerName: string, previousOwnerEmail: string) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Ownership transferred email for ${email} in ${orgName}`)
+      return { success: true, dev: true }
+    }
+
+    const html = OwnershipTransferredTemplate(name, orgName, previousOwnerName, previousOwnerEmail)
+
+    await resend.emails.send({
+      from: `E-Voting <${process.env.EMAIL_FROM || "onboarding@yourdomain.com"}>`,
+      to: email,
+      subject: `Notice: You are now the owner of ${orgName} - E-Voting`,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send ownership transfer email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendElectionCreatedNotificationEmail = async (
+  recipientEmail: string, 
+  recipientName: string, 
+  orgName: string, 
+  electionName: string, 
+  electionCode: string,
+  startTime: Date,
+  endTime: Date,
+  creatorName: string, 
+  electionId: string
+) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Election created notification for ${recipientEmail}: ${electionName}`)
+      return { success: true, dev: true }
+    }
+
+    const html = ElectionCreatedNotificationTemplate(
+      recipientName, 
+      orgName, 
+      electionName, 
+      electionCode,
+      startTime,
+      endTime,
+      creatorName, 
+      electionId
+    )
+
+    await resend.emails.send({
+      from: `E-Voting <${process.env.EMAIL_FROM || "updates@yourdomain.com"}>`,
+      to: recipientEmail,
+      subject: `Notification: New Election Created - ${electionName}`,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send election creation notification email:", error)
     return { success: false, error }
   }
 }

@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { VoterSchema, VoterFormValues } from "@/lib/schemas/voter"
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 
 /**
  * Authorization helper to ensure user is permitted to manage voters
@@ -41,14 +41,14 @@ async function getAuthorizedUser(electionId: string) {
 
 export async function createVoter(electionId: string, values: VoterFormValues) {
   try {
-    const { organizationId } = await getAuthorizedUser(electionId)
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
     
     const validatedFields = VoterSchema.safeParse(values)
     if (!validatedFields.success) {
       return { error: "Invalid fields" }
     }
 
-    const { name, uniqueId, dob, image, additionalDetails } = validatedFields.data
+    const { name, uniqueId, image, additionalDetails } = validatedFields.data
 
     // Check if voter already exists for this election
     const existingVoter = await db.voter.findUnique({
@@ -64,15 +64,28 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
       return { error: "Voter with this Unique ID already exists in this election" }
     }
 
-    await db.voter.create({
-      data: {
-        electionId,
-        name,
-        uniqueId,
-        dob,
-        image,
-        additionalDetails: additionalDetails || {}
-      }
+    await db.$transaction(async (tx) => {
+      await tx.voter.create({
+        data: {
+          electionId,
+          name,
+          uniqueId,
+          image,
+          additionalDetails: additionalDetails || {}
+        }
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "VOTER_CREATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId,
+          organizationId: organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { name, uniqueId }
+        }
+      })
     })
 
     revalidatePath(`/admin/election/${electionId}/voters`)
@@ -85,14 +98,14 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
 
 export async function updateVoter(voterId: string, electionId: string, values: VoterFormValues) {
   try {
-    await getAuthorizedUser(electionId)
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
 
     const validatedFields = VoterSchema.safeParse(values)
     if (!validatedFields.success) {
       return { error: "Invalid fields" }
     }
 
-    const { name, uniqueId, dob, image, additionalDetails } = validatedFields.data
+    const { name, uniqueId, image, additionalDetails } = validatedFields.data
 
     // Check if another voter has the same uniqueId in this election
     const existingVoter = await db.voter.findFirst({
@@ -107,15 +120,37 @@ export async function updateVoter(voterId: string, electionId: string, values: V
       return { error: "Another voter with this Unique ID already exists" }
     }
 
-    await db.voter.update({
-      where: { id: voterId },
-      data: {
-        name,
-        uniqueId,
-        dob,
-        image,
-        additionalDetails: additionalDetails || {}
-      }
+    await db.$transaction(async (tx) => {
+      const oldVoter = await tx.voter.findUnique({
+        where: { id: voterId },
+        select: { name: true, uniqueId: true }
+      })
+
+      await tx.voter.update({
+        where: { id: voterId },
+        data: {
+          name,
+          uniqueId,
+          image,
+          additionalDetails: additionalDetails || {}
+        }
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "VOTER_UPDATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId,
+          organizationId: organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { 
+            voterId,
+            before: oldVoter,
+            after: { name, uniqueId }
+          }
+        }
+      })
     })
 
     revalidatePath(`/admin/election/${electionId}/voters`)
@@ -128,7 +163,7 @@ export async function updateVoter(voterId: string, electionId: string, values: V
 
 export async function deleteVoter(voterId: string, electionId: string) {
   try {
-    await getAuthorizedUser(electionId)
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
 
     // Check if voter has already cast a ballot
     const voter = await db.voter.findUnique({
@@ -140,8 +175,27 @@ export async function deleteVoter(voterId: string, electionId: string) {
       return { error: "Cannot delete a voter who has already cast a ballot" }
     }
 
-    await db.voter.delete({
-      where: { id: voterId }
+    await db.$transaction(async (tx) => {
+      const voterData = await tx.voter.findUnique({
+        where: { id: voterId },
+        select: { name: true, uniqueId: true }
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "VOTER_REMOVED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId,
+          organizationId: organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { voterId, name: voterData?.name, uniqueId: voterData?.uniqueId }
+        }
+      })
+
+      await tx.voter.delete({
+        where: { id: voterId }
+      })
     })
 
     revalidatePath(`/admin/election/${electionId}/voters`)
@@ -199,33 +253,40 @@ export async function verifyVotersBulk(electionId: string, voterData: any[]) {
  */
 export async function importVotersBulk(electionId: string, voterData: any[]) {
   try {
-    await getAuthorizedUser(electionId)
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
 
     // Prepare data for Prisma createMany
     const data = voterData.map(v => {
       // Extract known fields, put rest in additionalDetails
-      const { unique_id, name, dob, ...rest } = v
-      
-      let parsedDob = null
-      if (dob) {
-        const d = new Date(dob)
-        if (!isNaN(d.getTime())) {
-          parsedDob = d
-        }
-      }
+      const { unique_id, name, ...rest } = v
 
       return {
         electionId,
         uniqueId: String(unique_id),
         name: String(name),
-        dob: parsedDob,
         additionalDetails: rest || {}
       }
     })
 
-    const result = await db.voter.createMany({
-      data,
-      skipDuplicates: true // Safety measure
+    const result = await db.$transaction(async (tx) => {
+      const importResult = await tx.voter.createMany({
+        data,
+        skipDuplicates: true
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "VOTERS_BULK_IMPORT",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId,
+          organizationId: organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { count: importResult.count }
+        }
+      })
+
+      return importResult
     })
 
     revalidatePath(`/admin/election/${electionId}/voters`)

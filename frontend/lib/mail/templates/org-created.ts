@@ -14,7 +14,7 @@ export const OrganizationCreatedTemplate = (name: string, orgName: string, orgCo
     </div>
 
     <div class="message">
-      You can now start setting up your first election, inviting candidates, and adding voters using their Admission IDs.
+      You can now start setting up your first election, inviting candidates, and adding voters.
     </div>
 
     <div style="text-align: center; margin: 30px 0;">
@@ -24,7 +24,7 @@ export const OrganizationCreatedTemplate = (name: string, orgName: string, orgCo
     </div>
 
     <div class="message" style="margin-bottom: 0;">
-      Give your organization code to other staff members if you want them to request access to your organization dashboard.
+      Your organization code is used to register voting terminals via the E-Voting terminal application. Keep this code secure and do not share it with unauthorized personnel.
     </div>
   `
   return renderEmailLayout(content, "E-Voting")

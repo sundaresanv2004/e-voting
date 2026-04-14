@@ -31,6 +31,7 @@ import {
 import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field"
 import { editSystemAction } from "../_actions"
 import { getSystemStatusBadgeStyle, type System } from "./columns"
+import { Spinner } from "@/components/ui/spinner"
 
 interface EditSystemDialogProps {
   system: System | null
@@ -200,13 +201,14 @@ export function EditSystemDialog({ system, open, onOpenChange }: EditSystemDialo
           )}
         </div>
 
-        <DialogFooter className="px-6 py-3 border-t flex flex-row items-center justify-between gap-3">
+        <DialogFooter className="px-6 py-3 border-t flex flex-row items-center justify-between gap-3 bg-card">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             {isLocked ? "Close" : "Cancel"}
           </Button>
           {!isLocked && (
-            <Button onClick={handleSubmit} disabled={isPending || !hasChanges}>
-              {isPending ? "Saving..." : "Save Changes"}
+            <Button onClick={handleSubmit} disabled={isPending || !hasChanges} className="relative group overflow-hidden font-bold">
+              {isPending && <Spinner className="mr-2 h-4 w-4" color="currentColor" />}
+              <span>{isPending ? "Saving..." : "Save Changes"}</span>
             </Button>
           )}
         </DialogFooter>

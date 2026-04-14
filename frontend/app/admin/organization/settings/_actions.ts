@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, OrganizationType, AuditEntityType, AuditStatus } from "@prisma/client"
+import { sendOwnershipTransferredEmail } from "@/lib/mail"
 
 export async function getOrganizationData() {
   const session = await auth()
@@ -185,10 +186,6 @@ export async function deleteOrganizationAction() {
         }
       })
 
-      await tx.organization.delete({
-        where: { id: orgId }
-      })
-
       await tx.adminAuditLog.create({
         data: {
           action: "ORGANIZATION_DELETED",
@@ -199,6 +196,10 @@ export async function deleteOrganizationAction() {
           status: AuditStatus.SUCCESS,
           metadata: { name: organization.name, code: organization.code }
         }
+      })
+
+      await tx.organization.delete({
+        where: { id: orgId }
       })
     })
 
@@ -247,33 +248,76 @@ export async function transferOwnershipAction(newOwnerId: string) {
   }
 
   try {
-    // 1. Verify current user is the owner
-    const organization = await db.organization.findUnique({
-      where: { id: orgId },
-      select: { ownerId: true }
-    })
+    const result = await db.$transaction(async (tx) => {
+      // 1. Verify current user is the owner
+      const organization = await tx.organization.findUnique({
+        where: { id: orgId },
+        select: { ownerId: true, name: true }
+      })
 
-    if (!organization || organization.ownerId !== currentUserId) {
-      return { success: false, error: "Only the organization owner can transfer ownership." }
-    }
+      if (!organization || organization.ownerId !== currentUserId) {
+        throw new Error("Only the organization owner can transfer ownership.")
+      }
 
-    // 2. Perform the transfer
-    await db.$transaction([
-      db.organization.update({
+      const newOwner = await tx.user.findUnique({
+        where: { id: newOwnerId },
+        select: { name: true, email: true }
+      })
+
+      // 2. Perform the transfer
+      await tx.organization.update({
         where: { id: orgId },
         data: { ownerId: newOwnerId }
-      }),
-      db.user.update({
+      })
+
+      await tx.user.update({
         where: { id: newOwnerId },
         data: { role: UserRole.ORG_ADMIN }
       })
-    ])
+
+      // 3. Log the transfer
+      await tx.adminAuditLog.create({
+        data: {
+          action: "OWNERSHIP_TRANSFERRED",
+          entityType: AuditEntityType.ORGANIZATION,
+          entityId: orgId,
+          adminId: currentUserId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
+          metadata: { 
+            previousOwnerId: currentUserId,
+            newOwnerId: newOwnerId,
+            newOwnerName: newOwner?.name,
+            newOwnerEmail: newOwner?.email
+          }
+        }
+      })
+
+      return { 
+        success: true, 
+        newOwnerEmail: newOwner?.email, 
+        newOwnerName: newOwner?.name, 
+        orgName: organization.name,
+        previousOwnerName: session.user?.name || "Previous Owner",
+        previousOwnerEmail: session.user?.email || ""
+      }
+    })
+
+    if (result.success) {
+      await sendOwnershipTransferredEmail(
+        result.newOwnerEmail!,
+        result.newOwnerName!,
+        result.orgName!,
+        result.previousOwnerName!,
+        result.previousOwnerEmail!
+      )
+    }
 
     revalidatePath("/admin/organization/settings")
-    return { success: true }
+    return result
   } catch (error: any) {
     console.error("[TRANSFER_OWNERSHIP_ACTION]", error)
-    return { success: false, error: "Failed to transfer ownership. Please try again later." }
+    return { success: false, error: error.message || "Failed to transfer ownership" }
   }
 }
 

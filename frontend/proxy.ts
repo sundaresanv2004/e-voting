@@ -39,7 +39,7 @@ export default auth((req: any) => {
       const redirectUrl = new URL(redirectPath, nextUrl)
       
       // Preserve search params
-      nextUrl.searchParams.forEach((value, key) => {
+      nextUrl.searchParams.forEach((value: string, key: string) => {
         redirectUrl.searchParams.set(key, value)
       })
       
@@ -74,7 +74,7 @@ export default auth((req: any) => {
     const setupUrl = new URL('/setup/organization', nextUrl)
     
     // Preserve search params (e.g., logged_in=true)
-    nextUrl.searchParams.forEach((value, key) => {
+    nextUrl.searchParams.forEach((value: string, key: string) => {
         setupUrl.searchParams.set(key, value)
     })
     
@@ -87,7 +87,7 @@ export default auth((req: any) => {
     const adminUrl = new URL('/admin/organization', nextUrl)
     
     // Preserve search params (e.g., logged_in=true or org_created=true)
-    nextUrl.searchParams.forEach((value, key) => {
+    nextUrl.searchParams.forEach((value: string, key: string) => {
         adminUrl.searchParams.set(key, value)
     })
     

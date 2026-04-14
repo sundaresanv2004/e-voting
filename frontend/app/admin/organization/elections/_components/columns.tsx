@@ -11,6 +11,8 @@ import {
   ArrowUpDownIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
+  PlayIcon,
+  PauseIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Button } from "@/components/ui/button"
@@ -53,7 +55,8 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
 export const columns = (
   onView: (election: Election) => void,
   onEdit: (election: Election) => void,
-  onDelete: (election: Election) => void
+  onDelete: (election: Election) => void,
+  onToggleStatus: (id: string) => void
 ): ColumnDef<Election>[] => [
     {
       accessorKey: "name",
@@ -157,6 +160,21 @@ export const columns = (
                   <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
                   Edit Election
                 </DropdownMenuItem>
+                {(election.status === "ACTIVE" || election.status === "PAUSED") && (
+                  <DropdownMenuItem onSelect={() => onToggleStatus(election.id)}>
+                    {election.status === "ACTIVE" ? (
+                      <>
+                        <HugeiconsIcon icon={PauseIcon} className="h-4 w-4 text-amber-500" />
+                        Pause Election
+                      </>
+                    ) : (
+                      <>
+                        <HugeiconsIcon icon={PlayIcon} className="h-4 w-4 text-green-500" />
+                        Resume Election
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"

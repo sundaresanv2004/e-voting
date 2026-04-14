@@ -123,7 +123,7 @@ export function DeleteOrganizationDialog({
                 Deleting...
               </>
             ) : (
-              "Deletion"
+              "Delete"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

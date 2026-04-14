@@ -47,7 +47,7 @@ export default async function AuthorizedSystemsPage() {
       },
       _count: {
         select: {
-          logs: true,
+          auditLogs: true,
           ballots: true,
         }
       }

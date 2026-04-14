@@ -3,7 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 
 export async function updateElectionSettingsAction(
   electionId: string,
@@ -11,7 +11,6 @@ export async function updateElectionSettingsAction(
     requireSystemAuth?: boolean
     allSystemsAllowed?: boolean
     authorizeVoters?: boolean
-    verifyDob?: boolean
   }
 ) {
   const session = await auth()
@@ -23,16 +22,39 @@ export async function updateElectionSettingsAction(
   }
 
   try {
-    const updatedSettings = await db.electionSettings.update({
-      where: { electionId },
-      data: {
-        ...data,
-        updatedByUserId: userId,
-      },
+    const result = await db.$transaction(async (tx) => {
+      const oldSettings = await tx.electionSettings.findUnique({
+        where: { electionId },
+      })
+
+      const updatedSettings = await tx.electionSettings.update({
+        where: { electionId },
+        data: {
+          ...data,
+          updatedByUserId: userId,
+        },
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "ELECTION_SETTINGS_UPDATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
+          metadata: { 
+            before: oldSettings,
+            after: data
+          },
+        }
+      })
+
+      return updatedSettings
     })
 
     revalidatePath(`/admin/election/${electionId}/settings`)
-    return { success: true, settings: updatedSettings }
+    return { success: true, settings: result }
   } catch (error: any) {
     console.error("[UPDATE_ELECTION_SETTINGS]", error)
     return { success: false, error: "Failed to update settings" }
@@ -56,19 +78,43 @@ export async function updateElectionCoreAction(
   }
 
   try {
-    const updatedElection = await db.election.update({
-      where: { 
-        id: electionId,
-        organizationId: orgId
-      },
-      data: {
-        ...data,
-        updatedByUserId: userId,
-      },
+    const result = await db.$transaction(async (tx) => {
+      const oldElection = await tx.election.findUnique({
+        where: { id: electionId, organizationId: orgId },
+        select: { name: true, startTime: true, endTime: true }
+      })
+
+      const updatedElection = await tx.election.update({
+        where: { 
+          id: electionId,
+          organizationId: orgId
+        },
+        data: {
+          ...data,
+          updatedByUserId: userId,
+        },
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "ELECTION_CORE_UPDATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
+          metadata: { 
+            before: oldElection,
+            after: data
+          },
+        }
+      })
+
+      return updatedElection
     })
 
     revalidatePath(`/admin/election/${electionId}/settings`)
-    return { success: true, election: updatedElection }
+    return { success: true, election: result }
   } catch (error: any) {
     console.error("[UPDATE_ELECTION_CORE]", error)
     return { success: false, error: "Failed to update election details" }
