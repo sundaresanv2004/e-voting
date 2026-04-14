@@ -268,6 +268,7 @@ export function TransferOwnershipDialog({ open, onOpenChange }: TransferOwnershi
             <Button
               onClick={handleTransfer}
               disabled={isPending}
+              className="gap-2"
             >
               {isPending ? (
                 <>

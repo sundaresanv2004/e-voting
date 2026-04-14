@@ -206,8 +206,8 @@ export function EditSystemDialog({ system, open, onOpenChange }: EditSystemDialo
             {isLocked ? "Close" : "Cancel"}
           </Button>
           {!isLocked && (
-            <Button onClick={handleSubmit} disabled={isPending || !hasChanges} className="relative group overflow-hidden font-bold">
-              {isPending && <Spinner className="mr-2 h-4 w-4" color="currentColor" />}
+            <Button onClick={handleSubmit} disabled={isPending || !hasChanges} className="relative group overflow-hidden font-bold gap-2">
+              {isPending && <Spinner className="h-4 w-4" color="currentColor" />}
               <span>{isPending ? "Saving..." : "Save Changes"}</span>
             </Button>
           )}

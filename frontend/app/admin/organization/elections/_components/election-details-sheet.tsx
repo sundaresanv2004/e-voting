@@ -10,6 +10,8 @@ import {
   Copy01Icon,
   Tick02Icon,
   Clock01Icon,
+  PlayIcon,
+  PauseIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
@@ -24,6 +26,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -57,6 +60,7 @@ interface ElectionDetailsSheetProps {
   onOpenChange: (open: boolean) => void
   onEdit: () => void
   onDelete: () => void
+  onToggleStatus: (id: string) => Promise<void>
 }
 
 function getStatusColor(status: string) {
@@ -111,7 +115,20 @@ export function ElectionDetailsSheet({
   onOpenChange,
   onEdit,
   onDelete,
+  onToggleStatus,
 }: ElectionDetailsSheetProps) {
+  const [isPending, setIsPending] = React.useState(false)
+
+  const handleToggle = async () => {
+    setIsPending(true)
+    try {
+      await onToggleStatus(election.id)
+      onOpenChange(false)
+    } finally {
+      setIsPending(false)
+    }
+  }
+
   const duration = formatDistanceStrict(
     new Date(election.startTime),
     new Date(election.endTime)
@@ -274,29 +291,55 @@ export function ElectionDetailsSheet({
             </div>
           </div>
 
-          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-row">
-            <Button
-              variant="outline"
-              className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
-              onClick={() => {
-                onOpenChange(false)
-                setTimeout(onDelete, 300)
-              }}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-              Delete
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
-              onClick={() => {
-                onOpenChange(false)
-                setTimeout(onEdit, 300)
-              }}
-            >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-              Edit Election
-            </Button>
+          <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-col">
+            {(election.status === "ACTIVE" || election.status === "PAUSED") && (
+              <Button
+                variant="outline"
+                className={election.status === "ACTIVE"
+                  ? "w-full bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:text-amber-700 transition-colors gap-2"
+                  : "w-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors gap-2"
+                }
+                disabled={isPending}
+                onClick={handleToggle}
+              >
+                {isPending ? (
+                  <Spinner className="h-4 w-4" color="currentColor" />
+                ) : (
+                  <HugeiconsIcon icon={election.status === "ACTIVE" ? PauseIcon : PlayIcon} className="h-4 w-4 shrink-0" color="currentColor" />
+                )}
+                {isPending 
+                  ? (election.status === "ACTIVE" ? "Pausing..." : "Resuming...") 
+                  : (election.status === "ACTIVE" ? "Pause Election" : "Resume Election")
+                }
+              </Button>
+            )}
+
+            <div className="flex flex-row gap-3 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
+                disabled={isPending}
+                onClick={() => {
+                  onOpenChange(false)
+                  setTimeout(onDelete, 300)
+                }}
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors gap-2"
+                disabled={isPending}
+                onClick={() => {
+                  onOpenChange(false)
+                  setTimeout(onEdit, 300)
+                }}
+              >
+                <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                Edit Election
+              </Button>
+            </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>

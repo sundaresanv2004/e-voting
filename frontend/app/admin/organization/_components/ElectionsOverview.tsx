@@ -42,73 +42,74 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
   const router = useRouter()
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border-border/50 shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-5">
         <div className="space-y-1">
-          <CardTitle>Elections</CardTitle>
-          <CardDescription>
-            {elections.length === 0 ? "No elections created yet" : `You have ${elections.length} election${elections.length > 1 ? "s" : ""}`}
+          <CardTitle className="text-base font-black tracking-tight flex items-center gap-2">
+            <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-amber-500" />
+            Election Campaigns
+          </CardTitle>
+          <CardDescription className="text-[10px] font-medium">
+            {elections.length === 0 ? "No active campaigns" : `Managing ${elections.length} profile${elections.length > 1 ? "s" : ""}`}
           </CardDescription>
         </div>
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 h-7 font-bold text-[10px] uppercase tracking-wider"
           onClick={() => router.push("/admin/organization/elections")}
         >
           View All
-          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5" />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {elections.length === 0 ? (
           <button
             onClick={() => router.push("/admin/organization/elections?new=true")}
-            className="w-full flex flex-col items-center justify-center py-10 rounded-lg border border-dashed hover:border-foreground/20 hover:bg-muted/50 transition-colors cursor-pointer group"
+            className="w-full flex flex-col items-center justify-center py-10 px-6 hover:bg-muted/30 transition-all cursor-pointer group"
           >
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm border border-border/50">
               <HugeiconsIcon icon={PlusSignIcon} className="h-5 w-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-              Create your first election
+            <p className="text-xs font-black text-foreground group-hover:text-primary transition-colors">
+              Initialize First Campaign
             </p>
           </button>
         ) : (
-          <div className="space-y-4">
+          <div className="divide-y divide-border/40">
             {elections.map((election) => {
               const style = statusStyles[election.status] || statusStyles.UPCOMING
               return (
                 <button
                   key={election.id}
                   onClick={() => router.push(`/admin/election/${election.id}`)}
-                  className="w-full flex items-center gap-4 p-3 -mx-1 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer text-left group"
+                  className="w-full flex items-center gap-4 p-4 hover:bg-muted/40 transition-all cursor-pointer text-left group relative"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-amber-600" strokeWidth={2} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary group-hover:bg-primary/10 group-hover:text-primary transition-colors ring-1 ring-border/50 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                    <HugeiconsIcon icon={MapsIcon} className="h-4 w-4" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium leading-none truncate">{election.name}</p>
-                      <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 ${style}`}>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <p className="text-sm font-black leading-none truncate tracking-tight text-foreground group-hover:text-primary transition-colors">{election.name}</p>
+                      <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0 border-none rounded-full ${style}`}>
                         {election.status}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground/80 font-bold uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5 bg-muted/80 px-1.5 py-0.5 rounded-full ring-1 ring-border/50">
+                        <HugeiconsIcon icon={Calendar02Icon} className="h-2.5 w-2.5 text-primary/70" />
                         {format(new Date(election.startTime), "MMM d")} – {format(new Date(election.endTime), "MMM d, yyyy")}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <HugeiconsIcon icon={ShieldKeyIcon} className="h-3 w-3" />
-                        {election._count.roles}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <HugeiconsIcon icon={UserGroupIcon} className="h-3 w-3" />
-                        {election._count.candidates}
+                      <span className="flex items-center gap-1.5">
+                        <HugeiconsIcon icon={ShieldKeyIcon} className="h-2.5 w-2.5" />
+                        {election._count.roles} Pos.
                       </span>
                     </div>
                   </div>
-                  <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  <div className="shrink-0 h-7 w-7 rounded-full border border-border/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all shadow-sm">
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
+                  </div>
                 </button>
               )
             })}

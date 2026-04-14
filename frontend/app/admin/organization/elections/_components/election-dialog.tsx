@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { createElection, updateElection } from "../_actions"
 import { DateTimePicker } from "./date-time-picker"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
+import { Spinner } from "@/components/ui/spinner"
 
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -209,7 +210,9 @@ export function ElectionDialog({
             <Button
               type="submit"
               disabled={isPending}
+              className="gap-2"
             >
+              {isPending && <Spinner className="h-4 w-4" />}
               {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Election")}
             </Button>
           </DialogFooter>

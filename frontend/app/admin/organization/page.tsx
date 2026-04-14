@@ -150,7 +150,7 @@ export default async function OrganizationDashboardPage() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 px-4 md:px-8 py-6 space-y-6 max-w-[1400px] mx-auto w-full">
+      <div className="flex-1 px-4 md:px-8 py-4 space-y-4 max-w-[1400px] mx-auto w-full">
         {/* Metric Cards */}
         <MetricCards
           totalElections={totalElections}
@@ -161,15 +161,15 @@ export default async function OrganizationDashboardPage() {
         />
 
         {/* Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left Column — 2/3 */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             <ElectionsOverview elections={electionsForOverview} />
             <ActivityTimeline activities={activities} />
           </div>
 
           {/* Right Column — 1/3 */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <HardwareHealth
               approved={approvedSystems}
               pending={pendingSystems}

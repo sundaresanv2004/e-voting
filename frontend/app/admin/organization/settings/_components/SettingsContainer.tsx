@@ -206,8 +206,8 @@ function IdentitySection({ initialData }: { initialData: ProfileData }) {
         </div>
         <div className="flex items-center justify-between px-6 py-3 bg-muted/40 border-t text-[13px] text-muted-foreground">
           <span>Please use 32 characters at maximum.</span>
-          <Button type="submit" disabled={isPending || !hasChanges} size="sm" className="relative group overflow-hidden">
-            {isPending && <Spinner className="mr-2 h-4 w-4" color="currentColor" />}
+          <Button type="submit" disabled={isPending || !hasChanges} size="sm" className="relative group overflow-hidden gap-2">
+            {isPending && <Spinner className="h-4 w-4" color="currentColor" />}
             <span>{isPending ? "Saving..." : "Save"}</span>
           </Button>
         </div>
@@ -229,7 +229,7 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
     setIsPending(true)
     try {
       const result = await updateOrganizationAction(initialData.name, initialData.type, newUrl)
-      if (result.success) toast.success("Logo updated automatically")
+      if (result.success) toast.success("Logo updated")
       else toast.error(result.error || "Failed to save logo")
     } catch {
       toast.error("Auto-save failed")
@@ -358,7 +358,7 @@ function RegistrationSection({ initialData }: { initialData: SystemSettingsData 
         allowSystemConnection: checked,
         maxSystems: initialData.maxSystems
       })
-      if (result.success) toast.success("System connection policy updated automatically")
+      if (result.success) toast.success("System connection policy updated")
       else toast.error(result.error)
     } catch {
       toast.error("Failed to update policy")
@@ -403,7 +403,7 @@ function LimitsSection({ initialData }: { initialData: SystemSettingsData }) {
         allowSystemConnection: initialData.allowSystemConnection,
         maxSystems: newValue
       })
-      if (result.success) toast.success("System limit updated automatically")
+      if (result.success) toast.success("System limit updated")
       else toast.error(result.error)
     } catch {
       toast.error("Failed to update limit")

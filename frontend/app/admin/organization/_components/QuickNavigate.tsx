@@ -63,24 +63,24 @@ export function QuickNavigate({ electionCount, memberCount, systemCount }: Quick
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Quick Links</CardTitle>
-        <CardDescription>Navigate to a section</CardDescription>
+      <CardHeader className="border-b">
+        <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground/80">Navigation</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3">
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 gap-4">
           {navItems.map((item) => (
             <button
               key={item.key}
               onClick={() => router.push(item.href)}
-              className="flex flex-col items-start gap-2.5 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer text-left group"
+              className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border border-border/40 hover:border-primary/50 hover:bg-primary/[0.02] transition-all cursor-pointer text-center group relative overflow-hidden"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                <HugeiconsIcon icon={item.icon} className={`h-4 w-4 ${item.iconColor}`} strokeWidth={2} />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border/50 transition-transform group-hover:scale-110 duration-300 relative z-10`}>
+                <HugeiconsIcon icon={item.icon} className={`h-5 w-5 ${item.iconColor}`} strokeWidth={2} />
               </div>
-              <div>
-                <p className="text-sm font-medium leading-none">{item.label}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">{getMetric(item.key)}</p>
+              <div className="relative z-10">
+                <p className="text-xs font-black tracking-tight leading-none group-hover:text-primary transition-colors">{item.label}</p>
+                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase tracking-tight">{getMetric(item.key)}</p>
               </div>
             </button>
           ))}

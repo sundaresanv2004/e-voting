@@ -26,22 +26,25 @@ export function HardwareHealth({ approved, pending, rejected, revoked }: Hardwar
   ]
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="space-y-1">
-          <CardTitle className="text-base">Systems</CardTitle>
-          <CardDescription>
-            {total} registered {total === 1 ? "device" : "devices"}
+    <Card className="border-border/50 shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-4">
+        <div className="space-y-0.5">
+          <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2 uppercase">
+            <HugeiconsIcon icon={LaptopIcon} className="h-4 w-4 text-emerald-500" />
+            Hardware Fleet
+          </CardTitle>
+          <CardDescription className="text-[10px] font-bold">
+            {total} Synchronized {total === 1 ? "Device" : "Devices"}
           </CardDescription>
         </div>
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          className="gap-1.5"
+          className="h-7 text-[10px] uppercase font-black tracking-wider px-2"
           onClick={() => router.push("/admin/organization/systems")}
         >
-          Manage
-          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5" />
+          Explore
+          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import { type Election } from "./election-details-sheet"
 
 export function getStatusColor(status: string) {
@@ -56,7 +57,8 @@ export const columns = (
   onView: (election: Election) => void,
   onEdit: (election: Election) => void,
   onDelete: (election: Election) => void,
-  onToggleStatus: (id: string) => void
+  onToggleStatus: (id: string) => void,
+  isUpdating: string | null
 ): ColumnDef<Election>[] => [
     {
       accessorKey: "name",
@@ -142,9 +144,13 @@ export const columns = (
           <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={isUpdating === election.id}>
                   <span className="sr-only">Open menu</span>
-                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
+                  {isUpdating === election.id ? (
+                    <Spinner className="h-4 w-4" color="currentColor" />
+                  ) : (
+                    <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -161,19 +167,28 @@ export const columns = (
                   Edit Election
                 </DropdownMenuItem>
                 {(election.status === "ACTIVE" || election.status === "PAUSED") && (
-                  <DropdownMenuItem onSelect={() => onToggleStatus(election.id)}>
-                    {election.status === "ACTIVE" ? (
-                      <>
-                        <HugeiconsIcon icon={PauseIcon} className="h-4 w-4 text-amber-500" />
-                        Pause Election
-                      </>
-                    ) : (
-                      <>
-                        <HugeiconsIcon icon={PlayIcon} className="h-4 w-4 text-green-500" />
-                        Resume Election
-                      </>
-                    )}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => onToggleStatus(election.id)}
+                      className={election.status === "ACTIVE"
+                        ? "text-amber-600 focus:text-amber-700 focus:bg-amber-500/10 gap-2 cursor-pointer"
+                        : "text-emerald-600 focus:text-emerald-700 focus:bg-emerald-500/10 gap-2 cursor-pointer"
+                      }
+                    >
+                      {election.status === "ACTIVE" ? (
+                        <>
+                          <HugeiconsIcon icon={PauseIcon} className="h-4 w-4" />
+                          Pause Election
+                        </>
+                      ) : (
+                        <>
+                          <HugeiconsIcon icon={PlayIcon} className="h-4 w-4" />
+                          Resume Election
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

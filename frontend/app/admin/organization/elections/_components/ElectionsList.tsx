@@ -22,7 +22,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
 
   const [electionToDelete, setElectionToDelete] = React.useState<Election | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
-  const [isPending, setIsPending] = React.useState(false)
+  const [isUpdating, setIsUpdating] = React.useState<string | null>(null)
 
   const handleView = (election: Election) => {
     setSelectedElection(election)
@@ -35,7 +35,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
   }
 
   const handleToggleStatus = async (electionId: string) => {
-    setIsPending(true)
+    setIsUpdating(electionId)
     try {
       const res = await toggleElectionStatus(electionId)
       if (res.success) {
@@ -46,7 +46,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
     } catch {
       toast.error("An unexpected error occurred")
     } finally {
-      setIsPending(false)
+      setIsUpdating(null)
     }
   }
 
@@ -62,6 +62,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
             setElectionToDelete(selectedElection)
             setIsDeleteDialogOpen(true)
           }}
+          onToggleStatus={handleToggleStatus}
         />
       )}
 
@@ -90,7 +91,8 @@ export function ElectionsList({ elections }: ElectionsListProps) {
             setElectionToDelete(election)
             setIsDeleteDialogOpen(true)
           },
-          handleToggleStatus
+          handleToggleStatus,
+          isUpdating
         )} 
         data={elections} 
         searchPlaceholder="Search elections by name or code..."

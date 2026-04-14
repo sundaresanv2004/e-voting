@@ -24,22 +24,25 @@ export function TeamSnapshot({ adminCount, staffCount, viewerCount, totalMembers
   ]
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="space-y-1">
-          <CardTitle className="text-base">Team</CardTitle>
-          <CardDescription>
-            {totalMembers} {totalMembers === 1 ? "member" : "members"}
+    <Card className="border-border/50 shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-4">
+        <div className="space-y-0.5">
+          <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2 uppercase">
+            <HugeiconsIcon icon={UserGroupIcon} className="h-4 w-4 text-sky-500" />
+            Core Team
+          </CardTitle>
+          <CardDescription className="text-[10px] font-bold">
+            {totalMembers} Active Pulse {totalMembers === 1 ? "Member" : "Members"}
           </CardDescription>
         </div>
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          className="gap-1.5"
+          className="h-7 text-[10px] uppercase font-black tracking-wider px-2"
           onClick={() => router.push("/admin/organization/members")}
         >
           Manage
-          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3.5 w-3.5" />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
       <CardContent>

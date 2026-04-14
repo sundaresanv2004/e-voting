@@ -22,6 +22,7 @@ import { SystemStatus } from "@prisma/client"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -203,7 +204,11 @@ export const columns = (
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" disabled={isUpdating === system.id}>
                   <span className="sr-only">Open menu</span>
-                  <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
+                  {isUpdating === system.id ? (
+                    <Spinner className="h-4 w-4" color="currentColor" />
+                  ) : (
+                    <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" color="currentColor" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[180px] rounded-xl shadow-xl">

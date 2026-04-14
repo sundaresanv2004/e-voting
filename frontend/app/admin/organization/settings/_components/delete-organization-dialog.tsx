@@ -116,10 +116,11 @@ export function DeleteOrganizationDialog({
               handleDelete()
             }}
             variant="destructive"
+            className="gap-2"
           >
             {isPending ? (
               <>
-                <Spinner className="mr-2" />
+                <Spinner />
                 Deleting...
               </>
             ) : (

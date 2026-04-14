@@ -32,6 +32,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { updateSystemStatusAction } from "../_actions"
@@ -370,32 +371,44 @@ export function SystemDetailsSheet({
                   <>
                     <Button
                       variant="outline"
-                      className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                      className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
                       disabled={isPending}
                       onClick={() => handleStatusUpdate(SystemStatus.REJECTED)}
                     >
-                      <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                      Reject
+                      {isPending ? (
+                        <Spinner className="h-4 w-4" color="currentColor" />
+                      ) : (
+                        <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                      )}
+                      {isPending ? "Rejecting..." : "Reject"}
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors"
+                      className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors gap-2"
                       disabled={isPending}
                       onClick={() => handleStatusUpdate(SystemStatus.APPROVED)}
                     >
-                      <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                      Approve
+                      {isPending ? (
+                        <Spinner className="h-4 w-4" color="currentColor" />
+                      ) : (
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                      )}
+                      {isPending ? "Approving..." : "Approve"}
                     </Button>
                   </>
                 ) : system.status === SystemStatus.APPROVED && (
                   <Button
                     variant="outline"
-                    className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                    className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
                     disabled={isPending}
                     onClick={() => handleStatusUpdate(SystemStatus.REVOKED)}
                   >
-                    <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                    Revoke Authorization
+                    {isPending ? (
+                      <Spinner className="h-4 w-4" color="currentColor" />
+                    ) : (
+                      <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                    )}
+                    {isPending ? "Revoking..." : "Revoke Authorization"}
                   </Button>
                 )}
               </div>

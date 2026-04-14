@@ -64,10 +64,10 @@ export function DeleteMemberDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isPending}
-            className="bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors shadow-none"
+            className="bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors shadow-none gap-2"
           >
-            {isPending && <Spinner className="mr-2" color="currentColor" />}
-            {isPending ? "Removing..." : "Remove Member"}
+            {isPending && <Spinner color="currentColor" />}
+            {isPending ? "Deleting..." : "Delete Member"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -33,7 +33,7 @@ const SystemsHero: React.FC<SystemsHeroProps> = ({ title = "Authorized Systems",
                         <h1 className="text-3xl font-black tracking-tight text-foreground md:text-3xl">
                             {title}
                         </h1>
-                        <div className="flex items-center text-sm text-muted-foreground/80 font-semibold tracking-wide lowercase">
+                        <div className="flex items-center text-sm text-muted-foreground/80 font-semibold tracking-wide">
                             <HugeiconsIcon icon={Calendar01Icon} className="mr-1.5 h-4 w-4 text-primary" color="currentColor" />
                             <p>{currentDate}</p>
                         </div>

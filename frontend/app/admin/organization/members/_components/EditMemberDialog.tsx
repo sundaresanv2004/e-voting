@@ -33,6 +33,7 @@ import {
 import { Field, FieldLabel, FieldDescription, FieldError, FieldContent, FieldTitle } from "@/components/ui/field"
 import { updateMemberAction, getElectionsForAssignment } from "../_actions"
 import type { Member } from "./columns"
+import { Spinner } from "@/components/ui/spinner"
 
 interface EditMemberDialogProps {
   member: Member | null
@@ -210,7 +211,9 @@ export function EditMemberDialog({ member, open, onOpenChange }: EditMemberDialo
           <Button
             onClick={handleSubmit}
             disabled={isPending || (!hasAllAccess && selectedElectionIds.length === 0 && role !== UserRole.ORG_ADMIN)}
+            className="gap-2"
           >
+            {isPending && <Spinner className="h-4 w-4" />}
             {isPending ? "Updating Access..." : "Update Permissions"}
           </Button>
         </DialogFooter>
