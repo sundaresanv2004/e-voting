@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
 
             if (result.success) {
                 setIsSuccess(true)
-                toast.success("Verification link sent successfully")
+                toast.success("Reset link sent successfully")
             } else {
                 setError(result.error || "Internal Server Error")
             }
@@ -111,9 +111,13 @@ export default function ForgotPasswordPage() {
                             <FieldError errors={[{ message: errors.email?.message }]} />
                         </Field>
 
-                        <Button type="submit" className="w-full" disabled={isPending}>
-                            {isPending && <Spinner className="h-4 w-4" />}
-                            {isPending ? "Sending..." : "Send Reset Link"}
+                        <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                            {isPending ? (
+                                <>
+                                    <Spinner />
+                                    Sending...
+                                </>
+                            ) : "Send Reset Link"}
                         </Button>
                     </form>
                 )}

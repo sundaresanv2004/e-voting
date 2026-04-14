@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { generateVerificationToken } from "@/lib/tokens"
 import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/mail"
 import { RegisterSchema } from "@/lib/schemas/auth"
+import { AuditStatus } from "@prisma/client"
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +40,17 @@ export async function POST(req: Request) {
     const verificationToken = await generateVerificationToken(email)
     await sendVerificationEmail(verificationToken.identifier, verificationToken.token)
     await sendWelcomeEmail(email, name || "User")
+
+    // Log the account creation
+    await db.userAuditLog.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        action: "ACCOUNT_CREATE",
+        status: AuditStatus.SUCCESS,
+        metadata: { method: "credentials_api" }
+      }
+    })
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name } })
   } catch (error: any) {

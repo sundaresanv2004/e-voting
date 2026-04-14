@@ -35,15 +35,26 @@ export default auth((req: any) => {
       }
 
       // If verified, they shouldn't be on any auth page (login, signup, verify-email)
-      const redirectUrl = hasOrganization ? '/admin/organization' : '/setup/organization'
-      return Response.redirect(new URL(redirectUrl, nextUrl))
+      const redirectPath = hasOrganization ? '/admin/organization' : '/setup/organization'
+      const redirectUrl = new URL(redirectPath, nextUrl)
+      
+      // Preserve search params
+      nextUrl.searchParams.forEach((value, key) => {
+        redirectUrl.searchParams.set(key, value)
+      })
+      
+      return Response.redirect(redirectUrl)
     }
     return undefined // Guest can access auth routes
   }
 
   // 3. Protected route handling
   if (!isLoggedIn) {
-    return Response.redirect(new URL('/auth/login', nextUrl))
+    const loginUrl = new URL('/auth/login', nextUrl)
+    if (nextUrl.pathname !== '/') {
+        loginUrl.searchParams.set('next', nextUrl.pathname)
+    }
+    return Response.redirect(loginUrl)
   }
 
   // 4. Authenticated-but-needs-action handling
@@ -60,13 +71,27 @@ export default auth((req: any) => {
   // Next Priority: Organization Setup
   if (!hasOrganization) {
     if (isSetupRoute || isUserRoute) return undefined // Let them setup or manage their profile
-    return Response.redirect(new URL('/setup/organization', nextUrl))
+    const setupUrl = new URL('/setup/organization', nextUrl)
+    
+    // Preserve search params (e.g., logged_in=true)
+    nextUrl.searchParams.forEach((value, key) => {
+        setupUrl.searchParams.set(key, value)
+    })
+    
+    return Response.redirect(setupUrl)
   }
 
   // Final Priority: App Access
   // If they have an org but are still on a setup page, nudge them into the app
   if (hasOrganization && isSetupRoute) {
-    return Response.redirect(new URL('/admin/organization', nextUrl))
+    const adminUrl = new URL('/admin/organization', nextUrl)
+    
+    // Preserve search params (e.g., logged_in=true or org_created=true)
+    nextUrl.searchParams.forEach((value, key) => {
+        adminUrl.searchParams.set(key, value)
+    })
+    
+    return Response.redirect(adminUrl)
   }
 
   return undefined

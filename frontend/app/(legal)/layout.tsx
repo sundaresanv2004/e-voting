@@ -114,6 +114,10 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="min-h-screen relative">
+            <div className="absolute lg:fixed top-4 left-4 z-50">
+                <BackButton />
+            </div>
+
             <div className="absolute lg:fixed top-4 right-4 z-50">
                 <SetTheme />
             </div>
@@ -137,9 +141,6 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-8">
-                <div className="mb-6">
-                    <BackButton />
-                </div>
                 <div className="flex flex-col gap-2">
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
                         {title}

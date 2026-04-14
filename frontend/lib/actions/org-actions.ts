@@ -2,8 +2,10 @@
 
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { OrganizationType, UserRole } from "@prisma/client"
+import { OrganizationType, UserRole, AuditStatus, AuditEntityType } from "@prisma/client"
 import { revalidatePath } from "next/cache"
+import { headers } from "next/headers"
+import { sendOrgCreatedEmail } from "@/lib/mail"
 
 import { OrganizationFormValues } from "@/lib/schemas/org"
 
@@ -74,18 +76,36 @@ export async function createOrganization(values: OrganizationFormValues) {
         },
       })
 
-      await tx.auditLog.create({
+      const headerList = await headers()
+      const ip = headerList.get("x-forwarded-for") || "unknown"
+      const userAgent = headerList.get("user-agent") || "unknown"
+
+      await tx.adminAuditLog.create({
         data: {
           action: "ORGANIZATION_CREATED",
-          entityType: "Organization",
+          entityType: AuditEntityType.ORGANIZATION,
           entityId: organization.id,
-          userId: session.user.id!,
+          adminId: session.user.id!,
+          organizationId: organization.id,
+          description: `Created organization: ${name}`,
+          status: AuditStatus.SUCCESS,
+          ipAddress: ip,
+          userAgent: userAgent,
           metadata: { name, type, code },
         }
       })
 
       return organization
     })
+
+    if (session.user.email) {
+        await sendOrgCreatedEmail(
+            session.user.email,
+            session.user.name || "User",
+            name,
+            code
+        )
+    }
 
     revalidatePath("/")
     revalidatePath("/admin/organization")

@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { SystemStatus, UserRole } from "@prisma/client"
+import { SystemStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { addDays } from "date-fns"
 
@@ -57,12 +57,14 @@ export async function updateSystemStatusAction(
         data: updateData
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "SYSTEM_UPDATED",
-          entityType: "AuthorizedSystem",
+          entityType: AuditEntityType.SYSTEM,
           entityId: systemId,
-          userId: userId!,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: {
             before: oldSystem.status,
             after: status,
@@ -164,12 +166,14 @@ export async function editSystemAction(
         data: updateData,
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "SYSTEM_EDITED",
-          entityType: "AuthorizedSystem",
+          entityType: AuditEntityType.SYSTEM,
           entityId: systemId,
-          userId: userId!,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: {
             beforeName: oldSystem.name,
             afterName: name.trim() || null,
@@ -208,12 +212,14 @@ export async function deleteSystemAction(systemId: string) {
 
       if (!system) throw new Error("System not found")
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "SYSTEM_DELETED",
-          entityType: "AuthorizedSystem",
+          entityType: AuditEntityType.SYSTEM,
           entityId: systemId,
-          userId: userId!,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { name: system.name, status: system.status },
         },
       })

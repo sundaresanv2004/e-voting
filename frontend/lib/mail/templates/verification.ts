@@ -13,5 +13,5 @@ export const VerificationTemplate = (token: string) => {
       If you didn't request this email, there's nothing to worry about — you can safely ignore it. The code will expire in 1 hour.
     </div>
   `
-  return renderEmailLayout(content, "E-Voting System")
+  return renderEmailLayout(content, "E-Voting")
 }

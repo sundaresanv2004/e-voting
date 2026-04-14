@@ -5,6 +5,8 @@ import { OrgInvitationTemplate } from "./templates/org-invitation"
 import { ElectionAssignmentTemplate } from "./templates/election-assignment"
 import { PasswordResetTemplate } from "./templates/password-reset"
 import { PasswordResetConfirmationTemplate } from "./templates/password-reset-confirmation"
+import { LoginNotificationTemplate } from "./templates/login-notification"
+import { OrganizationCreatedTemplate } from "./templates/org-created"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -70,7 +72,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     await resend.emails.send({
       from: `E-Voting <${process.env.EMAIL_FROM || "verify@yourdomain.com"}>`,
       to: email,
-      subject: "Verify your email - E-Voting System",
+      subject: "Verify your email - E-Voting",
       html
     })
 
@@ -93,7 +95,7 @@ export const sendWelcomeEmail = async (email: string, name: string) => {
     await resend.emails.send({
       from: `E-Voting <${process.env.EMAIL_FROM || "welcome@yourdomain.com"}>`,
       to: email,
-      subject: "Welcome to E-Voting System!",
+      subject: "Welcome to E-Voting!",
       html
     })
 
@@ -146,6 +148,52 @@ export const sendElectionAssignmentEmail = async (email: string, name: string, o
     return { success: true }
   } catch (error) {
     console.error("Failed to send election assignment email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendLoginNotificationEmail = async (email: string, name: string, ip: string, userAgent: string) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Login notification for ${email} from ${ip}`)
+      return { success: true, dev: true }
+    }
+
+    const html = LoginNotificationTemplate(name, ip, userAgent)
+
+    await resend.emails.send({
+      from: `E-Voting Security <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      to: email,
+      subject: "Security Alert: New Login Detected",
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send login notification email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendOrgCreatedEmail = async (email: string, name: string, orgName: string, orgCode: string) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] Organization created email for ${email}: ${orgName} (${orgCode})`)
+      return { success: true, dev: true }
+    }
+
+    const html = OrganizationCreatedTemplate(name, orgName, orgCode)
+
+    await resend.emails.send({
+      from: `E-Voting <${process.env.EMAIL_FROM || "onboarding@yourdomain.com"}>`,
+      to: email,
+      subject: `Success: ${orgName} has been created - E-Voting`,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send organization created email:", error)
     return { success: false, error }
   }
 }

@@ -7,12 +7,17 @@ import { Layout01Icon, Logout01Icon, UserIcon } from '@hugeicons/core-free-icons
 
 import { auth, signOut } from "@/auth";
 import { RootNavActions } from "./_components/nav-actions";
+import { SuccessToastListener } from "@/components/auth/success-toast-listener";
+import { Suspense } from "react";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
     const session = await auth();
 
     return (
         <div className="relative min-h-screen">
+            <Suspense fallback={null}>
+                <SuccessToastListener />
+            </Suspense>
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                 {session?.user ? (
                     <>

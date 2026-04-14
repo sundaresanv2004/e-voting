@@ -3,7 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { UserRole, OrganizationType } from "@prisma/client"
+import { UserRole, OrganizationType, AuditEntityType, AuditStatus } from "@prisma/client"
 
 export async function getOrganizationData() {
   const session = await auth()
@@ -66,12 +66,14 @@ export async function updateOrganizationAction(
       })
 
       // Log Update
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ORGANIZATION_UPDATED",
-          entityType: "Organization",
+          entityType: AuditEntityType.ORGANIZATION,
           entityId: orgId,
-          userId: adminId!,
+          adminId: adminId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldOrg, 
             after: { name, type, logo, isActive: organization.isActive } 
@@ -81,12 +83,14 @@ export async function updateOrganizationAction(
 
       // Log Deactivation if isActive changed from true to false
       if (oldOrg?.isActive && !organization.isActive) {
-        await tx.auditLog.create({
+        await tx.adminAuditLog.create({
           data: {
             action: "ORGANIZATION_DEACTIVATED",
-            entityType: "Organization",
+            entityType: AuditEntityType.ORGANIZATION,
             entityId: orgId,
-            userId: adminId!,
+            adminId: adminId!,
+            organizationId: orgId!,
+            status: AuditStatus.SUCCESS,
             metadata: { name: organization.name, code: organization.code }
           }
         })
@@ -131,12 +135,14 @@ export async function updateOrganizationSettingsAction(data: {
         }
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ORG_SETTINGS_UPDATED",
-          entityType: "OrganizationSettings",
+          entityType: AuditEntityType.ORGANIZATION,
           entityId: orgId,
-          userId: adminId!,
+          adminId: adminId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldSettings, 
             after: { allowSystemConnection: data.allowSystemConnection, maxSystems: data.maxSystems } 
@@ -183,12 +189,14 @@ export async function deleteOrganizationAction() {
         where: { id: orgId }
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ORGANIZATION_DELETED",
-          entityType: "Organization",
+          entityType: AuditEntityType.ORGANIZATION,
           entityId: orgId,
-          userId: session?.user?.id!,
+          adminId: session?.user?.id!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { name: organization.name, code: organization.code }
         }
       })

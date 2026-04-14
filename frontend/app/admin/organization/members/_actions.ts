@@ -3,7 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { sendOrgInvitationEmail, sendElectionAssignmentEmail } from "@/lib/mail"
 
 export async function getMembers() {
@@ -181,12 +181,14 @@ export async function addMemberAction(
           })
 
           // AuditLog: Specific Election Access
-          await tx.auditLog.create({
+          await tx.adminAuditLog.create({
             data: {
               action: "ACCESS_GRANTED",
-              entityType: "UserElectionAccess",
+              entityType: AuditEntityType.USER,
               entityId: userId,
-              userId: adminId!,
+              adminId: adminId!,
+              organizationId: orgId!,
+              status: AuditStatus.SUCCESS,
               metadata: { electionIds, reason: "Initial member add" }
             }
           })
@@ -194,12 +196,14 @@ export async function addMemberAction(
       }
 
       // 3. AuditLog: Member Added
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "MEMBER_ADDED",
-          entityType: "User",
+          entityType: AuditEntityType.USER,
           entityId: userId,
-          userId: adminId!,
+          adminId: adminId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { role, hasAllElectionsAccess: hasAllAccess }
         }
       })
@@ -305,12 +309,14 @@ export async function updateMemberAction(
       }
 
       // 3. Perform Member Update Log
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "MEMBER_UPDATED",
-          entityType: "User",
+          entityType: AuditEntityType.USER,
           entityId: userId,
-          userId: adminId!,
+          adminId: adminId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { 
             before: { role: oldUser?.role, hasAllAccess: oldUser?.hasAllElectionsAccess },
             after: { role, hasAllAccess }
@@ -323,24 +329,28 @@ export async function updateMemberAction(
       const removedIds = oldIds.filter(id => !electionIds.includes(id))
 
       if (addedIds.length > 0) {
-        await tx.auditLog.create({
+        await tx.adminAuditLog.create({
           data: {
             action: "ACCESS_GRANTED",
-            entityType: "UserElectionAccess",
+            entityType: AuditEntityType.USER,
             entityId: userId,
-            userId: adminId!,
+            adminId: adminId!,
+            organizationId: orgId!,
+            status: AuditStatus.SUCCESS,
             metadata: { electionIds: addedIds }
           }
         })
       }
 
       if (removedIds.length > 0) {
-        await tx.auditLog.create({
+        await tx.adminAuditLog.create({
           data: {
             action: "ACCESS_REVOKED",
-            entityType: "UserElectionAccess",
+            entityType: AuditEntityType.USER,
             entityId: userId,
-            userId: adminId!,
+            adminId: adminId!,
+            organizationId: orgId!,
+            status: AuditStatus.SUCCESS,
             metadata: { electionIds: removedIds }
           }
         })
@@ -407,23 +417,27 @@ export async function removeMemberAction(userId: string) {
       })
 
       // AuditLog: Removal
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "MEMBER_REMOVED",
-          entityType: "User",
+          entityType: AuditEntityType.USER,
           entityId: userId,
-          userId: session?.user?.id,
+          adminId: session?.user?.id!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { name: user?.name, email: user?.email }
         }
       })
 
       if (electionIds.length > 0) {
-        await tx.auditLog.create({
+        await tx.adminAuditLog.create({
           data: {
             action: "ACCESS_REVOKED",
-            entityType: "UserElectionAccess",
+            entityType: AuditEntityType.USER,
             entityId: userId,
-            userId: session?.user?.id,
+            adminId: session?.user?.id!,
+            organizationId: orgId!,
+            status: AuditStatus.SUCCESS,
             metadata: { electionIds, reason: "Member removed from organization" }
           }
         })

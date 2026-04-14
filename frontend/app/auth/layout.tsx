@@ -3,11 +3,16 @@ import Link from "next/link"
 import SetTheme from "@/components/shared/setTheme"
 import {BackButton} from "@/components/shared/back-button"
 import {BackgroundRippleEffect} from "@/components/ui/background-ripple-effect"
+import { SuccessToastListener } from "@/components/auth/success-toast-listener"
+import { Suspense } from "react"
 
 export default function AuthLayout({children}: { children: ReactNode }) {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
+            <Suspense fallback={null}>
+                <SuccessToastListener />
+            </Suspense>
             <div className="absolute top-4 left-4 z-50">
                 <BackButton/>
             </div>

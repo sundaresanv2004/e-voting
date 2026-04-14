@@ -11,6 +11,8 @@ import { DeleteAccount } from "./_components/delete-account"
 import { UserIcon, Settings01Icon, Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "@/lib/utils"
+import { SettingsToastListener } from "./_components/settings-toast-listener"
+import { Suspense } from "react"
 
 const TABS = [
   { id: "profile", label: "Profile", icon: UserIcon, color: "text-blue-600" },
@@ -37,6 +39,9 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto py-8 px-4 md:px-8">
+      <Suspense fallback={null}>
+        <SettingsToastListener />
+      </Suspense>
       <div className="mb-8">
         <UserHero
           title="Account Settings"

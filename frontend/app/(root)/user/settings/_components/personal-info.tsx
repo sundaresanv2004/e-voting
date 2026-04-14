@@ -29,10 +29,16 @@ import {
   Mail01Icon,
   Image01Icon
 } from "@hugeicons/core-free-icons"
+import { Spinner } from "@/components/ui/spinner"
 
 type ProfileFormValues = z.infer<typeof ProfileSchema>
 
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+
 export function PersonalInfo() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { data: session, update: updateSession } = useSession()
   const [isUpdatingName, setIsUpdatingName] = React.useState(false)
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = React.useState(false)
@@ -69,6 +75,12 @@ export function PersonalInfo() {
     .toUpperCase()
     .slice(0, 2) || "U"
 
+  const triggerToast = (flag: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set(flag, "true")
+    router.replace(`${pathname}?${params.toString()}`)
+  }
+
   const onSubmit = async (values: ProfileFormValues) => {
     setIsUpdatingName(true)
     try {
@@ -79,7 +91,7 @@ export function PersonalInfo() {
       }
       await updateSession()
       reset({ name: values.name })
-      toast.success(response.success || "Profile updated!")
+      triggerToast("profile_updated")
     } catch (error) {
       console.error(error)
       toast.error("An unexpected error occurred")
@@ -92,6 +104,7 @@ export function PersonalInfo() {
     try {
       await updateUserImageAction(imageUrl)
       await updateSession()
+      triggerToast("avatar_updated")
     } catch (error) {
       console.error(error)
       toast.error("Failed to update profile picture")
@@ -102,7 +115,7 @@ export function PersonalInfo() {
     try {
       await updateUserImageAction(null)
       await updateSession()
-      toast.success("Profile picture removed")
+      triggerToast("avatar_removed")
     } catch (error) {
       console.error(error)
       toast.error("Failed to remove profile picture")
@@ -149,11 +162,16 @@ export function PersonalInfo() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
                     onClick={handleRemoveAvatar}
                     disabled={isUpdatingName}
                   >
-                    Remove
+                    {isUpdatingName ? (
+                      <>
+                        <Spinner />
+                        Removing...
+                      </>
+                    ) : "Remove"}
                   </Button>
                 )}
               </div>
@@ -188,9 +206,15 @@ export function PersonalInfo() {
         <CardFooter className="bg-muted/30 border-t py-4 px-6 flex justify-end">
           <Button
             type="submit"
+            className="gap-2"
             disabled={isUpdatingName || !isDirty}
           >
-            {isUpdatingName ? "Saving..." : "Save Changes"}
+            {isUpdatingName ? (
+              <>
+                <Spinner />
+                Saving...
+              </>
+            ) : "Save Changes"}
           </Button>
         </CardFooter>
       </form>

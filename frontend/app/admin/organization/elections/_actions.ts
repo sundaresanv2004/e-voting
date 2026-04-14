@@ -3,7 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { ElectionStatus, UserRole } from "@prisma/client"
+import { ElectionStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 
@@ -80,12 +80,14 @@ export async function createElection(formData: {
       })
 
       // 4. Log the creation
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ELECTION_CREATED",
-          entityType: "Election",
+          entityType: AuditEntityType.ELECTION,
           entityId: election.id,
-          userId: userId,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { name: election.name, startTime: election.startTime, endTime: election.endTime, code: election.code },
         }
       })
@@ -154,12 +156,14 @@ export async function updateElection(
         },
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ELECTION_UPDATED",
-          entityType: "Election",
+          entityType: AuditEntityType.ELECTION,
           entityId: election.id,
-          userId: userId,
+          adminId: userId!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { old: oldElection, new: { name: election.name, startTime: election.startTime, endTime: election.endTime, status: election.status } },
         }
       })
@@ -200,12 +204,14 @@ export async function deleteElection(id: string) {
         },
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "ELECTION_DELETED",
-          entityType: "Election",
+          entityType: AuditEntityType.ELECTION,
           entityId: id,
-          userId: session?.user?.id,
+          adminId: session?.user?.id!,
+          organizationId: orgId!,
+          status: AuditStatus.SUCCESS,
           metadata: { name: election.name, code: election.code },
         }
       })

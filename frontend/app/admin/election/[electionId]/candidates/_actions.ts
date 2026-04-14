@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { CandidateSchema, type CandidateFormValues } from "@/lib/schemas/candidate"
 
 export async function createCandidate(electionId: string, values: CandidateFormValues) {
@@ -51,13 +51,15 @@ export async function createCandidate(electionId: string, values: CandidateFormV
         }
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "CANDIDATE_ADDED",
-          entityType: "Candidate",
-          entityId: candidate.id,
-          userId: session.user.id!,
-          metadata: { name, electionRoleId },
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: session.user.id!,
+          organizationId: session.user.organizationId!,
+          status: AuditStatus.SUCCESS,
+          metadata: { name, electionRoleId, candidateId: candidate.id },
         }
       })
 
@@ -125,13 +127,16 @@ export async function updateCandidate(candidateId: string, electionId: string, v
         }
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "CANDIDATE_UPDATED",
-          entityType: "Candidate",
-          entityId: candidateId,
-          userId: session.user.id!,
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: session.user.id!,
+          organizationId: session.user.organizationId!,
+          status: AuditStatus.SUCCESS,
           metadata: { 
+            candidateId,
             before: oldCandidate, 
             after: { name, electionRoleId, profileImage, symbolImage } 
           }
@@ -182,13 +187,15 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
         where: { id: candidateId }
       })
 
-      await tx.auditLog.create({
+      await tx.adminAuditLog.create({
         data: {
           action: "CANDIDATE_REMOVED",
-          entityType: "Candidate",
-          entityId: candidateId,
-          userId: session.user.id!,
-          metadata: { name: candidateData?.name, electionRoleId: candidateData?.electionRoleId },
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: session.user.id!,
+          organizationId: session.user.organizationId!,
+          status: AuditStatus.SUCCESS,
+          metadata: { candidateId, name: candidateData?.name, electionRoleId: candidateData?.electionRoleId },
         }
       })
     })

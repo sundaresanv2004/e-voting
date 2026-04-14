@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import React, { useState, useTransition, Suspense } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
@@ -57,9 +59,9 @@ function LoginForm() {
                 }
 
                 if (nextParam) {
-                    router.push(nextParam)
+                    router.push(`${nextParam}${nextParam.includes('?') ? '&' : '?'}logged_in=true`)
                 } else {
-                    router.push('/admin/organization')
+                    router.push('/admin/organization?logged_in=true')
                 }
                 router.refresh()
             } catch (err) {
@@ -140,9 +142,13 @@ function LoginForm() {
 
                     {nextParam && <input type="hidden" name="redirectTo" value={nextParam} />}
 
-                    <Button type="submit" className="w-full" disabled={isPending}>
-                        {isPending && <Spinner className="h-4 w-4" />}
-                        {isPending ? "Signing in..." : "Sign In"}
+                    <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                        {isPending ? (
+                            <>
+                                <Spinner />
+                                Signing in...
+                            </>
+                        ) : "Sign In"}
                     </Button>
                 </form>
             </CardContent>

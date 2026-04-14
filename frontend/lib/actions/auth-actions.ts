@@ -1,5 +1,7 @@
 "use server"
 
+import { AuditStatus } from "@prisma/client"
+
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { generateVerificationToken, generatePasswordResetToken } from "@/lib/tokens"
@@ -7,6 +9,7 @@ import { sendVerificationEmail, sendPasswordResetEmail, sendPasswordResetConfirm
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import { ForgotPasswordSchema, ResetPasswordSchema } from "@/lib/schemas/auth"
+import { headers } from "next/headers"
 
 export const getPasswordResetTokenByToken = async (token: string) => {
     try {
@@ -46,6 +49,20 @@ export const resetPassword = async (formData: FormData) => {
 
         const passwordResetToken = await generatePasswordResetToken(email)
         await sendPasswordResetEmail(passwordResetToken.email, passwordResetToken.token)
+
+        const headerList = await headers()
+        const ip = headerList.get("x-forwarded-for") || "unknown"
+
+        await db.userAuditLog.create({
+            data: {
+                userId: existingUser.id,
+                email,
+                action: "OTP_GENERATE",
+                status: AuditStatus.SUCCESS,
+                reason: "Password Reset Requested",
+                ipAddress: ip
+            }
+        })
 
         return { success: true }
     } catch (error) {
@@ -107,6 +124,19 @@ export async function newPassword(password: string, confirmPassword: string, tok
 
         await sendPasswordResetConfirmationEmail(existingUser.email)
 
+        const headerList = await headers()
+        const ip = headerList.get("x-forwarded-for") || "unknown"
+
+        await db.userAuditLog.create({
+            data: {
+                userId: existingUser.id,
+                email: existingUser.email,
+                action: "PASSWORD_CHANGE",
+                status: AuditStatus.SUCCESS,
+                ipAddress: ip
+            }
+        })
+
         return { success: true }
     } catch (error) {
         console.error("Update password error:", error)
@@ -156,6 +186,18 @@ export const verifyEmail = async (otp: string, emailToken?: string) => {
       })
     ])
 
+    const headerList = await headers()
+    const ip = headerList.get("x-forwarded-for") || "unknown"
+
+    await db.userAuditLog.create({
+        data: {
+            email,
+            action: "EMAIL_VERIFIED",
+            status: AuditStatus.SUCCESS,
+            ipAddress: ip
+        }
+    })
+
     revalidatePath("/")
     revalidatePath("/dashboard")
     revalidatePath("/setup/organization")
@@ -183,6 +225,19 @@ export const resendVerificationCode = async (emailToken?: string) => {
         console.log("Resend Action - Generated token for:", email);
         await sendVerificationEmail(verificationToken.identifier, verificationToken.token)
         console.log("Resend Action - Email sent successfully");
+
+        const headerList = await headers()
+        const ip = headerList.get("x-forwarded-for") || "unknown"
+
+        await db.userAuditLog.create({
+            data: {
+                email,
+                action: "OTP_GENERATE",
+                status: AuditStatus.SUCCESS,
+                reason: "Email Verification Resend",
+                ipAddress: ip
+            }
+        })
 
         return { success: true }
     } catch (error) {

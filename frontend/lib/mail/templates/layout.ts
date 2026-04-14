@@ -1,5 +1,4 @@
-
-export const renderEmailLayout = (content: string, title: string = "E-Voting System") => `
+export const renderEmailLayout = (content: string, title: string = "E-Voting") => `
 <!DOCTYPE html>
 <html>
 <head>

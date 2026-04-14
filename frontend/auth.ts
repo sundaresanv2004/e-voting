@@ -4,9 +4,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/lib/db"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { sendWelcomeEmail } from "@/lib/mail"
+import { sendWelcomeEmail, sendLoginNotificationEmail } from "@/lib/mail"
+import { headers } from "next/headers"
 
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditStatus } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -33,6 +34,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
 
         if (!user || !user.password) {
+          await db.userAuditLog.create({
+            data: {
+              email: credentials.email as string,
+              action: "LOGIN",
+              status: AuditStatus.FAILURE,
+              reason: "User not found or no password set"
+            }
+          })
           return null
         }
 
@@ -44,6 +53,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (passwordsMatch) {
           return user
         }
+
+        await db.userAuditLog.create({
+          data: {
+            userId: user.id,
+            email: user.email,
+            action: "LOGIN",
+            status: AuditStatus.FAILURE,
+            reason: "Invalid password"
+          }
+        })
 
         return null
       }
@@ -112,14 +131,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         
         if (email) {
           try {
-            // 1. Always ensure email is verified when logging in via Google
             await db.user.updateMany({
               where: { email },
               data: { emailVerified: new Date() }
             });
 
-            // 2. Only sync profile picture if the current database record has NO image
-            // This satisfies the user's "if profile is null" requirement precisely.
             if (profile?.picture) {
               await db.user.updateMany({
                 where: { 
@@ -141,6 +157,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
+    async signIn({ user, account }) {
+      const headerList = await headers()
+      const ip = headerList.get("x-forwarded-for") || "unknown"
+      const userAgent = headerList.get("user-agent") || "unknown"
+
+      await db.userAuditLog.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          action: "LOGIN",
+          status: AuditStatus.SUCCESS,
+          ipAddress: ip,
+          userAgent: userAgent,
+          metadata: { provider: account?.provider || "credentials" }
+        }
+      })
+
+      if (user.email) {
+        await sendLoginNotificationEmail(
+            user.email, 
+            user.name || "User", 
+            ip, 
+            userAgent
+        )
+      }
+    },
     async linkAccount({ user, account }) {
       if (account.provider === "google" && user.email) {
         try {
@@ -166,6 +208,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     },
     async createUser({ user }) {
+      await db.userAuditLog.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          action: "ACCOUNT_CREATE",
+          status: AuditStatus.SUCCESS,
+          metadata: { provider: "credentials" }
+        }
+      })
+
       if (user.email) {
         const dbUser = await db.user.findUnique({ where: { email: user.email } })
         if (dbUser && !dbUser.password) {

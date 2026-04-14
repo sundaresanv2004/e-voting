@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import React, { useState, useTransition, Suspense } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
@@ -71,9 +73,9 @@ function SignupForm() {
                 }
 
                 if (nextParam) {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}&next=${encodeURIComponent(nextParam)}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}&next=${encodeURIComponent(nextParam)}&registered=true`)
                 } else {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}&registered=true`)
                 }
                 router.refresh()
             } catch (err) {
@@ -223,9 +225,13 @@ function SignupForm() {
                         </div>
                     </Field>
 
-                    <Button type="submit" className="w-full" disabled={isPending}>
-                        {isPending && <Spinner className="h-4 w-4" />}
-                        {isPending ? "Creating Account..." : "Create Account"}
+                    <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                        {isPending ? (
+                            <>
+                                <Spinner />
+                                Creating Account...
+                            </>
+                        ) : "Create Account"}
                     </Button>
                 </form>
             </CardContent>

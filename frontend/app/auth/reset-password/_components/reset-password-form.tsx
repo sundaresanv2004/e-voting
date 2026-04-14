@@ -53,10 +53,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             const result = await newPassword(values.password, values.confirmPassword, token)
 
             if (result.success) {
-                setIsSuccess(true)
-                setTimeout(() => {
-                    router.push("/auth/login")
-                }, 2000)
+                router.push("/auth/login?reset_success=true")
             } else {
                 setError(result.error || "Update failed")
             }
@@ -81,7 +78,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <CardContent className="px-0 text-center text-sm text-muted-foreground md:px-6 pb-6">
                     <p>Redirecting to login page...</p>
                     <div className="mt-4 flex justify-center">
-                        <Spinner className="h-6 w-6 text-primary" />
+                        <Spinner />
                     </div>
                 </CardContent>
             </Card>
@@ -163,9 +160,13 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                         <FieldError errors={[{ message: errors.confirmPassword?.message }]} />
                     </Field>
 
-                    <Button type="submit" className="w-full" disabled={isPending}>
-                        {isPending && <Spinner className="h-4 w-4" />}
-                        {isPending ? "Updating..." : "Update Password"}
+                    <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                        {isPending ? (
+                            <>
+                                <Spinner />
+                                Updating...
+                            </>
+                        ) : "Update Password"}
                     </Button>
                 </form>
             </CardContent>

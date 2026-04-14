@@ -14,6 +14,8 @@ const fontMono = Geist_Mono({
 })
 
 import { Toaster } from "sonner"
+import { SuccessToastListener } from "@/components/auth/success-toast-listener"
+import { Suspense } from "react"
 
 export default function RootLayout({
   children,

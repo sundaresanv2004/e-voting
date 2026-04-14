@@ -51,14 +51,11 @@ export default function OrganizationSetupPage() {
                     return
                 }
 
-                // Show a sleek success notification
-                toast.success("Organization created!")
-
                 // Update the session to include the new organizationId and role
                 await update()
 
                 // Hard reload to ensure the middleware picks up the new session cookie
-                window.location.href = '/admin/organization'
+                window.location.href = '/admin/organization?org_created=true'
             } catch (err) {
                 console.error("Setup error:", err)
                 setError('An unexpected error occurred. Please try again.')
@@ -142,9 +139,13 @@ export default function OrganizationSetupPage() {
                             </Field>
 
                             <div className="flex justify-center py-2 mb-4">
-                                <Button type="submit" className="w-full" disabled={isPending}>
-                                    {isPending && <Spinner className="h-4 w-4" />}
-                                    {isPending ? "Creating Organization..." : "Create Organization"}
+                                <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                                    {isPending ? (
+                                        <>
+                                            <Spinner />
+                                            Creating Organization...
+                                        </>
+                                    ) : "Create Organization"}
                                 </Button>
                             </div>
                         </form>

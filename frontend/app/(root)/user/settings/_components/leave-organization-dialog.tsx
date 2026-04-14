@@ -48,9 +48,8 @@ export function LeaveOrganizationDialog({
     try {
       const result = await leaveOrganizationAction()
       if (result.success) {
-        toast.success("Left organization successfully")
         await update()
-        router.push("/admin/organization")
+        router.push("/admin/organization?left_org=true")
         router.refresh()
       } else {
         toast.error(result.error || "Failed to leave organization")
@@ -134,6 +133,7 @@ export function LeaveOrganizationDialog({
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={!isConfirmed || isPending}
+            className="gap-2"
             onClick={(e) => {
               e.preventDefault()
               handleLeave()
@@ -141,12 +141,10 @@ export function LeaveOrganizationDialog({
           >
             {isPending ? (
               <>
-                <Spinner className="mr-2" />
+                <Spinner />
                 Leaving...
               </>
-            ) : (
-              "Leave"
-            )}
+            ) : "Leave"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

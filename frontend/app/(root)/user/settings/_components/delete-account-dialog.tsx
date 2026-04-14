@@ -46,9 +46,8 @@ export function DeleteAccountDialog({
     try {
       const result = await deleteAccountAction()
       if (result.success) {
-        toast.success("Account deleted successfully")
         await signOut({ redirect: false })
-        router.push("/auth/login")
+        router.push("/auth/login?account_deleted=true")
         router.refresh()
       } else {
         toast.error(result.error || "Failed to delete account")
@@ -131,6 +130,7 @@ export function DeleteAccountDialog({
           {!hasOrganization && (
             <AlertDialogAction
               disabled={!isConfirmed || isPending}
+              className="gap-2"
               onClick={(e) => {
                 e.preventDefault()
                 handleDelete()
@@ -139,12 +139,10 @@ export function DeleteAccountDialog({
             >
               {isPending ? (
                 <>
-                  <Spinner className="mr-2" />
+                  <Spinner />
                   Deleting...
                 </>
-              ) : (
-                "Confirm Deletion"
-              )}
+              ) : "Confirm Deletion"}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

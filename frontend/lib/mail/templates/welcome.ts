@@ -28,5 +28,5 @@ export const WelcomeTemplate = (name: string) => {
       If you have any questions or need assistance, our support team is always here to help. Just reply to this email!
     </div>
   `
-  return renderEmailLayout(content, "E-Voting System")
+  return renderEmailLayout(content, "E-Voting")
 }

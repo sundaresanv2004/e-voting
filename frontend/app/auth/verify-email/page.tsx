@@ -81,9 +81,6 @@ function VerifyEmailForm() {
                     ? `/auth/login?next=${encodeURIComponent(nextParam)}&verified=true`
                     : '/auth/login?verified=true'
 
-                // Show the toast here so it's guaranteed to show during transition
-                toast.success("Account verified! Please log in.")
-
                 // Immediate redirect
                 router.push(loginUrl)
                 router.refresh()
@@ -101,6 +98,7 @@ function VerifyEmailForm() {
         try {
             const result = await resendVerificationCode(emailParam || undefined)
             if (result.success) {
+                toast.success("We have sent an OTP for verification.")
                 setResendTimer(RESEND_COOLDOWN)
             } else {
                 setError(result.error || "Failed to resend code")
@@ -195,11 +193,15 @@ function VerifyEmailForm() {
 
                         <Button
                             onClick={() => handleVerify(otp)}
-                            className="w-full"
+                            className="w-full gap-2"
                             disabled={otp.length !== 6 || isPending}
                         >
-                            {isPending && <Spinner className="w-4 h-4 mr-2 text-white" />}
-                            Verify Account
+                            {isPending ? (
+                                <>
+                                    <Spinner />
+                                    Verifying...
+                                </>
+                            ) : "Verify Account"}
                         </Button>
                     </div>
                 </div>
@@ -212,10 +214,13 @@ function VerifyEmailForm() {
                         onClick={handleResend}
                         variant={"link"}
                         disabled={resendTimer > 0 || isResending}
-                        className="text-primary font-semibold hover:underline disabled:no-underline disabled:opacity-50 transition-colors -ml-2"
+                        className="text-primary font-semibold hover:underline disabled:no-underline disabled:opacity-50 transition-colors -ml-2 gap-1.5 flex items-center"
                     >
                         {isResending ? (
-                            <Spinner className="w-3 h-3" />
+                            <>
+                                <Spinner />
+                                Resending...
+                            </>
                         ) : resendTimer > 0 ? (
                             <span>Try again in {resendTimer}s</span>
                         ) : (

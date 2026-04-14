@@ -23,6 +23,7 @@ import {
   ViewIcon,
   ViewOffSlashIcon
 } from "@hugeicons/core-free-icons"
+import { Spinner } from "@/components/ui/spinner"
 
 import { updatePasswordAction } from "../_actions"
 import { SecuritySchema } from "@/lib/schemas/user"
@@ -30,7 +31,12 @@ import { PasswordStrength } from "@/components/auth/password-strength"
 
 type SecurityFormValues = z.infer<typeof SecuritySchema>
 
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+
 export function SecuritySettings() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = React.useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false)
   const [showNewPassword, setShowNewPassword] = React.useState(false)
@@ -61,7 +67,9 @@ export function SecuritySettings() {
       if (response.error) {
         setError("currentPassword", { type: "server", message: response.error })
       } else {
-        toast.success(response.success || "Password updated!")
+        const params = new URLSearchParams(searchParams)
+        params.set("password_changed", "true")
+        router.replace(`${pathname}?${params.toString()}`)
         reset()
       }
     } catch (error) {
@@ -165,8 +173,13 @@ export function SecuritySettings() {
           </div>
         </CardContent>
         <CardFooter className="bg-muted/30 border-t py-4 px-6 flex justify-end">
-          <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? "Updating..." : "Update Password"}
+          <Button type="submit" className="gap-2" disabled={isUpdating}>
+            {isUpdating ? (
+              <>
+                <Spinner />
+                Updating Password...
+              </>
+            ) : "Update Password"}
           </Button>
         </CardFooter>
       </form>
