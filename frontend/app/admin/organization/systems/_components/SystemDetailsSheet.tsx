@@ -273,7 +273,7 @@ export function SystemDetailsSheet({
             </div>
 
             <Separator className="border-dashed" />
-            
+
             {/* Integrity Logs */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium px-1 text-foreground/80 flex items-center gap-2">
@@ -307,8 +307,8 @@ export function SystemDetailsSheet({
                             <TooltipTrigger asChild>
                               <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{system.approvedBy.email}</p>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-[300px]">
-                              <p className="break-all">{system.approvedBy.email}</p>
+                            <TooltipContent side="bottom" className="text-xs">
+                              {system.approvedBy.email}
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -340,8 +340,8 @@ export function SystemDetailsSheet({
                             <TooltipTrigger asChild>
                               <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{system.updatedBy.email}</p>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-[300px]">
-                              <p className="break-all">{system.updatedBy.email}</p>
+                            <TooltipContent side="bottom" className="text-xs">
+                              {system.updatedBy.email}
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -366,53 +366,53 @@ export function SystemDetailsSheet({
             {(system.status === SystemStatus.PENDING ||
               system.status === SystemStatus.APPROVED ||
               system.status === SystemStatus.EXPIRED) && (
-              <div className="flex gap-2 w-full">
-                {(system.status === SystemStatus.PENDING || system.status === SystemStatus.EXPIRED) ? (
-                  <>
+                <div className="flex gap-2 w-full">
+                  {(system.status === SystemStatus.PENDING || system.status === SystemStatus.EXPIRED) ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
+                        disabled={isPending}
+                        onClick={() => handleStatusUpdate(SystemStatus.REJECTED)}
+                      >
+                        {isPending ? (
+                          <Spinner className="h-4 w-4" color="currentColor" />
+                        ) : (
+                          <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                        )}
+                        {isPending ? "Rejecting..." : "Reject"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors gap-2"
+                        disabled={isPending}
+                        onClick={() => handleStatusUpdate(SystemStatus.APPROVED)}
+                      >
+                        {isPending ? (
+                          <Spinner className="h-4 w-4" color="currentColor" />
+                        ) : (
+                          <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                        )}
+                        {isPending ? "Approving..." : "Approve"}
+                      </Button>
+                    </>
+                  ) : system.status === SystemStatus.APPROVED && (
                     <Button
                       variant="outline"
-                      className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
+                      className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
                       disabled={isPending}
-                      onClick={() => handleStatusUpdate(SystemStatus.REJECTED)}
+                      onClick={() => handleStatusUpdate(SystemStatus.REVOKED)}
                     >
                       {isPending ? (
                         <Spinner className="h-4 w-4" color="currentColor" />
                       ) : (
-                        <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                        <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
                       )}
-                      {isPending ? "Rejecting..." : "Reject"}
+                      {isPending ? "Revoking..." : "Revoke Authorization"}
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 min-w-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 hover:text-emerald-700 transition-colors gap-2"
-                      disabled={isPending}
-                      onClick={() => handleStatusUpdate(SystemStatus.APPROVED)}
-                    >
-                      {isPending ? (
-                        <Spinner className="h-4 w-4" color="currentColor" />
-                      ) : (
-                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                      )}
-                      {isPending ? "Approving..." : "Approve"}
-                    </Button>
-                  </>
-                ) : system.status === SystemStatus.APPROVED && (
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
-                    disabled={isPending}
-                    onClick={() => handleStatusUpdate(SystemStatus.REVOKED)}
-                  >
-                    {isPending ? (
-                      <Spinner className="h-4 w-4" color="currentColor" />
-                    ) : (
-                      <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                    )}
-                    {isPending ? "Revoking..." : "Revoke Authorization"}
-                  </Button>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
             {/* Edit & Delete */}
             <div className="flex gap-2 w-full">

@@ -150,7 +150,7 @@ export function VoterDialog({
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               <div className="space-y-4">
                 <Field>
-                  <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                  <FieldLabel htmlFor="name">Full Name (Required)</FieldLabel>
                   <InputGroup>
                     <InputGroupAddon>
                       <InputGroupText>
@@ -168,7 +168,7 @@ export function VoterDialog({
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="uniqueId">Unique ID (e.g. Student ID)</FieldLabel>
+                  <FieldLabel htmlFor="uniqueId">Unique ID (Optional)</FieldLabel>
                   <InputGroup>
                     <InputGroupAddon>
                       <InputGroupText>
@@ -177,7 +177,7 @@ export function VoterDialog({
                     </InputGroupAddon>
                     <InputGroupInput
                       id="uniqueId"
-                      placeholder="Enter unique ID"
+                      placeholder="Leave empty to auto-generate"
                       disabled={isPending}
                       className="font-mono text-sm"
                       {...register("uniqueId")}
@@ -205,7 +205,8 @@ export function VoterDialog({
                       </Tooltip>
                     </InputGroupAddon>
                   </InputGroup>
-                  <FieldDescription>This ID will be used for authentication at the terminal.</FieldDescription>
+                  <FieldDescription>If left empty, a secure ID will be automatically assigned to this voter.</FieldDescription>
+
                   {errors.uniqueId && <FieldError errors={[{ message: errors.uniqueId.message as string }]} />}
                 </Field>
 

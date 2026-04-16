@@ -47,6 +47,8 @@ model User {
   updatedAccess         UserElectionAccess[]   @relation("AccessUpdatedBy")
   createdSystemAccess   SystemElectionAccess[] @relation("SystemAccessCreatedBy")
   updatedSystemAccess   SystemElectionAccess[] @relation("SystemAccessUpdatedBy")
+  createdVoters         Voter[]                @relation("VoterCreatedBy")
+  updatedVoters         Voter[]                @relation("VoterUpdatedBy")
 
   @@index([organizationId])
 }
@@ -413,12 +415,19 @@ model Voter {
   election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
   ballot   Ballot?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  createdBy User @relation("VoterCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User @relation("VoterUpdatedBy", fields: [updatedByUserId], references: [id])
 
   @@unique([electionId, uniqueId])
   @@index([electionId])
   @@index([uniqueId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
 }
 
 model UserAuditLog {

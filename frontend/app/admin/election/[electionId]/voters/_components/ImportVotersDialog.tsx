@@ -49,6 +49,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
   const [parsedData, setParsedData] = React.useState<any[]>([])
   const [duplicates, setDuplicates] = React.useState<DuplicateVoter[]>([])
   const [importResults, setImportResults] = React.useState<{ count: number } | null>(null)
+  const [verificationInfo, setVerificationInfo] = React.useState<{ missingIdCount: number } | null>(null)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -110,11 +111,12 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
 
         // Validate headers
         const headers = Object.keys(json[0] as object)
-        if (!headers.includes("unique_id") || !headers.includes("name")) {
-          toast.error("Missing required columns: unique_id and name")
+        if (!headers.includes("name")) {
+          toast.error("Missing required column: name")
           setStep("upload")
           return
         }
+
 
         // Sanitize data for Server Action (remove non-plain objects/methods from XLSX)
         const sanitizedData = JSON.parse(JSON.stringify(json))
@@ -129,12 +131,15 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
           return
         }
 
+        setVerificationInfo({ missingIdCount: result.missingIdCount || 0 })
+
         if (result.duplicateCount && result.duplicateCount > 0) {
           setDuplicates(result.duplicates || [])
           setStep("resolving")
         } else {
           setStep("ready")
         }
+
       }
       reader.readAsArrayBuffer(file)
     } catch (error) {
@@ -308,11 +313,20 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                 </div>
               </ScrollArea>
 
-              <div className="p-4 rounded-xl border border-dashed text-center">
+              <div className="p-4 rounded-xl border border-dashed text-center space-y-3">
                 <p className="text-[11px] text-muted-foreground font-medium">
                   The remaining <span className="text-foreground font-bold">{parsedData.length - duplicates.length}</span> voters are unique and ready for import.
                 </p>
+                {verificationInfo && verificationInfo.missingIdCount > 0 && (
+                  <div className="p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                    <p className="text-[10px] text-blue-600 font-medium leading-relaxed">
+                      <HugeiconsIcon icon={InformationCircleIcon} className="w-3 h-3 inline mr-1 mb-0.5" />
+                      We discovered <span className="font-bold underline">{verificationInfo.missingIdCount}</span> records without a unique ID. They will be assigned secure identifiers automatically.
+                    </p>
+                  </div>
+                )}
               </div>
+
             </div>
           )}
 
@@ -327,9 +341,18 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                   All <span className="text-foreground font-bold">{parsedData.length}</span> records are clean and verified for import.
                 </p>
+                {verificationInfo && verificationInfo.missingIdCount > 0 && (
+                  <div className="mt-4 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 max-w-sm mx-auto">
+                    <p className="text-[11px] text-blue-600 font-medium leading-relaxed">
+                      <HugeiconsIcon icon={InformationCircleIcon} className="w-3 h-3 inline mr-1 mb-0.5" />
+                      We found <span className="font-bold underline">{verificationInfo.missingIdCount}</span> records without a unique ID. Our system will automatically generate secure identifiers for them.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
+
 
           {/* STEP: SUCCESS */}
           {step === "success" && (

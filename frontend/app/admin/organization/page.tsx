@@ -35,7 +35,10 @@ export default async function OrganizationDashboardPage() {
     revokedSystems,
     latestElections,
     latestSystems,
+    latestMembers,
+    latestSettings,
   ] = await Promise.all([
+
     db.organization.findUnique({
       where: { id: orgId },
       select: { name: true }
@@ -94,8 +97,29 @@ export default async function OrganizationDashboardPage() {
     db.authorizedSystem.findMany({
       where: { organizationId: orgId },
       orderBy: { updatedAt: "desc" },
-      take: 5,
+      take: 6,
     }),
+    // Latest members for activity feed
+    db.user.findMany({
+      where: { organizationId: orgId },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    }),
+    // Latest settings changes (tracked via election updates for simplicity)
+    db.electionSettings.findMany({
+      where: { election: { organizationId: orgId } },
+      include: { election: { select: { name: true } } },
+      orderBy: { updatedAt: "desc" },
+      take: 4,
+    })
   ])
 
   if (!organization) {
@@ -108,7 +132,7 @@ export default async function OrganizationDashboardPage() {
       id: e.id,
       type: "ELECTION" as const,
       title: e.name,
-      description: `Election created — ${e.status.toLowerCase()}`,
+      description: e.updatedAt > e.createdAt ? "Election details updated" : `New election created`,
       timestamp: e.updatedAt,
       status: e.status,
     })),
@@ -121,8 +145,26 @@ export default async function OrganizationDashboardPage() {
         : `Hardware registration — ${s.macAddress || "unknown MAC"}`,
       timestamp: s.updatedAt,
       status: s.status,
+    })),
+    ...latestMembers.map(m => ({
+      id: m.id,
+      type: "MEMBER" as const,
+      title: m.name || m.email,
+      description: m.updatedAt > m.createdAt 
+        ? `Role updated to ${m.role}` 
+        : `New team member joined`,
+      timestamp: m.updatedAt,
+      status: m.role,
+    })),
+    ...latestSettings.map(s => ({
+      id: s.id,
+      type: "ELECTION" as const,
+      title: s.election.name,
+      description: "Election settings modified",
+      timestamp: s.updatedAt,
     }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 6)
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8)
+
 
   // Format elections for overview
   const electionsForOverview: ElectionSummary[] = latestElections.map(e => ({

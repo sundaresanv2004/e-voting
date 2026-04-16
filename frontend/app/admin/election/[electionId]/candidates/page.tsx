@@ -80,22 +80,23 @@ export default async function CandidatesPage({
         title="Election Candidates"
         subtitle={election.name}
         actions={
-          canManage && (
+          <div className="flex items-center gap-2">
             <CandidateExport
               data={candidates as any}
               electionName={election.name}
             />
-          )
+            {canManage && (
+              <CreateCandidateTrigger
+                electionId={electionId}
+                availableRoles={roles}
+                listenToParams
+              />
+            )}
+          </div>
         }
-      >
-        {canManage && (
-          <CreateCandidateTrigger
-            electionId={electionId}
-            availableRoles={roles}
-            listenToParams
-          />
-        )}
-      </CandidateHero>
+      />
+
+
 
       <div className="flex-1 py-6 px-4 md:px-8 w-full">
         {roles.length === 0 ? (

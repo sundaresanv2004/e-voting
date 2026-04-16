@@ -121,7 +121,9 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
           name,
           uniqueId,
           image,
-          additionalDetails: additionalDetails || {}
+          additionalDetails: additionalDetails || {},
+          createdByUserId: userId,
+          updatedByUserId: userId
         }
       })
 
@@ -188,7 +190,8 @@ export async function updateVoter(voterId: string, electionId: string, values: V
           name,
           uniqueId,
           image,
-          additionalDetails: additionalDetails || {}
+          additionalDetails: additionalDetails || {},
+          updatedByUserId: userId
         }
       })
 
@@ -289,17 +292,20 @@ export async function verifyVotersBulk(electionId: string, voterData: any[]) {
     
     const duplicates = voterData.filter(v => v.unique_id && existingIdSet.has(String(v.unique_id)))
     const clean = voterData.filter(v => !v.unique_id || !existingIdSet.has(String(v.unique_id)))
+    const missingIdCount = voterData.filter(v => !v.unique_id || String(v.unique_id).trim() === "").length
 
     return {
       success: true,
       total: voterData.length,
       cleanCount: clean.length,
       duplicateCount: duplicates.length,
+      missingIdCount,
       duplicates: duplicates.map(d => ({
         uniqueId: String(d.unique_id),
         name: String(d.name)
       }))
     }
+
 
   } catch (error: any) {
     console.error("VERIFY_VOTERS_BULK_ERROR:", error)
@@ -342,7 +348,9 @@ export async function importVotersBulk(electionId: string, voterData: any[]) {
         electionId,
         uniqueId: finalUniqueId as string,
         name: String(name),
-        additionalDetails: rest || {}
+        additionalDetails: rest || {},
+        createdByUserId: userId,
+        updatedByUserId: userId
       })
     }
 

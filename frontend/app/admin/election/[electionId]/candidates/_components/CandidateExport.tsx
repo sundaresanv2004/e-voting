@@ -44,9 +44,10 @@ export function CandidateExport({ data, electionName }: CandidateExportProps) {
       await new Promise(resolve => setTimeout(resolve, 800))
 
       const exportData = data.map(candidate => ({
+        "Candidate ID": candidate.id,
         "Candidate Name": candidate.name,
         "Election Role": candidate.role.name,
-        "Status": "Active", // Standard status for now
+        "Status": "Active",
         "Created At": new Date(candidate.createdAt).toLocaleString(),
         "Last Updated": new Date(candidate.updatedAt).toLocaleString()
       }))
@@ -73,16 +74,17 @@ export function CandidateExport({ data, electionName }: CandidateExportProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          disabled={isExporting || data.length === 0}
+          disabled={isExporting}
         >
           {isExporting ? (
-            <Spinner />
+            <Spinner className="h-4 w-4" />
           ) : (
             <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
           )}
-          {isExporting ? "Generating..." : "Export Data"}
+          <span>{isExporting ? "Generating..." : "Export"}</span>
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           Choose Format

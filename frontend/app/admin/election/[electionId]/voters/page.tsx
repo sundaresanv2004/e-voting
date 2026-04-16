@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import VoterHero from "./_components/voter-hero"
 import { CreateVoterTrigger } from "./_components/CreateVoterTrigger"
 import { ImportVotersDialog } from "./_components/ImportVotersDialog"
+import { VoterExport } from "./_components/VoterExport"
 import { VoterList } from "./_components/VoterList"
 
 export default async function VotersPage({
@@ -45,23 +46,37 @@ export default async function VotersPage({
     include: {
       ballot: {
         select: { id: true, createdAt: true }
+      },
+      createdBy: {
+        select: { name: true, email: true, image: true, role: true }
+      },
+      updatedBy: {
+        select: { name: true, email: true, image: true, role: true }
       }
     }
+
   })
 
   return (
     <div className="flex flex-col w-full min-h-full">
       <VoterHero title="Election Voters" subtitle={election.name}>
-        {canManage && (
-          <div className="flex items-center gap-2">
-            <ImportVotersDialog electionId={electionId} />
-            <CreateVoterTrigger
-              electionId={electionId}
-              listenToParams
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <VoterExport
+            data={voters as any}
+            electionName={election.name}
+          />
+          {canManage && (
+            <>
+              <ImportVotersDialog electionId={electionId} />
+              <CreateVoterTrigger
+                electionId={electionId}
+                listenToParams
+              />
+            </>
+          )}
+        </div>
       </VoterHero>
+
 
       <div className="flex-1 py-6 px-4 md:px-8 w-full">
         {voters.length === 0 ? (

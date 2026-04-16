@@ -34,12 +34,25 @@ export type VoterColumn = {
   uniqueId: string
   name: string
   image: string | null
+  additionalDetails?: any | null
+
   dob: Date | null
   electionId: string
   ballot?: { id: string; createdAt: string | Date } | null
   createdAt: string | Date
   updatedAt?: string | Date
+  createdBy?: {
+    name: string | null
+    email: string
+    image: string | null
+  } | null
+  updatedBy?: {
+    name: string | null
+    email: string
+    image: string | null
+  } | null
 }
+
 
 function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   if (isSorted === "asc") {
