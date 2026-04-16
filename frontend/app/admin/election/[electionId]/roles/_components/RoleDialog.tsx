@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Field,
   FieldLabel,
@@ -104,7 +105,7 @@ export function RoleDialog({
         : await createRole(electionId, values)
 
       if (result.success) {
-        toast.success(`Role ${initialData ? "updated" : "created"} successfully!`)
+        toast.success(`Role ${initialData ? "updated" : "created"}`)
         onOpenChange(false)
       } else {
         const errorMsg = result.error || "Something went wrong"
@@ -281,8 +282,15 @@ export function RoleDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Role")}
+            <Button type="submit" disabled={isPending} className="min-w-[120px]">
+              {isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" color="currentColor" />
+                  {isEdit ? "Saving..." : "Creating..."}
+                </>
+              ) : (
+                isEdit ? "Save Changes" : "Create Role"
+              )}
             </Button>
           </DialogFooter>
         </form>

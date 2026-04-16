@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserCircleIcon } from "@hugeicons/core-free-icons"
 import { UserRole } from "@prisma/client"
+import { Badge } from "@/components/ui/badge"
 
 import VoterHero from "./_components/voter-hero"
 import { CreateVoterTrigger } from "./_components/CreateVoterTrigger"
@@ -80,9 +81,12 @@ export default async function VotersPage({
                 />
               </div>
             ) : (
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest bg-muted px-4 py-2 rounded-xl border">
-                Read-only mode for Viewers
-              </p>
+              <Badge
+                variant={"outline"}
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-widest bg-muted/50 px-4 py-3 rounded-xl border border-border/50"
+              >
+                Administrative actions are restricted for Viewers
+              </Badge>
             )}
           </div>
         ) : (

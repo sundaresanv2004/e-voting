@@ -18,7 +18,8 @@ export function SuccessToastListener() {
             "reset_sent",
             "reset_success",
             "account_deleted",
-            "left_org"
+            "left_org",
+            "logged_out"
         ]
 
         for (const param of params) {
@@ -47,6 +48,9 @@ export function SuccessToastListener() {
                         break
                     case "account_deleted":
                         toast.success("Account deleted successfully")
+                        break
+                    case "logged_out":
+                        toast.success("Logged out successfully")
                         break
                 }
                 triggered.current = param

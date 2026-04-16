@@ -156,8 +156,8 @@ export function ElectionDetailsSheet({
             <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-muted/50 to-muted/80 p-6 shadow-sm">
               <div className="relative z-10 flex items-center justify-between">
                 <div className="space-y-1.5 min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground">
-                    Election Code
+                  <p className="text-xs text-muted-foreground uppercase font-black tracking-widest text-muted-foreground/60">
+                    Unique Identifier
                   </p>
                   <code className="text-xl font-mono tracking-wider text-foreground block truncate">
                     {election.code}

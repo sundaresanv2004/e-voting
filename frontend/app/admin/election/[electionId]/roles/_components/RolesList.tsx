@@ -53,7 +53,7 @@ export function RolesList({ roles, electionId, availableSystems, userRole }: Rol
     try {
       const result = await deleteRole(roleToDelete.id, electionId)
       if (result.success) {
-        toast.success("Role deleted successfully")
+        toast.success("Role deleted")
       } else {
         toast.error(result.error || "Failed to delete role")
       }

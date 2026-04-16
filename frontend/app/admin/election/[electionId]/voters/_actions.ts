@@ -39,6 +39,50 @@ async function getAuthorizedUser(electionId: string) {
   return { userId: session.user.id, organizationId: user.organizationId }
 }
 
+/**
+ * Generates a unique, non-repeating ID for a voter in a specific election
+ */
+async function generateSafeUniqueId(electionId: string): Promise<string> {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  let isUnique = false
+  let code = ""
+  
+  while (!isUnique) {
+    let raw = ""
+    for (let i = 0; i < 8; i++) {
+      raw += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    code = raw.slice(0, 4) + "-" + raw.slice(4)
+    
+    // Check DB for collision
+    const existing = await db.voter.findUnique({
+      where: {
+        electionId_uniqueId: {
+          electionId,
+          uniqueId: code
+        }
+      }
+    })
+    
+    if (!existing) isUnique = true
+  }
+  
+  return code
+}
+
+/**
+ * Public action to get a unique code (used by the UI button)
+ */
+export async function getNewUniqueCode(electionId: string) {
+  try {
+    await getAuthorizedUser(electionId)
+    const code = await generateSafeUniqueId(electionId)
+    return { code }
+  } catch (error: any) {
+    return { error: error.message || "Failed to generate code" }
+  }
+}
+
 export async function createVoter(electionId: string, values: VoterFormValues) {
   try {
     const { userId, organizationId } = await getAuthorizedUser(electionId)
@@ -48,7 +92,12 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
       return { error: "Invalid fields" }
     }
 
-    const { name, uniqueId, image, additionalDetails } = validatedFields.data
+    const { name, uniqueId: providedId, image, additionalDetails } = validatedFields.data
+
+    // Generate ID if missing
+    const uniqueId = (providedId && providedId.trim() !== "") 
+      ? providedId 
+      : await generateSafeUniqueId(electionId)
 
     // Check if voter already exists for this election
     const existingVoter = await db.voter.findUnique({
@@ -63,6 +112,7 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
     if (existingVoter) {
       return { error: "Voter with this Unique ID already exists in this election" }
     }
+
 
     await db.$transaction(async (tx) => {
       await tx.voter.create({
@@ -105,13 +155,18 @@ export async function updateVoter(voterId: string, electionId: string, values: V
       return { error: "Invalid fields" }
     }
 
-    const { name, uniqueId, image, additionalDetails } = validatedFields.data
+    const { name, uniqueId: providedId, image, additionalDetails } = validatedFields.data
+
+    // Generate ID if missing
+    const uniqueId = (providedId && providedId.trim() !== "") 
+      ? providedId 
+      : await generateSafeUniqueId(electionId)
 
     // Check if another voter has the same uniqueId in this election
     const existingVoter = await db.voter.findFirst({
       where: {
         electionId,
-        uniqueId,
+        uniqueId: String(uniqueId),
         NOT: { id: voterId }
       }
     })
@@ -119,6 +174,7 @@ export async function updateVoter(voterId: string, electionId: string, values: V
     if (existingVoter) {
       return { error: "Another voter with this Unique ID already exists" }
     }
+
 
     await db.$transaction(async (tx) => {
       const oldVoter = await tx.voter.findUnique({
@@ -213,24 +269,26 @@ export async function verifyVotersBulk(electionId: string, voterData: any[]) {
   try {
     await getAuthorizedUser(electionId)
 
-    const uniqueIds = voterData.map(v => String(v.unique_id))
+    // Filter out voters who already have a unique_id and check them
+    const providedIds = voterData
+      .filter(v => v.unique_id && String(v.unique_id).trim() !== "")
+      .map(v => String(v.unique_id))
 
     // Find existing voters in this election with these IDs
-    const existingVoters = await db.voter.findMany({
-      where: {
-        electionId,
-        uniqueId: { in: uniqueIds }
-      },
-      select: {
-        uniqueId: true,
-        name: true
-      }
-    })
+    const existingVoters = providedIds.length > 0 
+      ? await db.voter.findMany({
+          where: {
+            electionId,
+            uniqueId: { in: providedIds }
+          },
+          select: { uniqueId: true }
+        })
+      : []
 
     const existingIdSet = new Set(existingVoters.map(v => v.uniqueId))
     
-    const duplicates = voterData.filter(v => existingIdSet.has(String(v.unique_id)))
-    const clean = voterData.filter(v => !existingIdSet.has(String(v.unique_id)))
+    const duplicates = voterData.filter(v => v.unique_id && existingIdSet.has(String(v.unique_id)))
+    const clean = voterData.filter(v => !v.unique_id || !existingIdSet.has(String(v.unique_id)))
 
     return {
       success: true,
@@ -242,6 +300,7 @@ export async function verifyVotersBulk(electionId: string, voterData: any[]) {
         name: String(d.name)
       }))
     }
+
   } catch (error: any) {
     console.error("VERIFY_VOTERS_BULK_ERROR:", error)
     return { error: error.message || "Failed to verify data" }
@@ -256,17 +315,38 @@ export async function importVotersBulk(electionId: string, voterData: any[]) {
     const { userId, organizationId } = await getAuthorizedUser(electionId)
 
     // Prepare data for Prisma createMany
-    const data = voterData.map(v => {
-      // Extract known fields, put rest in additionalDetails
-      const { unique_id, name, ...rest } = v
+    const data = []
+    const generatedInBatch = new Set<string>()
 
-      return {
+    for (const v of voterData) {
+      const { unique_id, name, ...rest } = v
+      
+      let finalUniqueId = (unique_id && String(unique_id).trim() !== "") 
+        ? String(unique_id) 
+        : null
+
+      // If missing, generate one that isn't in DB AND isn't in this batch
+      if (!finalUniqueId) {
+        let isBatchUnique = false
+        while (!isBatchUnique) {
+          const newId = await generateSafeUniqueId(electionId)
+          if (!generatedInBatch.has(newId)) {
+            finalUniqueId = newId
+            generatedInBatch.add(newId)
+            isBatchUnique = true
+          }
+        }
+      }
+
+      data.push({
         electionId,
-        uniqueId: String(unique_id),
+        uniqueId: finalUniqueId as string,
         name: String(name),
         additionalDetails: rest || {}
-      }
-    })
+      })
+    }
+
+
 
     const result = await db.$transaction(async (tx) => {
       const importResult = await tx.voter.createMany({

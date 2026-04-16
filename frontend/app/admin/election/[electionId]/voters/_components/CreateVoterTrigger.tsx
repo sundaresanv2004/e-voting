@@ -4,18 +4,20 @@ import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserAdd01Icon } from "@hugeicons/core-free-icons"
-
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { VoterDialog } from "./VoterDialog"
 
 interface CreateVoterTriggerProps {
   electionId: string
   listenToParams?: boolean
+  className?: string
 }
 
 export function CreateVoterTrigger({
   electionId,
   listenToParams = false,
+  className,
 }: CreateVoterTriggerProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,12 +37,15 @@ export function CreateVoterTrigger({
 
   return (
     <>
-      <Button 
+      <Button
         onClick={() => setIsOpen(true)}
-        className="gap-2 bg-primary text-primary-foreground shadow-sm px-5"
+        className={cn("gap-2 group", className)}
       >
-        <HugeiconsIcon icon={UserAdd01Icon} className="h-4 w-4" strokeWidth={2.5} />
-        <span>Add New Voter</span>
+        <div className="relative">
+          <HugeiconsIcon icon={UserAdd01Icon} className="h-4 w-4" />
+          <div className="absolute inset-0 bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <span className="relative">Add Voter</span>
       </Button>
 
       <VoterDialog

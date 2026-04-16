@@ -24,11 +24,11 @@ export function TeamSnapshot({ adminCount, staffCount, viewerCount, totalMembers
   ]
 
   return (
-    <Card className="border-border/50 shadow-sm overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-4">
+    <Card className="border-border/50 overflow-hidden py-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
         <div className="space-y-0.5">
-          <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2 uppercase">
-            <HugeiconsIcon icon={UserGroupIcon} className="h-4 w-4 text-sky-500" />
+          <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
+            <HugeiconsIcon icon={UserGroupIcon} className="h-5 w-5 text-sky-500" />
             Core Team
           </CardTitle>
           <CardDescription className="text-[10px] font-bold">
@@ -45,7 +45,7 @@ export function TeamSnapshot({ adminCount, staffCount, viewerCount, totalMembers
           <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-6">
         {totalMembers === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">

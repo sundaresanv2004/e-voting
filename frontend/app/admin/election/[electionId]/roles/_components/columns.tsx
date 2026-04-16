@@ -141,9 +141,9 @@ export const columns = (
       cell: ({ row }) => {
         const count = row.original._count?.candidates ?? 0
         return (
-          <span className="text-sm text-muted-foreground font-medium">
+          <Badge variant="secondary" className="font-semibold bg-muted px-2 py-0.5 pointer-events-none">
             {count} {count === 1 ? "Candidate" : "Candidates"}
-          </span>
+          </Badge>
         )
       }
     },

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { PlusSignIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { CandidateDialog } from "./CandidateDialog"
 import type { RoleColumn } from "../../roles/_components/columns"
 
@@ -52,9 +53,12 @@ export function CreateCandidateTrigger({
       electionId={electionId}
       availableRoles={availableRoles}
     >
-      <Button variant={variant} size={size} className={className}>
-        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="w-4 h-4" />
-        {showText && "Add Candidate"}
+      <Button variant={variant} size={size} className={cn("gap-2 group", className)}>
+        <div className="relative">
+          <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="w-4 h-4" />
+          <div className="absolute inset-0 bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        {showText && <span className="relative">Add Candidate</span>}
       </Button>
     </CandidateDialog>
   )

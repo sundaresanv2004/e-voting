@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { PlusSignIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { RoleDialog } from "./RoleDialog"
+import { cn } from "@/lib/utils"
 
 interface CreateRoleTriggerProps {
   electionId: string
@@ -54,9 +55,12 @@ export function CreateRoleTrigger({
       availableSystems={availableSystems}
       nextSuggestedOrder={nextSuggestedOrder || 1}
     >
-      <Button variant={variant} size={size} className={className}>
-        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="w-4 h-4" />
-        {showText && "Create Role"}
+      <Button variant={variant} size={size} className={cn("gap-2 group", className)}>
+        <div className="relative">
+          <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="w-4 h-4" />
+          <div className="absolute inset-0 bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        {showText && <span className="relative">Create Role</span>}
       </Button>
     </RoleDialog>
   )

@@ -26,11 +26,11 @@ export function HardwareHealth({ approved, pending, rejected, revoked }: Hardwar
   ]
 
   return (
-    <Card className="border-border/50 shadow-sm overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-4">
+    <Card className="border-border/50 overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
         <div className="space-y-0.5">
-          <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2 uppercase">
-            <HugeiconsIcon icon={LaptopIcon} className="h-4 w-4 text-emerald-500" />
+          <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
+            <HugeiconsIcon icon={LaptopIcon} className="h-5 w-5 text-emerald-500" />
             Hardware Fleet
           </CardTitle>
           <CardDescription className="text-[10px] font-bold">

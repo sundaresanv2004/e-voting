@@ -30,7 +30,7 @@ function MetricCard({ title, value, description, icon, iconClassName }: MetricCa
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
-        <div className="text-3xl font-black tracking-tight">{value}</div>
+        <div className="text-3xl font-bold tracking-tight">{value}</div>
         <p className="text-[11px] font-medium text-muted-foreground leading-none flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50 w-fit">
           <span className="h-1 w-1 rounded-full bg-primary/40" />
           {description}

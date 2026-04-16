@@ -56,7 +56,7 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
     try {
       const result = await deleteVoter(voterToDelete.id, electionId)
       if (result.success) {
-        toast.success("Voter removed successfully")
+        toast.success("Voter removed")
       } else {
         toast.error(result.error || "Failed to remove voter")
       }

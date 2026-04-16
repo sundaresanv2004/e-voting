@@ -54,7 +54,7 @@ export function CandidatesList({ candidates, electionId, availableRoles, userRol
     try {
       const result = await deleteCandidate(candidateToDelete.id, electionId)
       if (result.success) {
-        toast.success("Candidate deleted successfully")
+        toast.success("Candidate deleted")
       } else {
         toast.error(result.error || "Failed to delete candidate")
       }

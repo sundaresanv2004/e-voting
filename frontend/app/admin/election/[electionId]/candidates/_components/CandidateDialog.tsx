@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { Spinner } from "@/components/ui/spinner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -112,7 +113,7 @@ export function CandidateDialog({
         : await createCandidate(electionId, values)
 
       if (result.success) {
-        toast.success(initialData ? "Candidate updated successfully" : "Candidate created successfully")
+        toast.success(`Candidate ${initialData ? "updated" : "registered"}`)
         onOpenChange(false)
       } else {
         const errorMsg = result.error || "Something went wrong"
@@ -255,15 +256,24 @@ export function CandidateDialog({
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isPending || isProfileUploading || isSymbolUploading || availableRoles.length === 0}
+              className="min-w-[140px]"
             >
-              {isPending 
-                ? (isEditing ? "Saving..." : "Creating...") 
-                : (isProfileUploading || isSymbolUploading)
-                  ? "Uploading Media..."
-                  : (isEditing ? "Save Changes" : "Register Candidate")
+              {isPending ? (
+                <>
+                  <Spinner className="h-4 w-4" color="currentColor" />
+                  {isEditing ? "Saving..." : "Registering..."}
+                </>
+              ) : (isProfileUploading || isSymbolUploading)
+                ? (
+                  <>
+                    <Spinner className="mr-1.5 h-4 w-4" color="currentColor" />
+                    Uploading Media...
+                  </>
+                )
+                : (isEditing ? "Save Changes" : "Register Candidate")
               }
             </Button>
           </DialogFooter>

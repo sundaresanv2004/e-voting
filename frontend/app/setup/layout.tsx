@@ -28,7 +28,7 @@ export default async function SetupLayout({ children }: { children: ReactNode })
                 <RootNavActions />
                 <form action={async () => {
                     "use server"
-                    await signOut({ redirectTo: "/" })
+                    await signOut({ redirectTo: "/?logged_out=true" })
                 }}>
                     <Button
                         variant="outline"

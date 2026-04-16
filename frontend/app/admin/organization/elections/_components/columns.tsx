@@ -13,6 +13,8 @@ import {
   ArrowDown01Icon,
   PlayIcon,
   PauseIcon,
+  Copy01Icon,
+  Tick02Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Button } from "@/components/ui/button"
@@ -53,6 +55,27 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   return <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Button variant="ghost" size="icon" className="h-4 w-4 shrink-0" onClick={handleCopy}>
+      <HugeiconsIcon
+        icon={copied ? Tick02Icon : Copy01Icon}
+        className="h-3 w-3"
+        color="currentColor"
+      />
+    </Button>
+  )
+}
+
 export const columns = (
   onView: (election: Election) => void,
   onEdit: (election: Election) => void,
@@ -78,12 +101,20 @@ export const columns = (
     },
     {
       accessorKey: "code",
-      header: "Code",
-      cell: ({ row }) => (
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded-full px-2 font-mono">
-          {row.getValue("code")}
-        </code>
-      ),
+      header: "Unique ID",
+      cell: ({ row }) => {
+        const code = row.getValue("code") as string
+        return (
+          <div className="flex items-center gap-2 group/copy">
+            <code className="text-xs bg-muted px-2 py-0.5 rounded-full font-mono">
+              {code}
+            </code>
+            <div className="opacity-0 group-hover/copy:opacity-100 transition-opacity">
+              <CopyButton text={code} />
+            </div>
+          </div>
+        )
+      },
     },
     {
       accessorKey: "status",

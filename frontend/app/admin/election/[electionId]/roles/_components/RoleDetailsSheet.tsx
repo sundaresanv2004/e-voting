@@ -230,29 +230,30 @@ export function RoleDetailsSheet({
             <div className="grid gap-3">
               {/* Creator Card */}
               {role.createdBy && (
-                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
-                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
+                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-green-500/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0 group-hover:scale-105 transition-transform duration-300">
                     <AvatarImage src={role.createdBy.image || ""} alt={role.createdBy.name || "User"} className="object-cover" />
                     <AvatarFallback className="bg-green-500/5 text-green-600 text-[10px] font-bold">
                       {role.createdBy.name?.charAt(0) || role.createdBy.email?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0 text-left">
+                  <div className="flex-1 min-w-0 text-left relative z-10">
                     <p className="text-xs text-muted-foreground">Created By</p>
-                    <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                    <p className="text-sm font-medium truncate leading-tight mt-0.5 group-hover:text-foreground transition-colors">
                       {role.createdBy.name || "Unknown User"}
                     </p>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{role.createdBy.email}</p>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block opacity-70">{role.createdBy.email}</p>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom">
+                      <TooltipContent side="bottom" className="bg-card border-border/50 backdrop-blur-md">
                         <p>{role.createdBy.email}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-1 shrink-0">
-                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                  <div className="text-right flex flex-col items-end gap-1 shrink-0 relative z-10">
+                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter bg-green-500/10 text-green-600 border-none">
                       Creator
                     </Badge>
                     <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
@@ -264,29 +265,30 @@ export function RoleDetailsSheet({
 
               {/* Updater Card */}
               {role.updatedBy && (
-                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
-                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
+                <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-purple-500/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0 group-hover:scale-105 transition-transform duration-300">
                     <AvatarImage src={role.updatedBy.image || ""} alt={role.updatedBy.name || "User"} className="object-cover" />
                     <AvatarFallback className="bg-purple-500/5 text-purple-600 text-[10px] font-bold">
                       {role.updatedBy.name?.charAt(0) || role.updatedBy.email?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-xs text-muted-foreground">Last Modified By</p>
-                    <p className="text-sm font-medium truncate leading-tight mt-0.5">
+                  <div className="flex-1 min-w-0 text-left relative z-10">
+                    <p className="text-xs text-muted-foreground">Last Modified</p>
+                    <p className="text-sm font-medium truncate leading-tight mt-0.5 group-hover:text-foreground transition-colors">
                       {role.updatedBy.name || "Unknown User"}
                     </p>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block">{role.updatedBy.email}</p>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] block opacity-70">{role.updatedBy.email}</p>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom">
+                      <TooltipContent side="bottom" className="bg-card border-border/50 backdrop-blur-md">
                         <p>{role.updatedBy.email}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-1 shrink-0">
-                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
+                  <div className="text-right flex flex-col items-end gap-1 shrink-0 relative z-10">
+                    <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter bg-purple-500/10 text-purple-600 border-none">
                       Modified
                     </Badge>
                     <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">

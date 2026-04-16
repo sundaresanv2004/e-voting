@@ -42,11 +42,11 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
   const router = useRouter()
 
   return (
-    <Card className="border-border/50 shadow-sm overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-5">
+    <Card className="border-border/50 overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b pt-6">
         <div className="space-y-1">
-          <CardTitle className="text-base font-black tracking-tight flex items-center gap-2">
-            <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-amber-500" />
+          <CardTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
+            <HugeiconsIcon icon={MapsIcon} className="h-5 w-5 text-amber-500" />
             Election Campaigns
           </CardTitle>
           <CardDescription className="text-[10px] font-medium">

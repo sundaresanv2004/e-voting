@@ -1,15 +1,16 @@
 "use client"
 
+import * as React from "react"
 import {
   ColumnDef,
   getCoreRowModel,
-  useReactTable,
-  flexRender,
   getPaginationRowModel,
   getFilteredRowModel,
-  ColumnFiltersState,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+  flexRender,
 } from "@tanstack/react-table"
-import * as React from "react"
 
 import {
   Table,
@@ -19,124 +20,113 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
+
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, ArrowLeft01Icon, ArrowRight01Icon, FilterIcon, Tick01Icon, Cancel01Icon, UserGroupIcon } from "@hugeicons/core-free-icons"
+import { Search01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   emptyMessage?: string
+  searchPlaceholder?: string
   onRowClick?: (row: TData) => void
-  searchKey?: string
 }
 
 export function VoterDataTable<TData, TValue>({
   columns,
   data,
   emptyMessage = "No voters found.",
+  searchPlaceholder = "Search voters...",
   onRowClick,
-  searchKey = "name",
 }: DataTableProps<TData, TValue>) {
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [sorting, setSorting] = React.useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      columnFilters,
+    getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 20,
+      },
     },
+    state: {
+      globalFilter,
+      sorting,
+    },
+    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
   })
-
-  // Get counts for badges
-  const totalCount = data.length
-  const votedCount = data.filter((item: any) => !!item.ballot).length
-  const notVotedCount = totalCount - votedCount
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 p-4 rounded-2xl border border-dashed">
-        <Tabs 
-          defaultValue="all" 
-          className="w-full sm:w-auto"
-          onValueChange={(value) => {
-            if (value === "all") {
-              table.getColumn("status")?.setFilterValue(undefined)
-            } else {
-              table.getColumn("status")?.setFilterValue(value)
-            }
-          }}
-        >
-          <TabsList className="bg-background shadow-sm border p-1 h-10">
-            <TabsTrigger value="all" className="gap-2 px-4 data-[state=active]:bg-muted">
-              <HugeiconsIcon icon={UserGroupIcon} className="h-3.5 w-3.5" />
-              <span>All</span>
-              <span className="ml-1 text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full opacity-70">{totalCount}</span>
-            </TabsTrigger>
-            <TabsTrigger value="voted" className="gap-2 px-4 data-[state=active]:bg-green-500/10 data-[state=active]:text-green-600">
-              <HugeiconsIcon icon={Tick01Icon} className="h-3.5 w-3.5" />
-              <span>Voted</span>
-              <span className="ml-1 text-[10px] font-bold bg-green-500/10 px-1.5 py-0.5 rounded-full">{votedCount}</span>
-            </TabsTrigger>
-            <TabsTrigger value="not-voted" className="gap-2 px-4 data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-600">
-              <HugeiconsIcon icon={Cancel01Icon} className="h-3.5 w-3.5" />
-              <span>Not Voted</span>
-              <span className="ml-1 text-[10px] font-bold bg-amber-500/10 px-1.5 py-0.5 rounded-full">{notVotedCount}</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Table Controls (Search & Status Filter) */}
+      <div className="flex items-center gap-4">
+        <InputGroup className="max-w-sm w-full">
+          <InputGroupAddon>
+            <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
+          </InputGroupAddon>
+          <InputGroupInput
+            placeholder={searchPlaceholder}
+            value={globalFilter ?? ""}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+          />
+        </InputGroup>
 
-        <div className="flex items-center gap-2 flex-1 sm:justify-end">
-          <div className="relative max-w-sm flex-1">
-            <HugeiconsIcon 
-              icon={Search01Icon} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" 
-            />
-            <Input
-              placeholder={`Search by ${searchKey}...`}
-              value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn(searchKey)?.setFilterValue(event.target.value)
-              }
-              className="pl-10 h-10 bg-background border-muted-foreground/20 focus-visible:ring-primary/20"
-            />
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-10 w-10 p-0 bg-background"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-10 w-10 p-0 bg-background"
-            >
-              <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        {table.getColumn("status") && (
+          <Select
+            value={(table.getColumn("status")?.getFilterValue() as string) ?? "ALL"}
+            onValueChange={(value) =>
+              table.getColumn("status")?.setFilterValue(value === "ALL" ? "" : value)
+            }
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL" className="font-medium p-2">
+                All Statuses
+              </SelectItem>
+              <SelectItem value="voted" className="p-2">
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px] font-bold uppercase">Voted</Badge>
+              </SelectItem>
+              <SelectItem value="not-voted" className="p-2">
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-bold uppercase">Not Voted</Badge>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
+
+      {/* Data Table */}
       <div className="rounded-2xl border bg-card/50 overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="font-bold text-foreground h-11 px-6 text-xs uppercase tracking-widest opacity-70">
+                  <TableHead key={header.id} className="font-bold text-foreground h-11 px-6">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -161,7 +151,7 @@ export function VoterDataTable<TData, TValue>({
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3 px-6">
+                    <TableCell key={cell.id} className="py-4 px-6">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -169,20 +159,69 @@ export function VoterDataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground italic">
-                  {emptyMessage}
+                <TableCell colSpan={columns.length} className="h-40 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-2 h-full">
+                    <HugeiconsIcon icon={Search01Icon} className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-muted-foreground text-sm font-medium">{emptyMessage}</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination & Total Records Footer */}
       <div className="flex items-center justify-between px-2">
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-40">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-        </p>
-        <div className="flex items-center gap-1.5">
-           <span className="text-xs font-bold text-muted-foreground leading-none mr-2">{table.getFilteredRowModel().rows.length} Total Voters</span>
+        <div className="flex-1 text-sm text-muted-foreground">
+          Total {table.getFilteredRowModel().rows.length} voter(s)
+        </div>
+        <div className="flex items-center">
+          <div className="flex w-[100px] items-center justify-center text-sm">
+            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+          </div>
+          <div className="flex items-center space-x-2">
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      table.previousPage();
+                    }}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <span className="sr-only">Go to previous page</span>
+                    <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Go to previous page</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      table.nextPage();
+                    }}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    <span className="sr-only">Go to next page</span>
+                    <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Go to next page</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </div>
     </div>

@@ -49,7 +49,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
   const [parsedData, setParsedData] = React.useState<any[]>([])
   const [duplicates, setDuplicates] = React.useState<DuplicateVoter[]>([])
   const [importResults, setImportResults] = React.useState<{ count: number } | null>(null)
-  
+
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Reset state when dialog closes
@@ -92,7 +92,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
     if (!file) return
 
     setStep("verifying")
-    
+
     try {
       const reader = new FileReader()
       reader.onload = async (e) => {
@@ -122,7 +122,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
 
         // Call server-side verification
         const result = await verifyVotersBulk(electionId, sanitizedData)
-        
+
         if (result.error) {
           toast.error(result.error)
           setStep("upload")
@@ -138,9 +138,9 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
       }
       reader.readAsArrayBuffer(file)
     } catch (error) {
-       console.error("PARSING_ERROR:", error)
-       toast.error("Failed to parse file")
-       setStep("upload")
+      console.error("PARSING_ERROR:", error)
+      toast.error("Failed to parse file")
+      setStep("upload")
     }
   }
 
@@ -195,7 +195,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
             {step === "resolving" ? "Conflict Detected" : "Bulk Import Voters"}
           </DialogTitle>
           <DialogDescription className="text-sm font-medium text-muted-foreground/80">
-            {step === "resolving" 
+            {step === "resolving"
               ? "Some voters in your file already exist in this election."
               : "Register multiple voters at once via spreadsheet."}
           </DialogDescription>
@@ -211,13 +211,16 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                   Formatting Rules
                 </div>
                 <div className="text-sm text-foreground/80 space-y-2">
-                  <p>Your spreadsheet <strong>must</strong> include these column headers:</p>
+                  <p>Your spreadsheet should include these column headers:</p>
                   <div className="flex flex-wrap gap-2 pt-1 pb-2">
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-xs font-bold border-blue-500/20">unique_id</Badge>
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-xs font-bold border-blue-500/20">name</Badge>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-black uppercase border-emerald-500/20 px-2 py-0.5">name (Required)</Badge>
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-black uppercase border-blue-500/20 px-2 py-0.5">unique_id (Optional)</Badge>
                   </div>
-                  <p>All other columns in your file will be saved as additional details for the voter.</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    If the <code className="text-primary font-bold">unique_id</code> column is missing or empty for a row, our system will automatically generate a secure, non-repeating identifier for that voter.
+                  </p>
                 </div>
+
               </div>
 
               <div
@@ -263,20 +266,20 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
           {/* STEP: VERIFYING / IMPORTING */}
           {(step === "verifying" || step === "importing") && (
             <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
-                <div className="relative h-20 w-20 flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-3xl border-4 border-primary/20 border-t-primary animate-spin" />
-                    <HugeiconsIcon icon={SearchListIcon} className="h-8 w-8 text-primary animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                    <h3 className="text-xl font-bold tracking-tight">
-                        {step === "verifying" ? "Verifying Data Identity..." : "Finalizing Secure Import..."}
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        {step === "verifying" 
-                          ? "We are checking your spreadsheet for duplicates and ensuring data integrity."
-                          : "Almost there! We are saving the verified voter records to the database."}
-                    </p>
-                </div>
+              <div className="relative h-20 w-20 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-3xl border-4 border-primary/20 border-t-primary animate-spin" />
+                <HugeiconsIcon icon={SearchListIcon} className="h-8 w-8 text-primary animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold tracking-tight">
+                  {step === "verifying" ? "Verifying Data Identity..." : "Finalizing Secure Import..."}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  {step === "verifying"
+                    ? "We are checking your spreadsheet for duplicates and ensuring data integrity."
+                    : "Almost there! We are saving the verified voter records to the database."}
+                </p>
+              </div>
             </div>
           )}
 
@@ -289,7 +292,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                   Found {duplicates.length} duplicate records. They will be skipped automatically.
                 </p>
               </div>
-              
+
               <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 py-1">Conflicting Records</p>
               <ScrollArea className="h-[250px] rounded-2xl border bg-muted/30 p-2">
                 <div className="space-y-2">
@@ -304,7 +307,7 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
                   ))}
                 </div>
               </ScrollArea>
-              
+
               <div className="p-4 rounded-xl border border-dashed text-center">
                 <p className="text-[11px] text-muted-foreground font-medium">
                   The remaining <span className="text-foreground font-bold">{parsedData.length - duplicates.length}</span> voters are unique and ready for import.
@@ -316,48 +319,48 @@ export function ImportVotersDialog({ electionId }: ImportVotersDialogProps) {
           {/* STEP: READY */}
           {step === "ready" && (
             <div className="py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 scale-110">
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
-                </div>
-                <div className="space-y-2">
-                    <h3 className="text-2xl font-black tracking-tight text-emerald-600">Verification Complete</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        All <span className="text-foreground font-bold">{parsedData.length}</span> records are clean and verified for import.
-                    </p>
-                </div>
+              <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 scale-110">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black tracking-tight text-emerald-600">Verification Complete</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  All <span className="text-foreground font-bold">{parsedData.length}</span> records are clean and verified for import.
+                </p>
+              </div>
             </div>
           )}
 
           {/* STEP: SUCCESS */}
           {step === "success" && (
-             <div className="py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="h-24 w-24 rounded-[2rem] bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
-                    <HugeiconsIcon icon={Tick02Icon} size={48} strokeWidth={3} />
-                </div>
-                <div className="space-y-2">
-                    <h3 className="text-3xl font-black tracking-tight">Import Successful</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        <span className="text-foreground font-black text-lg">{importResults?.count}</span> voters have been successfully registered for this election.
-                    </p>
-                </div>
-             </div>
+            <div className="py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="h-24 w-24 rounded-[2rem] bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
+                <HugeiconsIcon icon={Tick02Icon} size={48} strokeWidth={3} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-black tracking-tight">Import Successful</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  <span className="text-foreground font-black text-lg">{importResults?.count}</span> voters have been successfully registered for this election.
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t flex flex-row items-center justify-end gap-3 bg-card/50">
+        <DialogFooter className="px-6 py-4 border-t flex flex-row items-center justify-end gap-3 bg-card">
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={step === "verifying" || step === "importing"}>
             {step === "success" ? "Close" : "Cancel"}
           </Button>
 
           {step === "upload" && (
             <Button onClick={handleVerify} disabled={!file} className="px-8 font-bold gap-2 active:scale-95 transition-all">
-                Verify Data
+              Verify Data
             </Button>
           )}
 
           {(step === "resolving" || step === "ready") && (
             <Button onClick={handleImport} className="px-8 font-bold gap-2 active:scale-95 transition-all bg-emerald-600 hover:bg-emerald-700">
-                {step === "resolving" ? `Skip Duplicates & Import ${parsedData.length - duplicates.length}` : `Register ${parsedData.length} Voters`}
+              {step === "resolving" ? `Skip Duplicates & Import ${parsedData.length - duplicates.length}` : `Register ${parsedData.length} Voters`}
             </Button>
           )}
         </DialogFooter>
