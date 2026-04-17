@@ -95,7 +95,7 @@ export function ElectionsList({ elections }: ElectionsListProps) {
           isUpdating
         )} 
         data={elections} 
-        searchPlaceholder="Search elections by name or code..."
+        searchPlaceholder="Search elections by name..."
         onRowClick={handleView}
       />
     </>

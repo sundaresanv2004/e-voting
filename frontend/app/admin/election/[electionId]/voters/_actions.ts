@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { VoterSchema, VoterFormValues } from "@/lib/schemas/voter"
-import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus, Prisma } from "@prisma/client"
 
 /**
  * Authorization helper to ensure user is permitted to manage voters
@@ -321,7 +321,7 @@ export async function importVotersBulk(electionId: string, voterData: any[]) {
     const { userId, organizationId } = await getAuthorizedUser(electionId)
 
     // Prepare data for Prisma createMany
-    const data = []
+    const data: Prisma.VoterCreateManyInput[] = []
     const generatedInBatch = new Set<string>()
 
     for (const v of voterData) {

@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
+import { getCalculatedElectionStatus } from "@/lib/utils/election"
 
 export async function updateElectionSettingsAction(
   electionId: string,
@@ -11,6 +12,9 @@ export async function updateElectionSettingsAction(
     requireSystemAuth?: boolean
     allSystemsAllowed?: boolean
     authorizeVoters?: boolean
+    showCandidateProfiles?: boolean
+    showCandidateSymbols?: boolean
+    shuffleCandidates?: boolean
   }
 ) {
   const session = await auth()
@@ -81,8 +85,16 @@ export async function updateElectionCoreAction(
     const result = await db.$transaction(async (tx) => {
       const oldElection = await tx.election.findUnique({
         where: { id: electionId, organizationId: orgId },
-        select: { name: true, startTime: true, endTime: true }
+        select: { name: true, startTime: true, endTime: true, status: true }
       })
+
+      if (!oldElection) throw new Error("Election not found")
+
+      let newStatus = getCalculatedElectionStatus(data.startTime, data.endTime)
+      // If it was manually PAUSED and it technically should be ACTIVE based on time, keep it PAUSED
+      if (oldElection.status === "PAUSED" && newStatus === "ACTIVE") {
+        newStatus = "PAUSED"
+      }
 
       const updatedElection = await tx.election.update({
         where: { 
@@ -91,6 +103,7 @@ export async function updateElectionCoreAction(
         },
         data: {
           ...data,
+          status: newStatus,
           updatedByUserId: userId,
         },
       })
@@ -105,7 +118,7 @@ export async function updateElectionCoreAction(
           status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldElection,
-            after: data
+            after: { ...data, status: newStatus }
           },
         }
       })
@@ -113,6 +126,7 @@ export async function updateElectionCoreAction(
       return updatedElection
     })
 
+    revalidatePath("/", "layout")
     revalidatePath(`/admin/election/${electionId}/settings`)
     return { success: true, election: result }
   } catch (error: any) {

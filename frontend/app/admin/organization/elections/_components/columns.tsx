@@ -99,23 +99,7 @@ export const columns = (
       },
       cell: ({ row }) => <span className="font-semibold">{row.getValue("name")}</span>,
     },
-    {
-      accessorKey: "code",
-      header: "Unique ID",
-      cell: ({ row }) => {
-        const code = row.getValue("code") as string
-        return (
-          <div className="flex items-center gap-2 group/copy">
-            <code className="text-xs bg-muted px-2 py-0.5 rounded-full font-mono">
-              {code}
-            </code>
-            <div className="opacity-0 group-hover/copy:opacity-100 transition-opacity">
-              <CopyButton text={code} />
-            </div>
-          </div>
-        )
-      },
-    },
+
     {
       accessorKey: "status",
       filterFn: "equals",

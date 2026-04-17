@@ -371,11 +371,16 @@ function RegistrationSection({ initialData }: { initialData: SystemSettingsData 
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1 flex-1">
-            <h3 className="text-sm font-semibold">Allow Local System Connection</h3>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              Enable this to allow local voting systems to connect and establish communication with your organization's cloud. This is required for both initial registration and ongoing communication.
-            </p>
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+              <HugeiconsIcon icon={ComputerIcon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Allow Local System Connection</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Enable this to allow local voting systems to connect and establish communication with your organization's cloud. This is required for both initial registration and ongoing communication.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 shrink-0 pt-1">
             <Switch checked={enabled} onCheckedChange={handleToggle} disabled={isPending} />
@@ -416,11 +421,16 @@ function LimitsSection({ initialData }: { initialData: SystemSettingsData }) {
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
-          <div className="space-y-1 flex-1">
-            <h3 className="text-sm font-semibold">Maximum Registered Systems</h3>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              Set a cap on the total number of systems that can be connected to your organization (maximum 20).
-            </p>
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+              <HugeiconsIcon icon={Building05Icon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Maximum Registered Systems</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Set a cap on the total number of systems that can be connected to your organization (maximum 20).
+              </p>
+            </div>
           </div>
           <div className="w-full sm:w-[250px] shrink-0 space-y-4 pt-1">
             <div className="flex items-center justify-between">
@@ -456,11 +466,16 @@ function DeleteSection({ orgName }: { orgName: string }) {
     <div className="rounded-xl border border-destructive/20 bg-card overflow-hidden">
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-destructive">Delete this Organization</h3>
-            <p className="text-[13px] text-muted-foreground">
-              Once deleted, all data is permanently removed and cannot be recovered.
-            </p>
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-600">
+              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-destructive">Delete this Organization</h3>
+              <p className="text-[13px] text-muted-foreground">
+                Once deleted, all data is permanently removed and cannot be recovered.
+              </p>
+            </div>
           </div>
           <Button
             variant="destructive"
@@ -468,7 +483,6 @@ function DeleteSection({ orgName }: { orgName: string }) {
             className="gap-2 shrink-0 active:scale-[0.98] transition-all"
             onClick={() => setIsOpen(true)}
           >
-            <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
             Delete Organization
           </Button>
         </div>
@@ -494,11 +508,16 @@ function TransferSection() {
     <div className="rounded-xl border border-blue-500/20 bg-card overflow-hidden">
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400">Transfer Ownership</h3>
-            <p className="text-[13px] text-muted-foreground">
-              Transfer management control of this organization to another member.
-            </p>
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+              <HugeiconsIcon icon={UserAccountIcon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400">Transfer Ownership</h3>
+              <p className="text-[13px] text-muted-foreground">
+                Transfer management control of this organization to another member.
+              </p>
+            </div>
           </div>
           <Button
             variant="outline"
@@ -506,7 +525,6 @@ function TransferSection() {
             className="gap-2 shrink-0 border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-500/10 active:scale-[0.98] transition-all"
             onClick={() => setIsOpen(true)}
           >
-            <HugeiconsIcon icon={UserAccountIcon} className="h-4 w-4" />
             Transfer Ownership
           </Button>
         </div>

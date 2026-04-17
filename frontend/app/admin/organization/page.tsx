@@ -8,9 +8,10 @@ import { HardwareHealth } from "./_components/HardwareHealth"
 import { TeamSnapshot } from "./_components/TeamSnapshot"
 import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
-import { ElectionStatus, SystemStatus, UserRole } from "@prisma/client"
+import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
 import { SuccessToastListener } from "@/components/auth/success-toast-listener"
 import { Suspense } from "react"
+import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function OrganizationDashboardPage() {
   const session = await auth()
@@ -34,9 +35,7 @@ export default async function OrganizationDashboardPage() {
     rejectedSystems,
     revokedSystems,
     latestElections,
-    latestSystems,
-    latestMembers,
-    latestSettings,
+    latestAuditLogs,
   ] = await Promise.all([
 
     db.organization.findUnique({
@@ -93,78 +92,62 @@ export default async function OrganizationDashboardPage() {
         }
       }
     }),
-    // Latest systems for activity feed
-    db.authorizedSystem.findMany({
+    // Latest Activity Pulse from Audit Logs
+    db.adminAuditLog.findMany({
       where: { organizationId: orgId },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-    }),
-    // Latest members for activity feed
-    db.user.findMany({
-      where: { organizationId: orgId },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: {
+        admin: {
+          select: { name: true, email: true }
+        }
       }
     }),
-    // Latest settings changes (tracked via election updates for simplicity)
-    db.electionSettings.findMany({
-      where: { election: { organizationId: orgId } },
-      include: { election: { select: { name: true } } },
-      orderBy: { updatedAt: "desc" },
-      take: 4,
-    })
   ])
+
 
   if (!organization) {
     redirect("/setup/organization")
   }
 
-  // Construct Activity Feed
-  const activities: ActivityItem[] = [
-    ...latestElections.map(e => ({
-      id: e.id,
-      type: "ELECTION" as const,
-      title: e.name,
-      description: e.updatedAt > e.createdAt ? "Election details updated" : `New election created`,
-      timestamp: e.updatedAt,
-      status: e.status,
-    })),
-    ...latestSystems.map(s => ({
-      id: s.id,
-      type: "SYSTEM" as const,
-      title: s.name || s.hostName || "Unnamed System",
-      description: s.updatedAt > s.createdAt 
-        ? `Status updated to ${s.status}` 
-        : `Hardware registration — ${s.macAddress || "unknown MAC"}`,
-      timestamp: s.updatedAt,
-      status: s.status,
-    })),
-    ...latestMembers.map(m => ({
-      id: m.id,
-      type: "MEMBER" as const,
-      title: m.name || m.email,
-      description: m.updatedAt > m.createdAt 
-        ? `Role updated to ${m.role}` 
-        : `New team member joined`,
-      timestamp: m.updatedAt,
-      status: m.role,
-    })),
-    ...latestSettings.map(s => ({
-      id: s.id,
-      type: "ELECTION" as const,
-      title: s.election.name,
-      description: "Election settings modified",
-      timestamp: s.updatedAt,
-    }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8)
+  // Construct Activity Feed from Audit Logs
+  const activities: ActivityItem[] = latestAuditLogs.map(log => {
+    let type: "ELECTION" | "SYSTEM" | "MEMBER" = "ELECTION"
+    if (log.entityType === AuditEntityType.CANDIDATE || log.entityType === AuditEntityType.ELECTION_ROLE || log.entityType === AuditEntityType.ELECTION) {
+      type = "ELECTION"
+    } else if (log.entityType === AuditEntityType.SYSTEM) {
+      type = "SYSTEM"
+    } else if (log.entityType === AuditEntityType.USER || log.entityType === AuditEntityType.MEMBER || log.entityType === AuditEntityType.ACCESS) {
+      type = "MEMBER"
+    }
 
+    // Determine Title & Description based on action
+    const adminName = log.admin?.name || log.admin?.email || "Administrator"
+    let title = log.description || log.action.replace(/_/g, " ")
+    let description = `Actioned by ${adminName}`
+
+    // Custom formatting for common actions
+    if (log.action === "ELECTION_CREATED") {
+      title = (log.metadata as any)?.name || "New Election"
+      description = "Election initialization complete"
+    } else if (log.action === "MEMBER_ADDED") {
+      title = log.admin?.name || log.admin?.email || "New Member"
+      description = `Joined as ${(log.metadata as any)?.role || "Member"}`
+    } else if (log.action === "MEMBER_UPDATED") {
+      description = `Role updated to ${(log.metadata as any)?.after?.role || "Member"}`
+    } else if (log.action === "SYSTEM_APPROVED") {
+      description = "Hardware security clearance granted"
+    }
+
+    return {
+      id: log.id,
+      type,
+      title,
+      description,
+      timestamp: log.createdAt,
+      status: (log.metadata as any)?.status || (log.metadata as any)?.newStatus || (log.metadata as any)?.role || undefined
+    }
+  })
 
   // Format elections for overview
   const electionsForOverview: ElectionSummary[] = latestElections.map(e => ({
@@ -179,10 +162,12 @@ export default async function OrganizationDashboardPage() {
     },
   }))
 
+
   const totalSystems = approvedSystems + pendingSystems + rejectedSystems + revokedSystems
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
+      <AutoRefresh intervalMs={25000} />
       <Suspense fallback={null}>
         <SuccessToastListener />
       </Suspense>

@@ -157,7 +157,7 @@ export function ElectionDetailsSheet({
               <div className="relative z-10 flex items-center justify-between">
                 <div className="space-y-1.5 min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase font-black tracking-widest text-muted-foreground/60">
-                    Unique Identifier
+                    Election Code
                   </p>
                   <code className="text-xl font-mono tracking-wider text-foreground block truncate">
                     {election.code}

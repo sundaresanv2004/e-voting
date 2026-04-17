@@ -33,10 +33,12 @@ interface ElectionsOverviewProps {
 }
 
 const statusStyles: Record<string, string> = {
-  ACTIVE: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  UPCOMING: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  COMPLETED: "bg-secondary text-secondary-foreground",
+  ACTIVE: "bg-green-500/10 text-green-600 border-green-500/20",
+  UPCOMING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  COMPLETED: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+  PAUSED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 }
+
 
 export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
   const router = useRouter()
