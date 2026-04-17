@@ -1,7 +1,0 @@
-{
-  "name": "errors",
-  "version": "2.01",
-  "001": "File with this name file already exists.\nTry uploading after renaming file manually.",
-  "002": "File can't be moved from a different disc drive.\nTry to upload after moving file to local disc dive.",
-  "003": "Download failed: Permission denied. Please check\nyour permissions and try again."
-}

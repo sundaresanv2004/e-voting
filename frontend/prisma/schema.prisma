@@ -1,0 +1,524 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                      String                 @id @default(cuid())
+  name                    String?
+  email                   String                 @unique
+  emailVerified           DateTime?
+  image                   String?
+  password                String?
+  role                    UserRole               @default(USER)
+  organizationId          String?
+  isActive                Boolean                @default(true)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  accounts                Account[]
+  authenticators          Authenticator[]
+  createdOrganizations    Organization[]         @relation("CreatedBy")
+  updatedOrganizations    Organization[]         @relation("OrganizationUpdatedBy")
+  updatedSettings         OrganizationSettings[] @relation("UpdatedBy")
+  createdSettings         OrganizationSettings[] @relation("SettingsCreatedBy")
+  sessions                Session[]
+  organization            Organization?          @relation(fields: [organizationId], references: [id])
+  createdElections        Election[]             @relation("ElectionCreator")
+  updatedElections        Election[]             @relation("ElectionUpdatedBy")
+  createdElectionSettings ElectionSettings[]     @relation("ElectionSettingsCreatedBy")
+  updatedElectionSettings ElectionSettings[]     @relation("ElectionSettingsUpdatedBy")
+  createdElectionRoles    ElectionRole[]         @relation("ElectionRoleCreatedBy")
+  updatedElectionRoles    ElectionRole[]         @relation("ElectionRoleUpdatedBy")
+  createdCandidates       Candidate[]            @relation("CandidateCreatedBy")
+  updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
+  approvedSystems         AuthorizedSystem[]     @relation("SystemApprover")
+  updatedSystems          AuthorizedSystem[]     @relation("SystemUpdatedBy")
+  ownedOrganizations      Organization[]         @relation("OrganizationOwner")
+  userAuditLogs           UserAuditLog[]
+  adminAuditLogs          AdminAuditLog[]
+  generatedResults        ElectionResult[]       @relation("ResultGeneratedBy")
+
+  hasAllElectionsAccess Boolean                @default(false)
+  electionAccess        UserElectionAccess[]   @relation("UserElections")
+  createdAccess         UserElectionAccess[]   @relation("AccessCreatedBy")
+  updatedAccess         UserElectionAccess[]   @relation("AccessUpdatedBy")
+  createdSystemAccess   SystemElectionAccess[] @relation("SystemAccessCreatedBy")
+  updatedSystemAccess   SystemElectionAccess[] @relation("SystemAccessUpdatedBy")
+  createdVoters         Voter[]                @relation("VoterCreatedBy")
+  updatedVoters         Voter[]                @relation("VoterUpdatedBy")
+
+  @@index([organizationId])
+}
+
+model Organization {
+  id              String                @id @default(cuid())
+  name            String
+  type            OrganizationType
+  code            String                @unique
+  logo            String?
+  createdByUserId String
+  updatedByUserId String
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  creator         User                  @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  owner           User?                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  updater         User                  @relation("OrganizationUpdatedBy", fields: [updatedByUserId], references: [id])
+  ownerId         String?
+  settings        OrganizationSettings?
+  members         User[]
+  elections       Election[]
+  systems         AuthorizedSystem[]
+  adminAuditLogs  AdminAuditLog[]
+
+  @@index([code])
+}
+
+model OrganizationSettings {
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  allowSystemConnection Boolean      @default(false)
+  maxSystems            Int?         @default(20)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  createdByUserId       String
+  updatedByUserId       String
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy             User         @relation("SettingsCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy             User         @relation("UpdatedBy", fields: [updatedByUserId], references: [id])
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+  WARNING
+  INFO
+}
+
+enum AuditEntityType {
+  ORGANIZATION
+  USER
+  ELECTION
+  ELECTION_ROLE
+  CANDIDATE
+  BALLOT
+  VOTER
+  SYSTEM
+  SETTINGS
+  AUTH
+  SECURITY
+  RESULT
+  MEMBER
+  ACCESS
+}
+
+enum UserRole {
+  USER
+  STAFF
+  VIEWER
+  ORG_ADMIN
+}
+
+enum OrganizationType {
+  SCHOOL
+  COLLEGE
+  OTHER
+}
+
+enum ElectionStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum SystemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+  SUSPENDED
+  EXPIRED
+}
+
+model Election {
+  id              String         @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String         @unique
+  startTime       DateTime
+  endTime         DateTime
+  status          ElectionStatus @default(UPCOMING)
+  createdByUserId String
+  updatedByUserId String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy           User                   @relation("ElectionCreator", fields: [createdByUserId], references: [id])
+  updatedBy           User                   @relation("ElectionUpdatedBy", fields: [updatedByUserId], references: [id])
+  settings            ElectionSettings?
+  result              ElectionResult?
+  roles               ElectionRole[]
+  ballots             Ballot[]
+  voters              Voter[]
+  accessibleBySystems SystemElectionAccess[] @relation("ElectionSystems")
+  accessibleByUsers   UserElectionAccess[]   @relation("ElectionUsers")
+  systemLogs          SystemAuditLog[]
+
+  @@index([organizationId])
+  @@index([startTime, endTime])
+  @@index([status])
+}
+
+model ElectionSettings {
+  id                    String   @id @default(cuid())
+  electionId            String   @unique
+  requireSystemAuth     Boolean  @default(true)
+  allSystemsAllowed     Boolean  @default(true)
+  authorizeVoters       Boolean  @default(true)
+  showCandidateProfiles Boolean  @default(true)
+  showCandidateSymbols  Boolean  @default(true)
+  shuffleCandidates     Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdByUserId       String
+  updatedByUserId       String
+
+  election  Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("ElectionSettingsCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User     @relation("ElectionSettingsUpdatedBy", fields: [updatedByUserId], references: [id])
+}
+
+model ElectionRole {
+  id              String   @id @default(cuid())
+  electionId      String
+  name            String
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  election       Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy      User               @relation("ElectionRoleCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy      User               @relation("ElectionRoleUpdatedBy", fields: [updatedByUserId], references: [id])
+  candidates     Candidate[]
+  votes          Vote[]
+  allowedSystems AuthorizedSystem[] @relation("RoleSystems")
+  results        CandidateResult[]
+
+  @@unique([electionId, name])
+  @@index([electionId, order])
+}
+
+model Candidate {
+  id              String   @id @default(cuid())
+  electionRoleId  String
+  name            String
+  profileImage    String?
+  symbolImage     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  role      ElectionRole      @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
+  createdBy User              @relation("CandidateCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User              @relation("CandidateUpdatedBy", fields: [updatedByUserId], references: [id])
+  votes     Vote[]
+  results   CandidateResult[]
+
+  @@index([electionRoleId])
+  @@index([createdByUserId])
+}
+
+model Ballot {
+  id         String   @id @default(cuid())
+  electionId String
+  systemId   String
+  createdAt  DateTime @default(now())
+
+  election Election         @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  system   AuthorizedSystem @relation(fields: [systemId], references: [id])
+  voterId  String?          @unique
+  voter    Voter?           @relation(fields: [voterId], references: [id])
+  votes    Vote[]
+
+  @@index([electionId])
+  @@index([systemId])
+  @@index([electionId, systemId])
+  @@index([createdAt])
+}
+
+model Vote {
+  id             String   @id @default(cuid())
+  ballotId       String
+  electionRoleId String
+  candidateId    String?
+  createdAt      DateTime @default(now())
+
+  ballot    Ballot       @relation(fields: [ballotId], references: [id], onDelete: Cascade)
+  role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
+  candidate Candidate?   @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+
+  @@unique([ballotId, electionRoleId])
+  @@index([ballotId])
+  @@index([candidateId])
+  @@index([electionRoleId])
+  @@index([createdAt])
+}
+
+model AuthorizedSystem {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String?
+  hostName         String?
+  ipAddress        String?
+  macAddress       String?
+  status           SystemStatus @default(PENDING)
+  secretTokenHash  String?      @unique // Store a hash (e.g., Argon2) of the secret, never the plain text
+  tokenExpiresAt   DateTime?
+  approvedByUserId String?
+  approvedAt       DateTime?
+  lastOpenedAt     DateTime?
+  lastClosedAt     DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  updatedByUserId  String?
+
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approvedBy     User?                  @relation("SystemApprover", fields: [approvedByUserId], references: [id])
+  updatedBy      User?                  @relation("SystemUpdatedBy", fields: [updatedByUserId], references: [id])
+  electionAccess SystemElectionAccess[] @relation("SystemElections")
+  roles          ElectionRole[]         @relation("RoleSystems")
+  ballots        Ballot[]
+  auditLogs      SystemAuditLog[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([approvedByUserId])
+  @@index([updatedByUserId])
+}
+
+model UserElectionAccess {
+  id         String @id @default(cuid())
+  userId     String
+  electionId String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  user      User     @relation("UserElections", fields: [userId], references: [id], onDelete: Cascade)
+  election  Election @relation("ElectionUsers", fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("AccessCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User     @relation("AccessUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@unique([userId, electionId])
+  @@index([userId])
+  @@index([electionId])
+}
+
+model SystemElectionAccess {
+  id         String @id @default(cuid())
+  systemId   String
+  electionId String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  system    AuthorizedSystem @relation("SystemElections", fields: [systemId], references: [id], onDelete: Cascade)
+  election  Election         @relation("ElectionSystems", fields: [electionId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("SystemAccessCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User             @relation("SystemAccessUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@unique([systemId, electionId])
+  @@index([systemId])
+  @@index([electionId])
+}
+
+model Voter {
+  id                String  @id @default(cuid())
+  electionId        String
+  uniqueId          String
+  name              String
+  image             String?
+  additionalDetails Json?
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  ballot   Ballot?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+  updatedByUserId String
+
+  createdBy User @relation("VoterCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy User @relation("VoterUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@unique([electionId, uniqueId])
+  @@index([electionId])
+  @@index([uniqueId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model UserAuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  email     String?
+  action    String
+  status    AuditStatus
+  reason    String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([email])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model AdminAuditLog {
+  id             String          @id @default(cuid())
+  adminId        String?
+  organizationId String?
+  action         String
+  entityType     AuditEntityType
+  status         AuditStatus     @default(INFO)
+  entityId       String?
+  description    String?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  admin        User?         @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model SystemAuditLog {
+  id         String      @id @default(cuid())
+  systemId   String
+  electionId String?
+  action     String
+  status     AuditStatus @default(INFO)
+  ipAddress  String?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  system   AuthorizedSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  election Election?        @relation(fields: [electionId], references: [id], onDelete: SetNull)
+
+  @@index([systemId])
+  @@index([electionId])
+  @@index([createdAt])
+}
+
+model ElectionResult {
+  id                String    @id @default(cuid())
+  electionId        String    @unique
+  totalVoters       Int
+  totalBallots      Int
+  turnoutPercentage Float?
+  resultData        Json
+  isFinalized       Boolean   @default(false)
+  finalizedAt       DateTime?
+  generatedAt       DateTime  @default(now())
+  generatedByUserId String?
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  generatedBy User?    @relation("ResultGeneratedBy", fields: [generatedByUserId], references: [id], onDelete: SetNull)
+}
+
+model CandidateResult {
+  id          String   @id @default(cuid())
+  roleId      String
+  candidateId String
+  voteCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  role      ElectionRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  candidate Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, candidateId])
+  @@index([roleId])
+  @@index([candidateId])
+}
