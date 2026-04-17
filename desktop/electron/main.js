@@ -6,10 +6,36 @@ const { machineIdSync } = require('node-machine-id');
 
 const os = require('os');
 
+const ApiClient = require('./api_client');
+
 // Initialize Store
 const store = new Store();
 
-const API_BASE_URL = process.env.API_URL || 'http://127.0.0.1:8000/api/v1';
+function clearLocalTerminalData() {
+    store.delete('systemId');
+    store.delete('secretToken');
+    store.delete('terminalStatus');
+    store.delete('organizationName');
+    store.delete('organizationLogo');
+    store.delete('organizationLogoCache');
+    store.delete('systemName');
+    store.set('terminalStatus', 'UNREGISTERED');
+    
+    if (mainWindow) {
+        mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
+    }
+}
+
+function handleApiResult(result) {
+    if (result && result.networkError && mainWindow) {
+        mainWindow.webContents.send('terminal:network-error', 'backend');
+    }
+    // If the record was deleted from the dashboard (404), purge local state
+    if (result && result.status === 404) {
+        clearLocalTerminalData();
+    }
+    return result;
+}
 
 /**
  * Captures basic system information for registration.
@@ -116,21 +142,16 @@ ipcMain.handle('terminal:register', async (event, { organizationCode, systemName
     const sysInfo = getSystemInfo();
     
     try {
-        const response = await fetch(`${API_BASE_URL}/organizations/connect-system`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                organizationCode,
-                systemName,
-                macAddress: sysInfo.macAddress,
-                hostName: sysInfo.hostName,
-                ipAddress: sysInfo.ipAddress
-            })
-        });
+        const result = handleApiResult(await ApiClient.connectSystem({
+            organizationCode,
+            systemName,
+            macAddress: sysInfo.macAddress,
+            hostName: sysInfo.hostName,
+            ipAddress: sysInfo.ipAddress
+        }));
 
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
+        if (result.success && result.data?.success) {
+            const data = result.data;
             store.set('systemId', data.systemId);
             store.set('systemName', systemName);
             store.set('organizationName', data.organizationName);
@@ -141,7 +162,7 @@ ipcMain.handle('terminal:register', async (event, { organizationCode, systemName
             
             return { success: true, systemId: data.systemId };
         } else {
-            return { success: false, error: data.detail || 'Registration failed' };
+            return { success: false, error: result.error || 'Registration failed' };
         }
     } catch (error) {
         return { success: false, error: 'Connection failed. Is the backend running?' };
@@ -152,24 +173,13 @@ ipcMain.handle('terminal:logout', async () => {
     const systemId = store.get('systemId');
     try {
         if (systemId) {
-            await fetch(`${API_BASE_URL}/organizations/systems/${systemId}/revoke`, { method: 'POST' });
+            handleApiResult(await ApiClient.revokeSystem(systemId));
         }
     } catch (e) {
         console.error("Logout API call failed:", e);
     } finally {
-        // Always clear locally even if network fails
-        store.delete('systemId');
-        store.delete('secretToken');
-        store.delete('terminalStatus');
-        store.delete('organizationName');
-        store.delete('organizationLogo');
-        store.delete('organizationLogoCache');
-        store.delete('systemName');
-        store.set('terminalStatus', 'UNREGISTERED');
-        
-        if (mainWindow) {
-            mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
-        }
+        // Use the centralized purge helper
+        clearLocalTerminalData();
     }
     return { success: true };
 });
@@ -181,9 +191,9 @@ function startStatusPolling(systemId) {
     
     pollInterval = setInterval(async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/organizations/systems/${systemId}/status`);
-            if (response.ok) {
-                const data = await response.json();
+            const result = handleApiResult(await ApiClient.getStatus(systemId));
+            if (result.success && result.data) {
+                const data = result.data;
                 if (data.status === 'APPROVED' && data.secretToken) {
                     saveSecretToken(data.secretToken);
                     store.set('terminalStatus', 'APPROVED');
@@ -226,43 +236,20 @@ ipcMain.handle('terminal:cancel-registration', async () => {
     try {
         if (systemId) {
             // Call the backend DELETE endpoint as requested
-            await fetch(`${API_BASE_URL}/organizations/systems/${systemId}`, { 
-                method: 'DELETE' 
-            });
+            handleApiResult(await ApiClient.cancelRegistration(systemId));
         }
     } catch (e) {
         console.error("Cancel registration API call failed:", e);
     } finally {
-        // Clear local credentials
-        store.delete('systemId');
-        store.delete('systemName');
-        store.delete('organizationName');
-        store.delete('organizationLogo');
-        store.delete('organizationLogoCache');
-        store.delete('secretToken');
-        store.set('terminalStatus', 'UNREGISTERED');
-        
-        if (mainWindow) {
-            mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
-        }
+        // Use the centralized purge helper
+        clearLocalTerminalData();
     }
     return { success: true };
 });
 
 ipcMain.handle('terminal:reset-registration-state', async () => {
     // This just clears local state without calling the DELETE API.
-    // Use this when a request was rejected but we want to let the user try again.
-    store.delete('systemId');
-    store.delete('systemName');
-    store.delete('organizationName');
-    store.delete('organizationLogo');
-    store.delete('organizationLogoCache');
-    store.delete('secretToken');
-    store.set('terminalStatus', 'UNREGISTERED');
-    
-    if (mainWindow) {
-        mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
-    }
+    clearLocalTerminalData();
     return { success: true };
 });
 
@@ -288,32 +275,28 @@ ipcMain.handle('terminal:verify-handshake', async () => {
     if (status === 'APPROVED' && secretToken) {
         try {
             const sysInfo = getSystemInfo();
-            const response = await fetch(`${API_BASE_URL}/organizations/systems/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    systemId,
-                    secretToken,
-                    macAddress: sysInfo.macAddress
-                })
-            });
+            const result = handleApiResult(await ApiClient.verifyTerminal({
+                systemId,
+                secretToken,
+                macAddress: sysInfo.macAddress
+            }));
 
-            if (response.ok) {
-                const result = await response.json();
+            if (result.success && result.data) {
+                const data = result.data;
             
-                if (result.valid) {
+                if (data.valid) {
                     store.set('terminalStatus', 'APPROVED');
                     // Update cache with fresh data
                     const oldLogoUrl = store.get('organizationLogo');
-                    store.set('organizationName', result.organizationName);
-                    store.set('organizationLogo', result.organizationLogo);
-                    store.set('systemName', result.systemName);
+                    store.set('organizationName', data.organizationName);
+                    store.set('organizationLogo', data.organizationLogo);
+                    store.set('systemName', data.systemName);
 
                     // Background cache the image for offline usage
-                    if (result.organizationLogo) {
+                    if (data.organizationLogo) {
                         // Only re-cache if URL changed or cache is missing
-                        if (result.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
-                            cacheLogo(result.organizationLogo);
+                        if (data.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
+                            cacheLogo(data.organizationLogo);
                         }
                     } else {
                         // Logo was removed from server, clear local cache
@@ -322,7 +305,7 @@ ipcMain.handle('terminal:verify-handshake', async () => {
                     return { success: true, status: 'APPROVED' };
                 } else {
                     // VERIFICATION FAILED - Be precise about the new status
-                    const serverStatus = result.status;
+                    const serverStatus = data.status;
                     
                     if (serverStatus === 'PENDING') {
                         store.set('terminalStatus', 'PENDING');

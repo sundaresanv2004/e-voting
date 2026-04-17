@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     
     DATABASE_URL: str = "postgresql+psycopg://myuser:mypassword@localhost:5432/e_voting"
     
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "onboarding@resend.dev"
+    WEBSITE_URL: str = "http://localhost:3000" # Default frontend URL
+    
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 settings = Settings()

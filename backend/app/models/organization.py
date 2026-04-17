@@ -25,6 +25,8 @@ class Organization(Base):
 
     settings = relationship("OrganizationSettings", back_populates="organization", uselist=False)
     systems = relationship("AuthorizedSystem", back_populates="organization")
+    elections = relationship("Election", back_populates="organization")
+    owner = relationship("User", back_populates="ownedOrganizations", foreign_keys=[ownerId])
 
 
 

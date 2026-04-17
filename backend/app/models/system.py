@@ -22,7 +22,7 @@ class AuthorizedSystem(Base):
     ipAddress = Column(String, nullable=True)
     macAddress = Column(String, nullable=True)
     status = Column(Enum(SystemStatus, name="systemstatus"), default=SystemStatus.PENDING)
-    secretToken = Column(String, unique=True, nullable=True)
+    secretTokenHash = Column(String, unique=True, nullable=True)
     tokenExpiresAt = Column(DateTime, nullable=True)
     approvedByUserId = Column(String, nullable=True)
     approvedAt = Column(DateTime, nullable=True)
@@ -33,4 +33,6 @@ class AuthorizedSystem(Base):
     updatedByUserId = Column(String, nullable=True)
 
     organization = relationship("Organization", back_populates="systems")
-    logs = relationship("SystemLog", back_populates="system", cascade="all, delete-orphan")
+    logs = relationship("SystemAuditLog", back_populates="system", cascade="all, delete-orphan")
+    ballots = relationship("Ballot", back_populates="system")
+    electionAccess = relationship("SystemElectionAccess", back_populates="system", cascade="all, delete-orphan")

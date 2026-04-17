@@ -1,15 +1,24 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Enum
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 import datetime
+import enum
 
-class SystemLog(Base):
-    __tablename__ = "SystemLog"
+class AuditStatus(enum.Enum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    WARNING = "WARNING"
+    INFO = "INFO"
+
+class SystemAuditLog(Base):
+    __tablename__ = "SystemAuditLog"
 
     id = Column(String, primary_key=True)
     systemId = Column(String, ForeignKey("AuthorizedSystem.id", ondelete="CASCADE"), nullable=False)
     electionId = Column(String, nullable=True) # Optional link to election
-    event = Column(String, nullable=False) # e.g., "CONNECTION_REQUESTED", "SUSPENDED"
+    action = Column(String, nullable=False)
+    status = Column(Enum(AuditStatus, name="auditstatus"), default=AuditStatus.INFO)
+    ipAddress = Column(String, nullable=True)
     metadata_ = Column("metadata", JSON, nullable=True)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
 

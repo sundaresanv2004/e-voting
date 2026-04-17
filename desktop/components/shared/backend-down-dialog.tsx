@@ -71,12 +71,8 @@ export function BackendDownDialog({ isOpen, onRetry, type = "backend", isRetryin
                         }
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="sm:justify-center">
-                    {isInternet ? (
-                        <Button variant="outline" onClick={handleExit} disabled={isRetrying}>
-                            Exit App
-                        </Button>
-                    ) : (
+                <AlertDialogFooter className="flex-col sm:flex-col space-y-2 sm:space-y-2 sm:space-x-0 w-full mt-2">
+                    {!isInternet && (
                         <Button
                             variant="outline"
                             onClick={() => openExternalUrl("mailto:contact@sundaresan.dev")}
@@ -85,10 +81,14 @@ export function BackendDownDialog({ isOpen, onRetry, type = "backend", isRetryin
                             Help
                         </Button>
                     )}
-                    <AlertDialogAction onClick={onRetry} disabled={isRetrying}>
+                    <AlertDialogAction
+                        onClick={onRetry}
+                        disabled={isRetrying}
+                        className="w-full align-right"
+                    >
                         {isRetrying ? (
                             <>
-                                <Spinner className="mr-2 h-4 w-4" />
+                                <Spinner className="h-4 w-4" />
                                 Retrying...
                             </>
                         ) : (

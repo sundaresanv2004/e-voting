@@ -37,30 +37,37 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
 
+    const checkNetworkHealth = async (isBackground = false) => {
+        if (typeof window !== "undefined" && !window.navigator.onLine) {
+            setNetworkError("internet");
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/health`, { method: 'GET', cache: 'no-store' });
+            if (!response.ok) throw new Error("Server health check failed");
+            
+            if (isBackground) setNetworkError(null);
+            return true;
+        } catch (err) {
+            if (typeof window !== "undefined" && window.navigator.onLine) {
+                setNetworkError("backend");
+            } else {
+                setNetworkError("internet");
+            }
+            return false;
+        }
+    };
+
     const hydrate = async () => {
         setLoading(true);
         setNetworkError(null);
         try {
-            if (typeof window !== "undefined" && !window.navigator.onLine) {
-                setNetworkError("internet");
-                return;
-            }
+            const isHealthy = await checkNetworkHealth();
+            if (!isHealthy) return;
 
             const electron = (window as any).electron;
             if (!electron?.terminal) return;
-
-            // Check if backend is reachable
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/health`, { method: 'GET', cache: 'no-store' });
-                if (!response.ok) throw new Error("Server health check failed");
-            } catch (err) {
-                if (typeof window !== "undefined" && window.navigator.onLine) {
-                    setNetworkError("backend");
-                } else {
-                    setNetworkError("internet");
-                }
-                return;
-            }
 
             // Fetch identity immediately to prepare the UI
             const identity = await electron.terminal.getIdentity();
@@ -95,14 +102,37 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         hydrate();
 
+        const handleOnline = () => {
+            // When internet returns, immediately check health and re-hydrate gracefully
+            checkNetworkHealth(true).then(ok => { if (ok) hydrate(); });
+        };
+        const handleOffline = () => setNetworkError("internet");
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
         const electron = (window as any).electron;
-        if (electron?.terminal?.onStatusUpdate) {
-            const unsub = electron.terminal.onStatusUpdate((newStatus: SystemStatus) => {
-                setTerminal(prev => ({ ...prev, systemStatus: newStatus }));
-            });
-            return () => {
-                if (unsub) unsub();
+        let unsubStatus: any;
+        let unsubNetwork: any;
+        
+        if (electron?.terminal) {
+            if (electron.terminal.onStatusUpdate) {
+                unsubStatus = electron.terminal.onStatusUpdate((newStatus: SystemStatus) => {
+                    setTerminal(prev => ({ ...prev, systemStatus: newStatus }));
+                });
             }
+            if (electron.terminal.onNetworkError) {
+                unsubNetwork = electron.terminal.onNetworkError((type: "backend" | "internet") => {
+                    setNetworkError(type);
+                });
+            }
+        }
+        
+        return () => {
+            if (unsubStatus) unsubStatus();
+            if (unsubNetwork) unsubNetwork();
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
         }
     }, []);
 

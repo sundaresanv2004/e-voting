@@ -20,6 +20,11 @@ contextBridge.exposeInMainWorld('electron', {
         const listener = (_event, status) => callback(status);
         ipcRenderer.on('terminal:status-updated', listener);
         return () => ipcRenderer.removeListener('terminal:status-updated', listener);
+    },
+    onNetworkError: (callback) => {
+        const listener = (_event, type) => callback(type);
+        ipcRenderer.on('terminal:network-error', listener);
+        return () => ipcRenderer.removeListener('terminal:network-error', listener);
     }
   }
 });

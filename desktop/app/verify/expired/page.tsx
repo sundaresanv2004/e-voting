@@ -41,9 +41,8 @@ export default function ExpiredSessionPage() {
     const handleTerminateLocal = async () => {
         setIsCancelling(true);
         try {
-            // ONLY clear local state, DO NOT delete cloud record as requested
-            // This allows the admin to still see the expired terminal but disconnects local app
-            await (window as any).electron.terminal.resetRegistrationState();
+            // Calls the backend to explicitly update the database status to SUSPENDED
+            await (window as any).electron.terminal.cancelRegistration();
             router.push("/auth/connect");
         } catch (e) {
             console.error("Failed to terminate local data:", e);

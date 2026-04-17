@@ -1,0 +1,1 @@
+# Mail service templates package

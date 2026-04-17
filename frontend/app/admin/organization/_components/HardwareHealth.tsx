@@ -26,7 +26,7 @@ export function HardwareHealth({ approved, pending, rejected, revoked }: Hardwar
   ]
 
   return (
-    <Card className="border-border/50 overflow-hidden py-0 gap-0">
+    <Card className="border-border/50 overflow-hidden py-0">
       <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
         <div className="space-y-0.5">
           <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
@@ -47,7 +47,7 @@ export function HardwareHealth({ approved, pending, rejected, revoked }: Hardwar
           <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pb-6">
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
