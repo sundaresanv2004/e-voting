@@ -147,7 +147,7 @@ export const columns = (
         )
       },
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground font-medium text-nowrap">
+        <span className="text-sm text-muted-foreground font-medium text-nowrap" suppressHydrationWarning>
           {format(new Date(row.getValue("createdAt")), "MMM d, yyyy")}
         </span>
       ),
@@ -168,7 +168,7 @@ export const columns = (
       },
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="text-sm text-foreground font-medium text-nowrap">
+          <span className="text-sm text-foreground font-medium text-nowrap" suppressHydrationWarning>
             {format(new Date(row.original.updatedAt), "MMM d")}
           </span>
           {row.original.updatedBy && (

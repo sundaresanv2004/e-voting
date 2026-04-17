@@ -4,7 +4,8 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { SystemStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { addDays } from "date-fns"
+import { addDays, addMinutes } from "date-fns"
+import { sendSystemApprovedEmail, sendSystemExpiredEmail } from "@/lib/mail"
 
 export async function updateSystemStatusAction(
   systemId: string,
@@ -54,7 +55,14 @@ export async function updateSystemStatusAction(
           id: systemId,
           organizationId: orgId
         },
-        data: updateData
+        data: updateData,
+        include: {
+          organization: {
+            include: {
+              owner: true
+            }
+          }
+        }
       })
 
       await tx.adminAuditLog.create({
@@ -78,6 +86,18 @@ export async function updateSystemStatusAction(
       return system
     })
 
+    if (status === SystemStatus.APPROVED && result.organization?.owner?.email) {
+      await sendSystemApprovedEmail(
+        result.organization.owner.email,
+        result.organization.owner.name || "Administrator",
+        result.name || "Unknown Terminal",
+        result.hostName || "Unknown",
+        result.ipAddress || "Unknown",
+        result.organization.name,
+        session?.user?.name || "Admin"
+      )
+    }
+
     revalidatePath("/admin/organization/systems")
     return { success: true, system: result }
   } catch (error: any) {
@@ -93,11 +113,28 @@ export async function syncSystemExpirations(organizationId: string, shouldRevali
   }
 
   try {
-    const result = await db.authorizedSystem.updateMany({
+    const expiredSystems = await db.authorizedSystem.findMany({
       where: {
         organizationId: organizationId,
         status: SystemStatus.APPROVED,
         tokenExpiresAt: { lte: new Date() },
+      },
+      include: {
+        organization: {
+          include: {
+            owner: true
+          }
+        }
+      }
+    })
+
+    if (expiredSystems.length === 0) {
+      return { success: true, expiredCount: 0 }
+    }
+
+    await db.authorizedSystem.updateMany({
+      where: {
+        id: { in: expiredSystems.map(s => s.id) }
       },
       data: {
         status: SystemStatus.EXPIRED,
@@ -106,11 +143,25 @@ export async function syncSystemExpirations(organizationId: string, shouldRevali
       },
     })
 
-    if (result.count > 0 && shouldRevalidate) {
+    // Notify for each expired system
+    for (const system of expiredSystems) {
+      if (system.organization.owner?.email) {
+        await sendSystemExpiredEmail(
+          system.organization.owner.email,
+          system.organization.owner.name || "Administrator",
+          system.name || "Unknown Terminal",
+          system.hostName || "Unknown",
+          system.ipAddress || "Unknown",
+          system.organization.name
+        )
+      }
+    }
+
+    if (shouldRevalidate) {
       revalidatePath("/admin/organization/systems")
     }
 
-    return { success: true, expiredCount: result.count }
+    return { success: true, expiredCount: expiredSystems.length }
   } catch (error) {
     console.error("[SYNC_SYSTEM_EXPIRATIONS]", error)
     return { success: false, error: "Failed to sync system expirations" }
@@ -131,14 +182,14 @@ export async function editSystemAction(
   }
 
   try {
+    const oldSystemSnapshot = await db.authorizedSystem.findUnique({
+      where: { id: systemId, organizationId: orgId },
+      select: { status: true, name: true, secretTokenHash: true }
+    })
+
+    if (!oldSystemSnapshot) return { success: false, error: "System not found" }
+
     const result = await db.$transaction(async (tx) => {
-      const oldSystem = await tx.authorizedSystem.findUnique({
-        where: { id: systemId, organizationId: orgId },
-        select: { status: true, name: true, secretTokenHash: true }
-      })
-
-      if (!oldSystem) throw new Error("System not found")
-
       const updateData: any = {
         name: name.trim() || null,
         status,
@@ -146,10 +197,10 @@ export async function editSystemAction(
       }
 
       // Handle token changes when status changes
-      if (status === SystemStatus.APPROVED && oldSystem.status !== SystemStatus.APPROVED) {
+      if (status === SystemStatus.APPROVED && oldSystemSnapshot.status !== SystemStatus.APPROVED) {
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
-        if (!oldSystem.secretTokenHash) {
+        if (!oldSystemSnapshot.secretTokenHash) {
           // In a real scenario, we'd generate a token, show it once, and store the hash.
           // For now, we'll store the UUID as the "hash" to satisfy the schema.
           updateData.secretTokenHash = crypto.randomUUID()
@@ -157,7 +208,7 @@ export async function editSystemAction(
         updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (
         (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) &&
-        oldSystem.status === SystemStatus.APPROVED
+        oldSystemSnapshot.status === SystemStatus.APPROVED
       ) {
         updateData.secretTokenHash = null
         updateData.tokenExpiresAt = null
@@ -166,6 +217,13 @@ export async function editSystemAction(
       const system = await tx.authorizedSystem.update({
         where: { id: systemId, organizationId: orgId },
         data: updateData,
+        include: {
+          organization: {
+            include: {
+              owner: true
+            }
+          }
+        }
       })
 
       await tx.adminAuditLog.create({
@@ -177,9 +235,9 @@ export async function editSystemAction(
           organizationId: orgId!,
           status: AuditStatus.SUCCESS,
           metadata: {
-            beforeName: oldSystem.name,
+            beforeName: oldSystemSnapshot.name,
             afterName: name.trim() || null,
-            beforeStatus: oldSystem.status,
+            beforeStatus: oldSystemSnapshot.status,
             afterStatus: status,
           },
         },
@@ -187,6 +245,18 @@ export async function editSystemAction(
 
       return system
     })
+
+    if (status === SystemStatus.APPROVED && oldSystemSnapshot.status !== SystemStatus.APPROVED && result.organization?.owner?.email) {
+        await sendSystemApprovedEmail(
+          result.organization.owner.email,
+          result.organization.owner.name || "Administrator",
+          result.name || "Unknown Terminal",
+          result.hostName || "Unknown",
+          result.ipAddress || "Unknown",
+          result.organization.name,
+          session?.user?.name || "Admin"
+        )
+    }
 
     revalidatePath("/admin/organization/systems")
     return { success: true, system: result }

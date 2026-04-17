@@ -9,10 +9,12 @@ import { LoginNotificationTemplate } from "./templates/login-notification"
 import { OrganizationCreatedTemplate } from "./templates/org-created"
 import { OwnershipTransferredTemplate } from "./templates/ownership-transferred"
 import { ElectionCreatedNotificationTemplate } from "./templates/election-created"
+import { SystemApprovedTemplate } from "./templates/system-approved"
+import { SystemExpiredTemplate } from "./templates/system-expired"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+export const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
 export const sendPasswordResetConfirmationEmail = async (email: string) => {
   try {
@@ -261,6 +263,67 @@ export const sendElectionCreatedNotificationEmail = async (
     return { success: true }
   } catch (error) {
     console.error("Failed to send election creation notification email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendSystemApprovedEmail = async (
+  email: string,
+  adminName: string,
+  systemName: string,
+  hostName: string,
+  ipAddress: string,
+  orgName: string,
+  approvedByName: string
+) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] System approved email for ${email}: ${systemName}`)
+      return { success: true, dev: true }
+    }
+
+    const html = SystemApprovedTemplate(adminName, systemName, hostName, ipAddress, orgName, approvedByName, domain)
+
+    await resend.emails.send({
+      from: `E-Voting <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      to: email,
+      subject: `Terminal Authorized: ${systemName}`,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send system approved email:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendSystemExpiredEmail = async (
+  email: string,
+  adminName: string,
+  systemName: string,
+  hostName: string,
+  ipAddress: string,
+  orgName: string
+) => {
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+      console.log(`[DEV] System expired email for ${email}: ${systemName}`)
+      return { success: true, dev: true }
+    }
+
+    const html = SystemExpiredTemplate(adminName, systemName, hostName, ipAddress, orgName, domain)
+
+    await resend.emails.send({
+      from: `E-Voting <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      to: email,
+      subject: `Security Alert: System Token Expired`,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to send system expired email:", error)
     return { success: false, error }
   }
 }

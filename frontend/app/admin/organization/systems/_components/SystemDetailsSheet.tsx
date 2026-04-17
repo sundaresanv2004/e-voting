@@ -181,41 +181,6 @@ export function SystemDetailsSheet({
               </div>
             </div>
 
-            {/* Device Stats */}
-            {system._count && (
-              <>
-                <Separator className="border-dashed" />
-                <div className="space-y-4">
-                  <h4 className="text-sm font-medium px-1 text-foreground/80 flex items-center gap-2">
-                    <HugeiconsIcon icon={Activity01Icon} className="h-4 w-4 text-muted-foreground" />
-                    Device Statistics
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 ring-1 ring-violet-500/20">
-                        <HugeiconsIcon icon={Activity01Icon} className="h-4 w-4" color="currentColor" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground">Logs</p>
-                        <p className="text-lg font-bold leading-tight">{system._count.logs}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 ring-1 ring-cyan-500/20">
-                        <HugeiconsIcon icon={CheckListIcon} className="h-4 w-4" color="currentColor" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground">Ballots</p>
-                        <p className="text-lg font-bold leading-tight">{system._count.ballots}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <Separator className="border-dashed" />
-
             {/* Timeline Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium px-1 text-foreground/80 flex items-center gap-2">
@@ -233,7 +198,7 @@ export function SystemDetailsSheet({
                       {format(new Date(system.createdAt), "MMM d, yyyy")}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 shrink-0">
+                  <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 shrink-0" suppressHydrationWarning>
                     {createdAtLabel}
                   </Badge>
                 </div>
@@ -249,7 +214,7 @@ export function SystemDetailsSheet({
                         {format(new Date(system.lastOpenedAt), "MMM d, yyyy")}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="font-mono text-xs py-0.5 shrink-0">
+                    <Badge variant="secondary" className="font-mono text-xs py-0.5 shrink-0" suppressHydrationWarning>
                       {format(new Date(system.lastOpenedAt), "h:mm a")}
                     </Badge>
                   </div>
@@ -265,7 +230,7 @@ export function SystemDetailsSheet({
                       {format(new Date(system.updatedAt), "MMM d, yyyy")}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="font-mono text-xs py-0.5 shrink-0">
+                  <Badge variant="secondary" className="font-mono text-xs py-0.5 shrink-0" suppressHydrationWarning>
                     {format(new Date(system.updatedAt), "h:mm a")}
                   </Badge>
                 </div>
@@ -316,7 +281,7 @@ export function SystemDetailsSheet({
                           <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
                             Authorized
                           </Badge>
-                          <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                          <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap" suppressHydrationWarning>
                             {system.approvedAt ? format(new Date(system.approvedAt), "MMM d, h:mm a") : "-"}
                           </p>
                         </div>
@@ -349,7 +314,7 @@ export function SystemDetailsSheet({
                           <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter opacity-70">
                             Modified
                           </Badge>
-                          <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                          <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap" suppressHydrationWarning>
                             {format(new Date(system.updatedAt), "MMM d, h:mm a")}
                           </p>
                         </div>

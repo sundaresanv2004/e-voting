@@ -310,11 +310,27 @@ ipcMain.handle('terminal:verify-handshake', async () => {
                     if (serverStatus === 'PENDING') {
                         store.set('terminalStatus', 'PENDING');
                         startStatusPolling(systemId);
+                    } else if (serverStatus === 'APPROVED') {
+                        // STALE KEY CASE: System is approved on server but our local token is rejected.
+                        // Likely due to admin re-approving and rotating the secret token.
+                        // We request a re-authorization to go back to PENDING.
+                        try {
+                            const sysInfo = getSystemInfo();
+                            await ApiClient.reauthorizeSystem({
+                                systemId,
+                                macAddress: sysInfo.macAddress
+                            });
+                        } catch (e) {
+                            console.error("Auto-reauthorize failed:", e);
+                        }
+                        
+                        store.set('terminalStatus', 'PENDING');
+                        store.delete('secretToken'); // Clear the stale token
+                        startStatusPolling(systemId);
                     } else if (serverStatus === 'REJECTED') {
                         store.set('terminalStatus', 'REJECTED');
                     } else if (serverStatus === 'REVOKED' || serverStatus === 'SUSPENDED') {
                         store.set('terminalStatus', 'REVOKED');
-                        // We keep the systemId but clear the secretToken as it's no longer valid
                         store.delete('secretToken');
                         startStatusPolling(systemId);
                     } else if (serverStatus === 'EXPIRED') {

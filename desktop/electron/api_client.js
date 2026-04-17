@@ -72,6 +72,13 @@ class ApiClient {
             method: 'DELETE'
         });
     }
+
+    static async reauthorizeSystem(payload) {
+        return this.request('/systems/reauthorize', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    }
 }
 
 module.exports = ApiClient;

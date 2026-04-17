@@ -2,6 +2,7 @@ import resend
 from app.core.config import settings
 from .templates.system_registration import render_system_registration_email
 from .templates.system_expired import render_system_expired_email
+from .templates.system_suspended import render_system_suspended_email
 
 class MailService:
     def __init__(self):
@@ -76,5 +77,43 @@ class MailService:
             resend.Emails.send(params)
         except Exception as e:
             print(f"Failed to send expired email: {e}")
+
+    async def send_system_suspended_email(
+        self, 
+        to_email: str, 
+        admin_name: str, 
+        system_name: str, 
+        host_name: str, 
+        ip_address: str, 
+        org_name: str,
+        reason: str
+    ):
+        if not settings.RESEND_API_KEY:
+            print(f"Skipping email (Suspended): No API Key. To: {to_email}")
+            return
+
+        systems_url = f"{settings.WEBSITE_URL}/admin/organization/systems"
+        html_content = render_system_suspended_email(
+            admin_name=admin_name,
+            system_name=system_name,
+            host_name=host_name,
+            ip_address=ip_address,
+            org_name=org_name,
+            systems_url=systems_url,
+            reason=reason
+        )
+
+        try:
+            params = {
+                "from": self.from_email,
+                "to": to_email,
+                "subject": f"Terminal Disconnected: {system_name}",
+                "html": html_content
+            }
+            resend.Emails.send(params)
+        except Exception as e:
+            print(f"Failed to send suspended email: {e}")
+
+mail_service = MailService()
 
 mail_service = MailService()

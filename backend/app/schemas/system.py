@@ -35,3 +35,7 @@ class SystemVerifyResponse(BaseModel):
     systemName: Optional[str] = None
     organizationName: Optional[str] = None
     organizationLogo: Optional[str] = None
+
+class SystemReauthorizeRequest(BaseModel):
+    systemId: str
+    macAddress: str

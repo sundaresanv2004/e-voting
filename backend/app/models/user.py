@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -9,7 +9,7 @@ class User(Base):
     name = Column(String, nullable=True)
     email = Column(String, unique=True, nullable=False)
     role = Column(String, default="USER")
-    organizationId = Column(String, nullable=True)
+    organizationId = Column(String, ForeignKey("Organization.id"), nullable=True)
     isActive = Column(Boolean, default=True)
     createdAt = Column(DateTime)
     updatedAt = Column(DateTime)

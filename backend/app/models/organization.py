@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Enum
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
@@ -21,7 +21,7 @@ class Organization(Base):
     isActive = Column(Boolean, default=True)
     createdAt = Column(DateTime)
     updatedAt = Column(DateTime)
-    ownerId = Column(String, nullable=True)
+    ownerId = Column(String, ForeignKey("User.id"), nullable=True)
 
     settings = relationship("OrganizationSettings", back_populates="organization", uselist=False)
     systems = relationship("AuthorizedSystem", back_populates="organization")
