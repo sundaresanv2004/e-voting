@@ -29,6 +29,7 @@ import {
   PlayIcon,
   Copy01Icon,
   EyeIcon,
+  GlobeIcon,
 } from "@hugeicons/core-free-icons"
 import { Spinner } from "@/components/ui/spinner"
 import { DateTimePicker } from "@/app/admin/organization/elections/_components/date-time-picker"
@@ -51,8 +52,8 @@ interface ElectionSettingsContainerProps {
     endTime: Date | string
     status: ElectionStatus
     settings: {
-      requireSystemAuth: boolean
-      allSystemsAllowed: boolean
+      allowOnlineVoting: boolean
+      allowOfflineVoting: boolean
       authorizeVoters: boolean
       showCandidateProfiles: boolean
       showCandidateSymbols: boolean
@@ -125,6 +126,8 @@ export function ElectionSettingsContainer({ election }: ElectionSettingsContaine
 
       <TabsContent value="security" className="mt-6 space-y-5">
         <VoterAuthSection election={election} />
+        <OnlineVotingSection election={election} />
+        <OfflineVotingSection election={election} />
       </TabsContent>
 
       <TabsContent value="ballot" className="mt-6 space-y-5">
@@ -406,14 +409,29 @@ function TimingSection({ election }: { election: any }) {
 
 function VoterAuthSection({ election }: { election: any }) {
   const [isPending, setIsPending] = React.useState(false)
+  const isOnlineEnabled = election.settings?.allowOnlineVoting ?? false
   const [enabled, setEnabled] = React.useState(election.settings?.authorizeVoters ?? false)
+  const router = useRouter()
+
+  React.useEffect(() => {
+    setEnabled(election.settings?.authorizeVoters ?? false)
+  }, [election.settings?.authorizeVoters])
+
+  React.useEffect(() => {
+    if (isOnlineEnabled && !enabled) {
+        setEnabled(true)
+    }
+  }, [isOnlineEnabled, enabled])
 
   const handleToggle = async (checked: boolean) => {
     setEnabled(checked)
     setIsPending(true)
     try {
       const result = await updateElectionSettingsAction(election.id, { authorizeVoters: checked })
-      if (result.success) toast.success("Voter authorization policy updated")
+      if (result.success) {
+          toast.success("Voter authorization policy updated")
+          router.refresh()
+      }
       else toast.error(result.error)
     } catch {
       toast.error("Failed to update policy")
@@ -433,7 +451,119 @@ function VoterAuthSection({ election }: { election: any }) {
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Voter Roll Authorization</h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed">
-                Voters must be present in the registered voter roll to cast a ballot. When disabled, anyone at an authorized terminal can vote.
+                {isOnlineEnabled ? (
+                    "Authorization is mandatory for online elections to protect identity and ensure 'One Person, One Vote' integrity."
+                ) : (
+                    "Voters must be present in the registered voter roll to cast a ballot. When disabled, anyone at an authorized terminal can vote."
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 pt-1">
+            <Switch checked={isOnlineEnabled ? true : enabled} onCheckedChange={handleToggle} disabled={isPending || isOnlineEnabled} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OnlineVotingSection({ election }: { election: any }) {
+  const [isPending, setIsPending] = React.useState(false)
+  const [enabled, setEnabled] = React.useState(election.settings?.allowOnlineVoting ?? false)
+  const router = useRouter()
+
+  React.useEffect(() => {
+    setEnabled(election.settings?.allowOnlineVoting ?? false)
+  }, [election.settings?.allowOnlineVoting])
+
+  const handleToggle = async (checked: boolean) => {
+    setEnabled(checked)
+    setIsPending(true)
+    try {
+      // If turning online ON, also toggle off offline for mutual exclusivity AND enforce voter auth
+      const result = await updateElectionSettingsAction(election.id, { 
+        allowOnlineVoting: checked,
+        ...(checked ? { allowOfflineVoting: false, authorizeVoters: true } : {})
+      })
+      if (result.success) {
+          toast.success("Online voting capability updated")
+          router.refresh()
+      }
+      else toast.error(result.error)
+    } catch {
+      toast.error("Failed to update setting")
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+              <HugeiconsIcon icon={GlobeIcon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Web-Based Online Voting</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Allow participants to cast votes through the website. <span className="text-primary font-medium italic underline underline-offset-2">Enabling this disables Offline Voting and enforces Voter Authorization.</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 pt-1">
+            <Switch checked={enabled} onCheckedChange={handleToggle} disabled={isPending} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OfflineVotingSection({ election }: { election: any }) {
+  const [isPending, setIsPending] = React.useState(false)
+  const [enabled, setEnabled] = React.useState(election.settings?.allowOfflineVoting ?? false)
+  const router = useRouter()
+
+  React.useEffect(() => {
+    setEnabled(election.settings?.allowOfflineVoting ?? false)
+  }, [election.settings?.allowOfflineVoting])
+
+  const handleToggle = async (checked: boolean) => {
+    setEnabled(checked)
+    setIsPending(true)
+    try {
+      // If turning offline ON, toggle off online for mutual exclusivity
+      const result = await updateElectionSettingsAction(election.id, { 
+        allowOfflineVoting: checked,
+        ...(checked ? { allowOnlineVoting: false } : {})
+      })
+      if (result.success) {
+          toast.success("Hardware-app voting capability updated")
+          router.refresh()
+      }
+      else toast.error(result.error)
+    } catch {
+      toast.error("Failed to update setting")
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600">
+              <HugeiconsIcon icon={ComputerIcon} className="h-4 w-4" color="currentColor" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Dedicated Hardware-App Voting</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Enable voting through authorized desktop kiosk applications. <span className="text-primary font-medium italic underline underline-offset-2">Enabling this disables Online Voting.</span>
               </p>
             </div>
           </div>

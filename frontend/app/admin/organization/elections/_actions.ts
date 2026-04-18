@@ -13,7 +13,7 @@ function generateCode(orgName: string = "EV") {
   // Remove special characters, handle multi-word names
   const sanitized = orgName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
   const prefix = sanitized.length >= 3 ? sanitized.substring(0, 4) : "EV"
-  
+
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let result = ''
   for (let i = 0; i < 6; i++) {
@@ -37,11 +37,11 @@ export async function createElection(formData: {
   }
 
   const validatedFields = ElectionSchema.safeParse(formData)
-  
+
   if (!validatedFields.success) {
-    return { 
-      success: false, 
-      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details" 
+    return {
+      success: false,
+      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details"
     }
   }
 
@@ -51,7 +51,7 @@ export async function createElection(formData: {
     // 1. Fetch organization and owner details
     const organization = await db.organization.findUnique({
       where: { id: orgId },
-      select: { 
+      select: {
         name: true,
         owner: {
           select: {
@@ -81,8 +81,12 @@ export async function createElection(formData: {
       await tx.electionSettings.create({
         data: {
           electionId: election.id,
-          requireSystemAuth: true,
-          allSystemsAllowed: true,
+          allowOnlineVoting: false,
+          allowOfflineVoting: true,
+          authorizeVoters: true,
+          showCandidateProfiles: true,
+          showCandidateSymbols: true,
+          shuffleCandidates: true,
           createdByUserId: userId,
           updatedByUserId: userId,
         },
@@ -107,7 +111,7 @@ export async function createElection(formData: {
     // 5. Notify the owner and creator
     const creatorName = session?.user?.name || "An Administrator"
     const creatorEmail = session?.user?.email
-    
+
     // Notification for Creator (if they have an email)
     if (creatorEmail) {
       await sendElectionCreatedNotificationEmail(
@@ -166,9 +170,9 @@ export async function updateElection(
   const validatedFields = ElectionSchema.safeParse(formData)
 
   if (!validatedFields.success) {
-    return { 
-      success: false, 
-      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details" 
+    return {
+      success: false,
+      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid election details"
     }
   }
 
@@ -186,9 +190,9 @@ export async function updateElection(
       }
 
       const election = await tx.election.update({
-        where: { 
+        where: {
           id,
-          organizationId: orgId 
+          organizationId: orgId
         },
         data: {
           name: formData.name,
@@ -253,9 +257,9 @@ export async function deleteElection(id: string) {
       })
 
       await tx.election.delete({
-        where: { 
+        where: {
           id,
-          organizationId: orgId 
+          organizationId: orgId
         },
       })
     })
@@ -302,7 +306,7 @@ export async function toggleElectionStatus(id: string) {
 
       const updated = await tx.election.update({
         where: { id, organizationId: orgId },
-        data: { 
+        data: {
           status: newStatus,
           updatedByUserId: userId
         }
@@ -316,8 +320,8 @@ export async function toggleElectionStatus(id: string) {
           adminId: userId!,
           organizationId: orgId!,
           status: AuditStatus.SUCCESS,
-          metadata: { 
-            name: election.name, 
+          metadata: {
+            name: election.name,
             previousStatus: election.status,
             newStatus
           },

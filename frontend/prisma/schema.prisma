@@ -237,8 +237,8 @@ model Election {
 model ElectionSettings {
   id                    String   @id @default(cuid())
   electionId            String   @unique
-  requireSystemAuth     Boolean  @default(true)
-  allSystemsAllowed     Boolean  @default(true)
+  allowOnlineVoting     Boolean  @default(false)
+  allowOfflineVoting    Boolean  @default(true)
   authorizeVoters       Boolean  @default(true)
   showCandidateProfiles Boolean  @default(true)
   showCandidateSymbols  Boolean  @default(true)

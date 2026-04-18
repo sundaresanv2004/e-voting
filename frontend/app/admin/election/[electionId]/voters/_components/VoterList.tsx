@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { deleteVoter } from "../_actions"
+import { deleteVoter, resetVoterVote } from "../_actions"
 import { VoterDataTable } from "./data-table"
 import { columns, VoterColumn } from "./columns"
 import { VoterDetailsSheet } from "./VoterDetailsSheet"
@@ -34,6 +34,10 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
 
   const [voterToDelete, setVoterToDelete] = React.useState<VoterColumn | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+
+  const [voterToReset, setVoterToReset] = React.useState<VoterColumn | null>(null)
+  const [isResetDialogOpen, setIsResetDialogOpen] = React.useState(false)
+
   const [isPending, setIsPending] = React.useState(false)
 
   const handleView = (voter: VoterColumn) => {
@@ -69,6 +73,25 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
     }
   }
 
+  const handleResetConfirm = async () => {
+    if (!voterToReset) return
+    setIsPending(true)
+    try {
+      const result = await resetVoterVote(voterToReset.id, electionId)
+      if (result.success) {
+        toast.success("Voter's ballot has been reset")
+      } else {
+        toast.error(result.error || "Failed to reset vote")
+      }
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setIsPending(false)
+      setIsResetDialogOpen(false)
+      setVoterToReset(null)
+    }
+  }
+
   return (
     <>
       <VoterDetailsSheet 
@@ -80,6 +103,10 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
         onDelete={(voter) => {
           setVoterToDelete(voter)
           setIsDeleteDialogOpen(true)
+        }}
+        onReset={(voter) => {
+          setVoterToReset(voter as any)
+          setIsResetDialogOpen(true)
         }}
       />
 
@@ -117,6 +144,28 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Voter&apos;s Ballot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{voterToReset?.name}&apos;s</strong> cast ballot from this election and allow them to vote again. The system will record an audit trail for this administrative action.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending} onClick={() => setVoterToReset(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleResetConfirm} 
+              disabled={isPending}
+              className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 hover:text-yellow-700 transition-colors"
+            >
+              {isPending && <Spinner className="mr-2" color="currentColor" />}
+              {isPending ? "Resetting..." : "Reset Vote"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <VoterDataTable 
         columns={columns(
           electionId, 
@@ -126,6 +175,10 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
           (voter) => {
             setVoterToDelete(voter)
             setIsDeleteDialogOpen(true)
+          },
+          (voter) => {
+            setVoterToReset(voter)
+            setIsResetDialogOpen(true)
           }
         )} 
         data={voters} 

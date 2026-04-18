@@ -102,7 +102,7 @@ export default function Hero() {
                                 variant="outline"
                                 className="group w-full sm:w-auto"
                             >
-                                <Link href="/vote">
+                                <Link href="/auth/vote">
                                     Vote Now
                                     <HugeiconsIcon icon={CheckmarkBadge01Icon}
                                         strokeWidth={2}

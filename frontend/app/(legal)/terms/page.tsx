@@ -81,10 +81,26 @@ export default function TermsPage() {
                 </Card>
             </section>
 
+            <section id="data-usage">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-xl">5. Data Usage & Third Parties</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>
+                            We collect basic profile information (name, email, profile picture) via Google OAuth solely to facilitate account creation and organization management. 
+                        </p>
+                        <p className="mt-4 font-bold">
+                            We do not share your personal data with any third-party advertisers, data brokers, or external services.
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
             <section id="termination">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">5. Termination</CardTitle>
+                        <CardTitle className="text-xl">6. Termination</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
@@ -97,7 +113,7 @@ export default function TermsPage() {
             <section id="liability">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">6. Limitation of Liability</CardTitle>
+                        <CardTitle className="text-xl">7. Limitation of Liability</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
@@ -110,15 +126,15 @@ export default function TermsPage() {
             <section id="contact">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl">7. Contact Information</CardTitle>
+                        <CardTitle className="text-xl">8. Contact Information</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
                             For legal notices or questions about these Terms, please contact:
                         </p>
                         <p className="mt-2">
-                            <a href="mailto:legal@evoting.sundaresan.dev" className="text-primary font-medium hover:underline">
-                                legal@evoting.sundaresan.dev
+                            <a href="mailto:legal@sundaresan.dev" className="text-primary font-medium hover:underline">
+                                legal@sundaresan.dev
                             </a>
                         </p>
                     </CardContent>

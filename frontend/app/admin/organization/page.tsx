@@ -9,8 +9,6 @@ import { TeamSnapshot } from "./_components/TeamSnapshot"
 import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
 import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
-import { SuccessToastListener } from "@/components/auth/success-toast-listener"
-import { Suspense } from "react"
 import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function OrganizationDashboardPage() {
@@ -168,9 +166,6 @@ export default async function OrganizationDashboardPage() {
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
       <AutoRefresh intervalMs={25000} />
-      <Suspense fallback={null}>
-        <SuccessToastListener />
-      </Suspense>
       {/* Header */}
       <DashboardHeader
         orgName={organization.name}

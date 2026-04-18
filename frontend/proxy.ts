@@ -10,7 +10,8 @@ export default auth((req: any) => {
   const isEmailVerified = !!(req.auth?.user as any)?.emailVerified || isGoogleUser
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
-  const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname)
+  const isVoteRoute = nextUrl.pathname.startsWith('/vote')
+  const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname) || isVoteRoute
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
   const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
@@ -37,6 +38,11 @@ export default auth((req: any) => {
       // If verified, they shouldn't be on any auth page (login, signup, verify-email)
       const redirectPath = hasOrganization ? '/admin/organization' : '/setup/organization'
       const redirectUrl = new URL(redirectPath, nextUrl)
+
+      // Special case for voting: tell them to logout for security
+      if (nextUrl.pathname === '/auth/vote') {
+        redirectUrl.searchParams.set('error', 'logout_to_vote')
+      }
       
       // Preserve search params
       nextUrl.searchParams.forEach((value: string, key: string) => {

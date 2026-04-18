@@ -41,24 +41,21 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <ul className="list-disc pl-6 space-y-2 mt-4">
                             <li>
-                                <strong>Authentication Data (via Google OAuth):</strong> When you sign in using Google, we collect your name and email address. This authentication is handled securely through Google&#39;s OAuth 2.0 service, and we do not have access to your Google password.
+                                <strong>Google User Data (via OAuth 2.0):</strong> When you authenticate using Google, we collect your <strong>full name, email address, and profile picture</strong>. This information is used exclusively to create your personal account, identify you as an administrator, and personalize your administrative experience.
                             </li>
                             <li>
                                 <strong>Organization Information:</strong> For organization administrators, we collect:
                                 <ul className="list-disc pl-6 mt-2">
                                     <li>Organization name (required) - school, college, or organization</li>
-                                    <li>Organization logo (optional) - for ballot branding and customization</li>
-                                    <li>Additional metadata (optional) - such as organization type, size, and other details to enhance your voting experience</li>
+                                    <li>Organization logo (optional) - for branding</li>
+                                    <li>Administrative metadata - used to conduct and manage secure elections</li>
                                 </ul>
                             </li>
                             <li>
-                                <strong>Voter Identity:</strong> Organization ID and voter eligibility information to verify your participation in specific elections.
+                                <strong>Voter Identity:</strong> Encrypted identifiers used strictly to verify eligibility and participation in specific authorized elections.
                             </li>
                             <li>
-                                <strong>Authentication Logs:</strong> IP address and timestamp of login and voting actions for audit trails and security purposes.
-                            </li>
-                            <li>
-                                <strong>Contact Form Data:</strong> Information you provide when contacting our support team, including name, email, phone (optional), and message content.
+                                <strong>Authentication & Security Logs:</strong> We store timestamps of login and voting actions to provide an audit trail for election integrity.
                             </li>
                         </ul>
                     </CardContent>
@@ -103,10 +100,26 @@ export default function PrivacyPolicyPage() {
                 </Card>
             </section>
 
+            <section id="data-sharing">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">5. No Third-Party Sharing</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="font-bold text-foreground">
+                            We do not sell, trade, or otherwise transfer your personal information to outside parties.
+                        </p>
+                        <p className="mt-4">
+                            All user data resides in a secure, encrypted environment. Your information is never shared with third-party advertisers or data brokers. We only share information when required by law to comply with legal processes or to protect the safety and integrity of an active election.
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
             <section id="data-retention">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">5. Data Retention</CardTitle>
+                        <CardTitle className="text-2xl">6. Data Retention</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
@@ -119,15 +132,15 @@ export default function PrivacyPolicyPage() {
             <section id="contact">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">6. Contact Us</CardTitle>
+                        <CardTitle className="text-2xl">7. Contact Us</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
                             For inquiries regarding data privacy or to exercise your data rights, please contact our Data Protection Officer at:
                         </p>
                         <p className="mt-2">
-                            <a href="mailto:privacy@evoting.sundaresan.dev" className="text-primary font-medium hover:underline">
-                                privacy@evoting.sundaresan.dev
+                            <a href="mailto:privacy@sundaresan.dev" className="text-primary font-medium hover:underline">
+                                privacy@sundaresan.dev
                             </a>
                         </p>
                     </CardContent>

@@ -46,3 +46,9 @@ export const ResetPasswordSchema = z.object({
   message: "Passwords do not match",
   path: ["confirmPassword"],
 })
+
+export const VoteSchema = z.object({
+  code: z.string().min(1, {
+    message: "Election code is required",
+  }),
+})

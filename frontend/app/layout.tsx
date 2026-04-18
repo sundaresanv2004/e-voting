@@ -33,6 +33,9 @@ export default function RootLayout({
         <Providers>
           <ThemeProvider>
             {children}
+            <Suspense fallback={null}>
+              <SuccessToastListener />
+            </Suspense>
             <Toaster richColors position="top-right" />
           </ThemeProvider>
         </Providers>

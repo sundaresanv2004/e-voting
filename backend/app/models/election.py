@@ -39,8 +39,8 @@ class ElectionSettings(Base):
 
     id = Column(String, primary_key=True)
     electionId = Column(String, ForeignKey("Election.id", ondelete="CASCADE"), unique=True, nullable=False)
-    requireSystemAuth = Column(Boolean, default=True)
-    allSystemsAllowed = Column(Boolean, default=True)
+    allowOnlineVoting = Column(Boolean, default=False)
+    allowOfflineVoting = Column(Boolean, default=True)
     authorizeVoters = Column(Boolean, default=True)
     showCandidateProfiles = Column(Boolean, default=True)
     showCandidateSymbols = Column(Boolean, default=True)

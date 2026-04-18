@@ -98,8 +98,8 @@ export default async function ElectionSettingsPage({
                 endTime: election.endTime,
                 status: election.status,
                 settings: election.settings ? {
-                  requireSystemAuth: election.settings.requireSystemAuth,
-                  allSystemsAllowed: election.settings.allSystemsAllowed,
+                  allowOnlineVoting: election.settings.allowOnlineVoting,
+                  allowOfflineVoting: election.settings.allowOfflineVoting,
                   authorizeVoters: election.settings.authorizeVoters,
                   showCandidateProfiles: election.settings.showCandidateProfiles,
                   showCandidateSymbols: election.settings.showCandidateSymbols,

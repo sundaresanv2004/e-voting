@@ -14,6 +14,7 @@ import {
   Cancel01Icon,
   Message01Icon,
   Copy01Icon,
+  Refresh01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserRole } from "@prisma/client"
@@ -83,6 +84,7 @@ interface VoterDetailsSheetProps {
   userRole: string
   onEdit: (voter: VoterDetails) => void
   onDelete: (voter: VoterDetails) => void
+  onReset: (voter: VoterDetails) => void
 }
 
 export function VoterDetailsSheet({
@@ -92,6 +94,7 @@ export function VoterDetailsSheet({
   userRole,
   onEdit,
   onDelete,
+  onReset,
 }: VoterDetailsSheetProps) {
   if (!voter) return null
 
@@ -308,29 +311,46 @@ export function VoterDetailsSheet({
           </div>
 
           {canManage && (
-            <SheetFooter className="mt-auto border-t py-4 px-6 gap-3 bg-muted/5 lg:backdrop-blur-sm flex flex-row shrink-0">
-              <Button
-                variant="outline"
-                className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
-                onClick={() => {
-                  onOpenChange(false)
-                  setTimeout(() => onDelete(voter), 300)
-                }}
-              >
-                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                Remove
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
-                onClick={() => {
-                  onOpenChange(false)
-                  setTimeout(() => onEdit(voter), 300)
-                }}
-              >
-                <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
-                Edit Voter
-              </Button>
+            <SheetFooter className="mt-auto border-t py-4 px-6 bg-muted/5 lg:backdrop-blur-sm shrink-0 flex flex-col gap-2">
+              {hasVoted && (
+                <div className="flex gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    className="flex-1 w-full bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 hover:text-yellow-700 transition-colors"
+                    onClick={() => {
+                      onOpenChange(false)
+                      setTimeout(() => onReset(voter), 300)
+                    }}
+                  >
+                    <HugeiconsIcon icon={Refresh01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                    Reset Vote
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  className="flex-1 min-w-0 bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
+                  onClick={() => {
+                    onOpenChange(false)
+                    setTimeout(() => onDelete(voter), 300)
+                  }}
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                  Remove
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 min-w-0 bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 hover:text-blue-700 transition-colors"
+                  onClick={() => {
+                    onOpenChange(false)
+                    setTimeout(() => onEdit(voter), 300)
+                  }}
+                >
+                  <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+                  Edit Voter
+                </Button>
+              </div>
             </SheetFooter>
           )}
         </SheetContent>
