@@ -9,8 +9,8 @@ import { getCalculatedElectionStatus } from "@/lib/utils/election"
 export async function updateElectionSettingsAction(
   electionId: string,
   data: {
-    requireSystemAuth?: boolean
-    allSystemsAllowed?: boolean
+    allowOnlineVoting?: boolean
+    allowOfflineVoting?: boolean
     authorizeVoters?: boolean
     showCandidateProfiles?: boolean
     showCandidateSymbols?: boolean

@@ -4,7 +4,6 @@ import * as React from "react"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  PencilEdit01Icon,
   InformationCircleIcon,
   ComputerIcon,
   LockIcon,

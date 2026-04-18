@@ -1,6 +1,10 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Home01Icon } from "@hugeicons/core-free-icons"
+import { Button } from "@/components/ui/button"
 import SetTheme from "@/components/shared/setTheme"
 import {
   Breadcrumb,
@@ -63,6 +67,15 @@ export function AdminHeader() {
         </Breadcrumb>
       </div>
       <div className="flex items-center gap-2">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+        >
+          <Link href="/">
+            <HugeiconsIcon icon={Home01Icon} className="h-4 w-4" strokeWidth={2} />
+          </Link>
+        </Button>
         <SetTheme />
       </div>
     </header>
