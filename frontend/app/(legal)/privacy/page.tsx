@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata: Metadata = {
     title: "Privacy Policy | E-Voting",
-    description: "Learn how E-Voting collects, uses, and protects your personal information.",
+    description: "Learn what data E-Voting collects, how it is used, and how it is protected.",
 }
 
 export default function PrivacyPolicyPage() {
@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
             <Card className="mb-4 sm:mb-10 bg-muted/50 border-muted">
                 <CardContent>
                     <p className="text-sm font-medium text-foreground m-0">
-                        <strong>Summary:</strong> E-Voting is committed to the highest standards of data privacy and election integrity. We ensure your vote remains anonymous and your personal data is secure.
+                        <strong>Summary:</strong> E-Voting uses only the information needed to create accounts, manage elections, and protect platform security. For Google Sign-In, we request only basic profile information and primary email address.
                     </p>
                 </CardContent>
             </Card>
@@ -24,106 +24,124 @@ export default function PrivacyPolicyPage() {
                     </CardHeader>
                     <CardContent>
                         <p>
-                            Welcome to E-Voting (&#34;we,&#34; &#34;our,&#34; or &#34;us&#34;). We provide a secure online voting platform for organizations, schools, and communities. This Privacy Policy outlines how we handle your personal information and voting data to ensure transparency and trust.
+                            This Privacy Policy explains how E-Voting (&#34;we,&#34; &#34;our,&#34; or &#34;us&#34;) collects, uses, stores, and protects personal information when you use our website and related services. E-Voting provides election management tools for organizations such as schools, colleges, and other groups.
                         </p>
                     </CardContent>
                 </Card>
             </section>
 
-            <section id="data-collection">
+            <section id="information-we-collect">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">2. Data Collection</CardTitle>
+                        <CardTitle className="text-2xl">2. Information We Collect</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p>
-                            To facilitate fair and authenticated elections, we collect the following information:
-                        </p>
-                        <ul className="list-disc pl-6 space-y-2 mt-4">
+                        <ul className="list-disc pl-6 space-y-3">
                             <li>
-                                <strong>Google User Data (via OAuth 2.0):</strong> When you authenticate using Google, we collect your <strong>full name, email address, and profile picture</strong>. This information is used exclusively to create your personal account, identify you as an administrator, and personalize your administrative experience.
+                                <strong>Google account information:</strong> If you sign in with Google, we access only your name, email address, and basic profile image made available through Google&#39;s `userinfo.email` and `userinfo.profile` scopes.
                             </li>
                             <li>
-                                <strong>Organization Information:</strong> For organization administrators, we collect:
-                                <ul className="list-disc pl-6 mt-2">
-                                    <li>Organization name (required) - school, college, or organization</li>
-                                    <li>Organization logo (optional) - for branding</li>
-                                    <li>Administrative metadata - used to conduct and manage secure elections</li>
-                                </ul>
+                                <strong>Account information:</strong> If you register directly, we collect your name, email address, and encrypted password.
                             </li>
                             <li>
-                                <strong>Voter Identity:</strong> Encrypted identifiers used strictly to verify eligibility and participation in specific authorized elections.
+                                <strong>Organization and election data:</strong> Organization name, organization type, optional logo, election details, authorized members, candidates, voter roll information, and election settings entered by your organization.
                             </li>
                             <li>
-                                <strong>Authentication & Security Logs:</strong> We store timestamps of login and voting actions to provide an audit trail for election integrity.
+                                <strong>Security and audit data:</strong> We may store login timestamps, IP address information, device or browser information, and administrative audit logs to help detect misuse, investigate incidents, and maintain election integrity.
                             </li>
                         </ul>
                     </CardContent>
                 </Card>
             </section>
 
-            <section id="vote-anonymity">
+            <section id="how-we-use-data">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">3. Vote Anonymity & Security</CardTitle>
+                        <CardTitle className="text-2xl">3. How We Use Information</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p>
-                            <strong>Your Vote is Secret:</strong> We employ cryptographic measures to separate your identity from your cast ballot. Once a vote is cast, it is encrypted and stored in a manner that prevents tracing it back to the individual voter, even by system administrators.
-                        </p>
-                        <p className="mt-4">
-                            <strong>Integrity Checks:</strong> We use industry-standard security protocols (Row Level Security, Encryption at Rest) to prevent unauthorized tampering with election results.
-                        </p>
-                    </CardContent>
-                </Card>
-            </section>
-
-            <section id="data-usage">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-2xl">4. How We Use Data</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>
-                            We use your data solely for the purpose of conducting elections and managing the platform:
-                        </p>
+                        <p>We use collected information only to operate and secure E-Voting.</p>
                         <ul className="list-disc pl-6 space-y-2 mt-4">
-                            <li>To authenticate you as a valid voter for a specific election using Google OAuth.</li>
-                            <li>To set up and manage your organization&#39;s elections and voting processes.</li>
-                            <li>To customize ballots with your organization&#39;s branding (logo and name).</li>
-                            <li>To prevent double-voting and ensure one-person-one-vote integrity.</li>
-                            <li>To notify you of upcoming elections, results publishing, or important updates.</li>
-                            <li>To maintain the security, stability, and reliability of the platform.</li>
-                            <li>To provide customer support and respond to your inquiries.</li>
+                            <li>To create and maintain user accounts.</li>
+                            <li>To authenticate users and allow access to the correct organization and elections.</li>
+                            <li>To manage elections, members, candidates, voter records, and related administrative settings.</li>
+                            <li>To send essential account, security, and election-related emails.</li>
+                            <li>To detect abuse, investigate issues, and protect the reliability and security of the platform.</li>
+                            <li>To comply with legal obligations and respond to lawful requests when required.</li>
                         </ul>
                     </CardContent>
                 </Card>
             </section>
 
-            <section id="data-sharing">
+            <section id="google-data">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">5. No Third-Party Sharing</CardTitle>
+                        <CardTitle className="text-2xl">4. Google User Data</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="font-bold text-foreground">
-                            We do not sell, trade, or otherwise transfer your personal information to outside parties.
+                        <p>
+                            When you use Google Sign-In, E-Voting uses Google user data only for authentication, account creation, account linking, and display of your basic profile information inside the product.
                         </p>
                         <p className="mt-4">
-                            All user data resides in a secure, encrypted environment. Your information is never shared with third-party advertisers or data brokers. We only share information when required by law to comply with legal processes or to protect the safety and integrity of an active election.
+                            We do <strong>not</strong> use Google user data for advertising, profiling, sale to data brokers, or any unrelated purpose. We do not request sensitive or restricted Google scopes for this application.
                         </p>
                     </CardContent>
                 </Card>
             </section>
 
-            <section id="data-retention">
+            <section id="sharing">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">5. Sharing of Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>
+                            We do not sell personal information. We do not share personal information with advertisers or data brokers.
+                        </p>
+                        <p className="mt-4">
+                            We may share limited information with service providers that help us operate the platform, such as hosting, database, email delivery, authentication, or media storage providers, only as needed to provide the service.
+                        </p>
+                        <p className="mt-4">
+                            We may also disclose information if required by law, to enforce our terms, or to protect the security, rights, or integrity of our users, organizations, or platform.
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section id="retention">
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-2xl">6. Data Retention</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
-                            We retain election data for a period determined by the organization administrator or as required by law for audit purposes. After the retention period expries, personal data is anonymized or deleted.
+                            We retain account, election, and audit information only as long as reasonably necessary to operate the service, support organizations, maintain security records, resolve disputes, or comply with legal obligations.
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section id="security">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">7. Security</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>
+                            We use reasonable technical and organizational safeguards to protect personal information against unauthorized access, misuse, alteration, or disclosure. No method of transmission or storage is guaranteed to be completely secure, but we work to protect the data entrusted to us.
+                        </p>
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section id="your-rights">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">8. Your Choices and Rights</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>
+                            You may contact us to request account deletion, correction of inaccurate information, or privacy-related assistance. If you signed in with Google, you may also manage connected app access through your Google account settings.
                         </p>
                     </CardContent>
                 </Card>
@@ -132,11 +150,11 @@ export default function PrivacyPolicyPage() {
             <section id="contact">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-2xl">7. Contact Us</CardTitle>
+                        <CardTitle className="text-2xl">9. Contact Us</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p>
-                            For inquiries regarding data privacy or to exercise your data rights, please contact our Data Protection Officer at:
+                            For privacy questions, requests, or concerns, contact us at:
                         </p>
                         <p className="mt-2">
                             <a href="mailto:privacy@sundaresan.dev" className="text-primary font-medium hover:underline">
