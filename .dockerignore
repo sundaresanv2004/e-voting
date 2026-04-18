@@ -6,3 +6,7 @@
 README.md
 .env*.local
 docker-compose.yml
+backend/
+desktop/
+node_modules/
+.next/

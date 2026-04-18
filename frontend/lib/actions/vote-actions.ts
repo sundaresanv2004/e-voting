@@ -30,7 +30,10 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
         // --- Live Status Check ---
         if (voter.election.status !== "ACTIVE") {
             if (voter.election.status === "PAUSED") {
-                return { error: "Access Suspended: This election has been temporarily paused by the administrator. Identification and voting are currently unavailable." }
+                return { 
+                    error: "Access Suspended: This election has been temporarily paused by the administrator. Identification and voting are currently unavailable.",
+                    status: "PAUSED"
+                }
             }
             return { error: "Access Denied: This election is currently not in an active state. Please contact your organization for details." }
         }
@@ -127,6 +130,69 @@ export async function validateElectionCodeAction(code: string) {
         return { success: true, electionId: election.id, name: election.name }
     } catch (error) {
         console.error("Validation error:", error)
-        return { error: "An unexpected error occurred. Please try again later." }
+        return { error: "An unexpected error occurred while verifying the election code. Please try again." }
+    }
+}
+
+export async function submitBallotAction(electionId: string, voterId: string, votes: Record<string, string>) {
+    try {
+        const voter = await db.voter.findUnique({
+            where: { id: voterId },
+            include: {
+                election: { include: { organization: true } },
+                ballot: true
+            }
+        })
+
+        if (!voter) return { error: "Voter not found. The session may be invalid." }
+        if (voter.ballot) return { error: "Our records show that a ballot has already been submitted for this identity." }
+        if (voter.election.status !== "ACTIVE") return { error: "The election is not currently active." }
+
+        // Find or create a default "Web Voting Portal" authorized system for this organization
+        let webSystem = await db.authorizedSystem.findFirst({
+            where: {
+                organizationId: voter.election.organizationId,
+                name: "Web Voting System"
+            }
+        })
+
+        if (!webSystem) {
+            webSystem = await db.authorizedSystem.create({
+                data: {
+                    organizationId: voter.election.organizationId,
+                    name: "Web Voting System",
+                    status: "APPROVED"
+                }
+            })
+        }
+
+        // Prepare the votes creation payload
+        const voteEntries = Object.entries(votes).map(([roleId, candidateId]) => ({
+            electionRoleId: roleId,
+            candidateId: candidateId
+        }))
+
+        // Execute ballot creation and vote entries inside a transaction
+        await db.$transaction(async (prisma) => {
+            const ballot = await prisma.ballot.create({
+                data: {
+                    electionId: electionId,
+                    systemId: webSystem.id,
+                    voterId: voterId,
+                    votes: {
+                        create: voteEntries
+                    }
+                }
+            })
+            return ballot
+        })
+
+        return { success: true }
+    } catch (error: any) {
+        console.error("Ballot submission error:", error)
+        if (error?.code === 'P2002') {
+            return { error: "A ballot has already been recorded for this voter." } // Prisma unique constraint handling
+        }
+        return { error: "An unexpected error occurred while submitting your ballot. Please try again." }
     }
 }

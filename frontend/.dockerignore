@@ -1,7 +1,8 @@
-# Docker-specific ignores
 Dockerfile
 .dockerignore
 docker-compose*.yml
+backend/
+desktop/
 
 # build outputs
 .next

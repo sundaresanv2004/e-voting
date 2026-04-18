@@ -8,11 +8,10 @@ import {
   Delete02Icon,
   MoreHorizontalIcon,
   ViewIcon,
-  Tick01Icon,
-  Cancel01Icon,
   ArrowUpDownIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
+  Refresh01Icon,
 } from "@hugeicons/core-free-icons"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
@@ -69,7 +68,8 @@ export const columns = (
   userRole: string,
   onView: (voter: VoterColumn) => void,
   onEdit: (voter: VoterColumn) => void,
-  onDelete: (voter: VoterColumn) => void
+  onDelete: (voter: VoterColumn) => void,
+  onReset: (voter: VoterColumn) => void
 ): ColumnDef<VoterColumn>[] => [
     {
       accessorKey: "name",
@@ -215,6 +215,14 @@ export const columns = (
                       <HugeiconsIcon icon={PencilEdit01Icon} className="h-4 w-4" color="currentColor" />
                       Edit Voter
                     </DropdownMenuItem>
+
+                    {voter.ballot && (
+                      <DropdownMenuItem onSelect={() => onReset(voter)}>
+                        <HugeiconsIcon icon={Refresh01Icon} className="h-4 w-4" color="currentColor" />
+                        Reset Vote
+                      </DropdownMenuItem>
+                    )}
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant="destructive"

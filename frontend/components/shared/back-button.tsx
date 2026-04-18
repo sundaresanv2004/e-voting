@@ -12,7 +12,7 @@ export function BackButton() {
         <Button
             variant="ghost"
             className="group"
-            onClick={() => router.back()}
+            onClick={() => router.push("/")}
         >
             <HugeiconsIcon
                 icon={ArrowLeft01Icon}

@@ -265,6 +265,53 @@ export async function deleteVoter(voterId: string, electionId: string) {
   }
 }
 
+export async function resetVoterVote(voterId: string, electionId: string) {
+  try {
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
+
+    // Check if voter has actually cast a ballot
+    const voter = await db.voter.findUnique({
+      where: { id: voterId },
+      include: { ballot: true }
+    })
+
+    if (!voter?.ballot) {
+      return { error: "This voter has not cast a ballot yet." }
+    }
+
+    await db.$transaction(async (tx) => {
+      const voterData = await tx.voter.findUnique({
+        where: { id: voterId },
+        select: { name: true, uniqueId: true }
+      })
+
+      // Log the reset action
+      await tx.adminAuditLog.create({
+        data: {
+          action: "VOTER_VOTE_RESET",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: userId,
+          organizationId: organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { voterId, name: voterData?.name, uniqueId: voterData?.uniqueId, ballotId: voter.ballot?.id }
+        }
+      })
+
+      // Delete the ballot (this cascades and deletes associated votes as defined in schema)
+      await tx.ballot.delete({
+        where: { id: voter.ballot!.id }
+      })
+    })
+
+    revalidatePath(`/admin/election/${electionId}/voters`)
+    return { success: "Voter's vote has been successfully reset." }
+  } catch (error: any) {
+    console.error("RESET_VOTER_VOTE_ERROR:", error)
+    return { error: error.message || "Something went wrong resetting the vote" }
+  }
+}
+
 /**
  * Verifies a batch of voter data against the database to identify duplicates
  */

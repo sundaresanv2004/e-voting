@@ -18,7 +18,13 @@ export default async function VotePage({
           logo: true
         }
       },
-      settings: true
+      settings: true,
+      roles: {
+        orderBy: { order: "asc" },
+        include: {
+          candidates: true
+        }
+      }
     }
   })
 
