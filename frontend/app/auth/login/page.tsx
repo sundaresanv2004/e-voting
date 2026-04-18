@@ -1,10 +1,8 @@
 "use client"
 
-import { toast } from "sonner"
-
 import React, { useState, useTransition, Suspense } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ViewIcon, ViewOffSlashIcon, Alert01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
+import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
@@ -28,6 +26,7 @@ function LoginForm() {
     const [showPassword, setShowPassword] = useState(false)
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
+    const authErrorParam = searchParams.get("error")
     const router = useRouter()
 
     const {
@@ -41,6 +40,16 @@ function LoginForm() {
             password: "",
         }
     })
+    const queryError =
+        authErrorParam === "CredentialsSignin"
+            ? "Invalid email or password. If this account was created with Google, please use Google sign-in."
+            : authErrorParam === "AccessDenied"
+                ? "Access denied for this account. Please contact support."
+                : authErrorParam
+                    ? "Authentication failed. Please try again."
+                    : null
+
+    const visibleError = error ?? queryError
 
     const onSubmit = (values: z.infer<typeof LoginSchema>) => {
         setError(null)
@@ -53,8 +62,17 @@ function LoginForm() {
                     redirect: false,
                 })
 
-                if (result?.error) {
-                    setError("Invalid email or password")
+                if (!result) {
+                    setError("Unable to contact authentication service. Please try again.")
+                    return
+                }
+
+                if (result.error || result.ok === false || (typeof result.status === "number" && result.status >= 400)) {
+                    if (result.error === "CredentialsSignin") {
+                        setError("Invalid email or password. If this account was created with Google, please use Google sign-in.")
+                    } else {
+                        setError("Login failed. Please check your credentials and try again.")
+                    }
                     return
                 }
 
@@ -89,11 +107,11 @@ function LoginForm() {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {error && (
+                    {visibleError && (
                         <Alert variant="destructive">
                             <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 text-destructive mb-1" />
                             <AlertDescription className="text-destructive">
-                                {error}
+                                {visibleError}
                             </AlertDescription>
                         </Alert>
                     )}

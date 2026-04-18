@@ -11,6 +11,7 @@ import { UserRole, AuditStatus } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
+  trustHost: true,
   session: {
     strategy: "jwt",
     maxAge: 1 * 60 * 60, // 1 hour
