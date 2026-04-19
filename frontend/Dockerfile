@@ -66,8 +66,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
 
-# Install the prisma CLI natively in the runner image
-RUN npm install prisma
+# Install the prisma CLI globally in the runner image
+RUN npm install -g prisma@7.6.0
 
 # Give execution permission to the start script
 RUN chmod +x ./start.sh
