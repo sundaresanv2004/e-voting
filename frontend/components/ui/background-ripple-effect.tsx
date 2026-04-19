@@ -74,7 +74,7 @@ const DivGrid = ({
   borderColor = "#3f3f46",
   fillColor = "rgba(14,165,233,0.3)",
   clickedCell = null,
-  onCellClick = () => {},
+  onCellClick = () => { },
   interactive = true,
 }: DivGridProps) => {
   const cells = useMemo(
@@ -104,9 +104,9 @@ const DivGrid = ({
 
         const style: CellStyle = clickedCell
           ? {
-              "--delay": `${delay}ms`,
-              "--duration": `${duration}ms`,
-            }
+            "--delay": `${delay}ms`,
+            "--duration": `${duration}ms`,
+          }
           : {};
 
         return (

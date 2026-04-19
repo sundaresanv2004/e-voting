@@ -12,10 +12,11 @@ interface BallotInterfaceProps {
     election: any
     voterData: any
     onSubmitBallot: (votes: Record<string, string>) => void
+    onBack: () => void
     isSubmitting: boolean
 }
 
-export function BallotInterface({ election, voterData, onSubmitBallot, isSubmitting }: BallotInterfaceProps) {
+export function BallotInterface({ election, voterData, onSubmitBallot, onBack, isSubmitting }: BallotInterfaceProps) {
     const [votes, setVotes] = useState<Record<string, string>>({})
     const [activeRoleIndex, setActiveRoleIndex] = useState(0)
     const [isReviewing, setIsReviewing] = useState(false)
@@ -63,9 +64,24 @@ export function BallotInterface({ election, voterData, onSubmitBallot, isSubmitt
 
     if (!roles.length) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center">
-                <p className="text-xl font-bold">No election roles found.</p>
-                <p className="text-muted-foreground">Please contact your administrator.</p>
+            <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 max-w-md mx-auto min-h-[400px]">
+                <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
+                    <HugeiconsIcon icon={Tick02Icon} className="w-8 h-8 opacity-40" />
+                </div>
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <h3 className="text-2xl font-bold tracking-tight">Ballot Not Configured</h3>
+                        <p className="text-muted-foreground font-medium leading-relaxed">
+                            No election roles or candidates have been assigned to this session yet. Please contact your organization's election coordinator for support.
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={onBack}
+                    >
+                        Return to Vote Screen
+                    </Button>
+                </div>
             </div>
         )
     }

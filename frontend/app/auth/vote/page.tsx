@@ -66,6 +66,13 @@ function VoteForm() {
         })
     }
 
+    // Reset disclaimer state when dialog is closed
+    React.useEffect(() => {
+        if (!isDisclaimerOpen) {
+            setHasAcceptedDisclaimer(false)
+        }
+    }, [isDisclaimerOpen])
+
     const handleContinue = () => {
         if (!hasAcceptedDisclaimer || !electionInfo) return
 
