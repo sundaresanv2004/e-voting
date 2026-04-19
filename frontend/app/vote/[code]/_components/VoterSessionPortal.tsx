@@ -19,6 +19,7 @@ import { VoterConfirmDialog } from "./VoterConfirmDialog"
 import { VoterPausedDialog } from "./VoterPausedDialog"
 
 import { BallotInterface } from "./BallotInterface"
+import SetTheme from "@/components/shared/setTheme"
 
 interface VoterSessionPortalProps {
     election: any
@@ -27,7 +28,6 @@ interface VoterSessionPortalProps {
 export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     const router = useRouter()
     const { setTheme } = useTheme()
-    const previousThemeRef = useRef<string | null>(null)
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isIdDialogOpen, setIsIdDialogOpen] = useState(false)
     const [isVoterInfoDialogOpen, setIsVoterInfoDialogOpen] = useState(false)
@@ -45,17 +45,6 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
         defaultValues: { uniqueId: "" }
     })
 
-    // Force light theme on mount, restore on unmount
-    useEffect(() => {
-        const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-        previousThemeRef.current = currentTheme
-        setTheme('light')
-        return () => {
-            if (previousThemeRef.current) {
-                setTheme(previousThemeRef.current)
-            }
-        }
-    }, [])
 
     // Monitor fullscreen status
     useEffect(() => {
@@ -180,9 +169,16 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50/80 via-background to-primary/5 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-primary/20">
+            {/* Premium Background Gradients */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute -top-[25%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-500/10 blur-[120px] animate-pulse duration-[10s]" />
+                <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[100px] animate-pulse duration-[8s]" />
+                <div className="absolute top-[20%] right-[15%] w-[30%] h-[30%] rounded-full bg-blue-400/5 blur-[80px]" />
+            </div>
+
             {/* Ripple Background Effect */}
-            <div className="absolute inset-0 opacity-80 pointer-events-none">
+            <div className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none">
                 <div
                     className="absolute inset-0"
                     style={{
@@ -194,21 +190,24 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
                 </div>
             </div>
 
-            {/* Gradient overlays */}
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background via-transparent to-transparent opacity-50" />
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-blue-500/5 via-transparent to-primary/5 opacity-60" />
+            {/* Content Overlays */}
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-background/20 to-background/80" />
 
-            {/* Exit Button - Top Right */}
-            <div className={`absolute top-4 right-4 z-50 transition-opacity duration-300 ${isVoting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+
+
+            {/* Controls - Top Right */}
+            <div className={`absolute top-4 right-4 z-50 flex items-center gap-2 transition-opacity duration-300 ${isVoting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={handleExit}
-                    className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10 transition-colors hover:text-destructive"
+                    className="text-destructive border-destructive/20 hover:border-destructive hover:bg-destructive/10 transition-colors hover:text-destructive h-9 px-3"
                 >
                     <HugeiconsIcon icon={Logout01Icon} className="w-4 h-4" />
                     Exit
                 </Button>
+                <div className="w-[1px] h-4 bg-border/40 mx-1" />
+                <SetTheme />
             </div>
 
             {/* Main Content - Entry Screen */}
@@ -229,17 +228,17 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
 
                     {/* Election Information */}
                     <div className="text-center space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-widest uppercase">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 dark:border-blue-400/30 text-blue-600 dark:text-blue-400 text-[10px] font-extrabold tracking-[0.2em] uppercase transition-all">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
                             </span>
                             Live Election Session
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+                        <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight lg:text-6xl">
                             {election.name}
                         </h1>
-                        <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed font-medium">
+                        <p className="text-muted-foreground dark:text-foreground/60 max-w-sm mx-auto text-sm md:text-base leading-relaxed font-medium">
                             This is a secure, monitored environment. Ensure you have your unique voter identification ready.
                         </p>
                     </div>

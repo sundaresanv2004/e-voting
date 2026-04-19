@@ -145,8 +145,8 @@ export default function TermsPage() {
                             For legal notices or questions about these Terms, contact:
                         </p>
                         <p className="mt-2">
-                            <a href="mailto:legal@sundaresan.dev" className="text-primary font-medium hover:underline">
-                                legal@sundaresan.dev
+                            <a href="mailto:legal@evoting.sundaresan.dev" className="text-primary font-medium hover:underline">
+                                legal@evoting.sundaresan.dev
                             </a>
                         </p>
                     </CardContent>

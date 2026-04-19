@@ -11,6 +11,7 @@ import { DeleteAccount } from "./_components/delete-account"
 import { UserIcon, Settings01Icon, Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "@/lib/utils"
+import { HomeButton } from "@/components/shared/home-button"
 
 const TABS = [
   { id: "profile", label: "Profile", icon: UserIcon, color: "text-blue-600" },
@@ -36,7 +37,11 @@ export default function AccountSettingsPage() {
   const activeTabDetails = TABS.find((t) => t.id === currentTab) || TABS[0]
 
   return (
-    <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto py-8 px-4 md:px-8">
+    <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto py-8 px-4 md:px-8 relative">
+      <div className="flex items-center mb-6">
+        <HomeButton />
+      </div>
+
       <div className="mb-8">
         <UserHero
           title="Account Settings"

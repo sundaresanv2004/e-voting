@@ -3,23 +3,23 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
+import { Home01Icon } from '@hugeicons/core-free-icons'
 
-export function BackButton() {
+export function HomeButton() {
     const router = useRouter()
 
     return (
         <Button
             variant="ghost"
             className="group gap-2"
-            onClick={() => router.back()}
+            onClick={() => router.push("/")}
         >
             <HugeiconsIcon
-                icon={ArrowLeft01Icon}
+                icon={Home01Icon}
                 size={20}
-                className="transition-transform group-hover:-translate-x-1"
+                className="transition-transform group-hover:scale-110"
             />
-            <span className="font-medium">Back</span>
+            <span className="font-medium">Home</span>
         </Button>
     )
 }

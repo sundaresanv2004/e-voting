@@ -163,8 +163,8 @@ export async function updateElection(
   const orgId = session?.user?.organizationId
   const userRole = session?.user?.role
 
-  if (!userId || !orgId || userRole !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized - Only Organization Admins can update elections")
+  if (!userId || !orgId || (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF)) {
+    throw new Error("Unauthorized - Only Organization Admins and Staff can update elections")
   }
 
   const validatedFields = ElectionSchema.safeParse(formData)
@@ -278,7 +278,7 @@ export async function toggleElectionStatus(id: string) {
   const orgId = session?.user?.organizationId
   const userRole = session?.user?.role
 
-  if (!userId || !orgId || userRole !== UserRole.ORG_ADMIN) {
+  if (!userId || !orgId || (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF)) {
     throw new Error("Unauthorized")
   }
 

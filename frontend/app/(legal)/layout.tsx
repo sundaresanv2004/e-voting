@@ -12,21 +12,26 @@ import { BackButton } from "@/components/shared/back-button"
 
 const TERMS_SECTIONS = [
     { id: "acceptance", title: "1. Acceptance of Terms" },
-    { id: "eligibility", title: "2. Eligibility & Accounts" },
-    { id: "voting-conduct", title: "3. Voting Conduct" },
-    { id: "election-integrity", title: "4. Election Integrity" },
-    { id: "termination", title: "5. Termination" },
-    { id: "liability", title: "6. Limitation of Liability" },
-    { id: "contact", title: "7. Contact Info" },
+    { id: "accounts", title: "2. Eligibility & Accounts" },
+    { id: "acceptable-use", title: "3. Acceptable Use" },
+    { id: "organization-responsibility", title: "4. Org Responsibility" },
+    { id: "privacy", title: "5. Privacy & Data" },
+    { id: "suspension", title: "6. Suspension" },
+    { id: "availability", title: "7. Availability" },
+    { id: "liability", title: "8. Limitation of Liability" },
+    { id: "contact", title: "9. Contact Info" },
 ]
 
 const PRIVACY_SECTIONS = [
     { id: "introduction", title: "1. Introduction" },
-    { id: "data-collection", title: "2. Data Collection" },
-    { id: "vote-anonymity", title: "3. Vote Anonymity & Security" },
-    { id: "data-usage", title: "4. How We Use Data" },
-    { id: "data-retention", title: "5. Data Retention" },
-    { id: "contact", title: "6. Contact Us" },
+    { id: "information-we-collect", title: "2. Data Collection" },
+    { id: "how-we-use-data", title: "3. How We Use Data" },
+    { id: "google-data", title: "4. Google User Data" },
+    { id: "sharing", title: "5. Sharing of Data" },
+    { id: "retention", title: "6. Data Retention" },
+    { id: "security", title: "7. Security" },
+    { id: "your-rights", title: "8. Your Rights" },
+    { id: "contact", title: "9. Contact Us" },
 ]
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
@@ -41,36 +46,49 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     useEffect(() => {
-        const handleScroll = () => {
-            const offset = 150
-            const scrollPosition = window.scrollY + offset
-            let currentSection = sections[0]?.id || ""
-
-            for (const section of sections) {
-                const element = document.getElementById(section.id)
-                if (element) {
-                    if (element.offsetTop <= scrollPosition) {
-                        currentSection = section.id
-                    }
+        const observers = new Map();
+        
+        const observerCallback = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveSection(entry.target.id);
                 }
-            }
+            });
+        };
 
+        const observerOptions = {
+            rootMargin: "-100px 0px -70% 0px",
+            threshold: 0,
+        };
+
+        const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+        sections.forEach((section) => {
+            const element = document.getElementById(section.id);
+            if (element) {
+                observer.observe(element);
+            }
+        });
+
+        // Special case for the bottom of the page
+        const handleScroll = () => {
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
-                currentSection = sections[sections.length - 1]?.id || currentSection
+                setActiveSection(sections[sections.length - 1]?.id || "");
             }
+        };
 
-            setActiveSection(currentSection)
-        }
+        window.addEventListener("scroll", handleScroll, { passive: true });
 
-        handleScroll()
-        window.addEventListener("scroll", handleScroll, { passive: true })
-        return () => window.removeEventListener("scroll", handleScroll)
+        return () => {
+            observer.disconnect();
+            window.removeEventListener("scroll", handleScroll);
+        };
     }, [sections])
 
     const scrollToSection = (id: string) => {
         const element = document.getElementById(id)
         if (element) {
-            const offset = 140
+            const offset = 150
             const elementPosition = element.getBoundingClientRect().top + window.scrollY
             const offsetPosition = elementPosition - offset
 

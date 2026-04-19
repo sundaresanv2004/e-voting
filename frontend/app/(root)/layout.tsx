@@ -5,8 +5,9 @@ import SetTheme from "@/components/shared/setTheme";
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Layout01Icon, Logout01Icon, UserIcon } from '@hugeicons/core-free-icons';
 
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { RootNavActions } from "./_components/nav-actions";
+import { LogoutButton } from "@/components/shared/logout-button";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
     const session = await auth();
@@ -17,20 +18,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 {session?.user ? (
                     <>
                         <RootNavActions />
-                        <form action={async () => {
-                            "use server"
-                            await signOut({ redirectTo: "/?logged_out=true" })
-                        }}>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                type="submit"
-                                className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10 transition-colors"
-                            >
-                                <HugeiconsIcon icon={Logout01Icon} className="w-4 h-4" />
-                                Logout
-                            </Button>
-                        </form>
+                        <LogoutButton />
                     </>
                 ) : (
                     <>

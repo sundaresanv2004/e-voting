@@ -34,9 +34,9 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { DateTimePicker } from "@/app/admin/organization/elections/_components/date-time-picker"
 
-import { 
-    updateElectionSettingsAction, 
-    updateElectionCoreAction 
+import {
+  updateElectionSettingsAction,
+  updateElectionCoreAction
 } from "../_actions"
 import { deleteElection, toggleElectionStatus } from "@/app/admin/organization/elections/_actions"
 import { useSession } from "next-auth/react"
@@ -298,6 +298,14 @@ function StatusSection({ election }: { election: any }) {
 
 function CodeSection({ code }: { code: string }) {
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    toast.success("Election code copied to clipboard")
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="rounded-xl border border-amber-500/20 bg-card overflow-hidden">
@@ -312,14 +320,20 @@ function CodeSection({ code }: { code: string }) {
               <p className="text-[12px] text-muted-foreground">Used by voting terminals to identify and connect to this election.</p>
             </div>
           </div>
-          <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0 mt-4 sm:mt-0">
-            <Button 
-              variant="outline" 
-              className="w-full sm:w-auto font-medium shadow-sm transition-all hover:bg-amber-500/5 hover:text-amber-700 hover:border-amber-500/30 gap-2"
+          <div className="flex flex-row gap-2 w-full sm:w-auto shrink-0 mt-4 sm:mt-0">
+            <Button
+              variant="outline"
+              onClick={handleCopy}
+            >
+              <HugeiconsIcon icon={copied ? Tick01Icon : Copy01Icon} className={cn("h-4 w-4", copied && "text-green-500")} />
+              {copied ? "Copied" : "Copy Code"}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setDialogOpen(true)}
             >
               <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
-              Reveal Code
+              Reveal
             </Button>
           </div>
         </div>
@@ -419,7 +433,7 @@ function VoterAuthSection({ election }: { election: any }) {
 
   React.useEffect(() => {
     if (isOnlineEnabled && !enabled) {
-        setEnabled(true)
+      setEnabled(true)
     }
   }, [isOnlineEnabled, enabled])
 
@@ -429,8 +443,8 @@ function VoterAuthSection({ election }: { election: any }) {
     try {
       const result = await updateElectionSettingsAction(election.id, { authorizeVoters: checked })
       if (result.success) {
-          toast.success("Voter authorization policy updated")
-          router.refresh()
+        toast.success("Voter authorization policy updated")
+        router.refresh()
       }
       else toast.error(result.error)
     } catch {
@@ -452,9 +466,9 @@ function VoterAuthSection({ election }: { election: any }) {
               <h3 className="text-sm font-semibold">Voter Roll Authorization</h3>
               <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {isOnlineEnabled ? (
-                    "Authorization is mandatory for online elections to protect identity and ensure 'One Person, One Vote' integrity."
+                  "Authorization is mandatory for online elections to protect identity and ensure 'One Person, One Vote' integrity."
                 ) : (
-                    "Voters must be present in the registered voter roll to cast a ballot. When disabled, anyone at an authorized terminal can vote."
+                  "Voters must be present in the registered voter roll to cast a ballot. When disabled, anyone at an authorized terminal can vote."
                 )}
               </p>
             </div>
@@ -482,13 +496,13 @@ function OnlineVotingSection({ election }: { election: any }) {
     setIsPending(true)
     try {
       // If turning online ON, also toggle off offline for mutual exclusivity AND enforce voter auth
-      const result = await updateElectionSettingsAction(election.id, { 
+      const result = await updateElectionSettingsAction(election.id, {
         allowOnlineVoting: checked,
         ...(checked ? { allowOfflineVoting: false, authorizeVoters: true } : {})
       })
       if (result.success) {
-          toast.success("Online voting capability updated")
-          router.refresh()
+        toast.success("Online voting capability updated")
+        router.refresh()
       }
       else toast.error(result.error)
     } catch {
@@ -536,13 +550,13 @@ function OfflineVotingSection({ election }: { election: any }) {
     setIsPending(true)
     try {
       // If turning offline ON, toggle off online for mutual exclusivity
-      const result = await updateElectionSettingsAction(election.id, { 
+      const result = await updateElectionSettingsAction(election.id, {
         allowOfflineVoting: checked,
         ...(checked ? { allowOnlineVoting: false } : {})
       })
       if (result.success) {
-          toast.success("Hardware-app voting capability updated")
-          router.refresh()
+        toast.success("Hardware-app voting capability updated")
+        router.refresh()
       }
       else toast.error(result.error)
     } catch {
@@ -746,9 +760,9 @@ function DangerSection({ election }: { election: any }) {
         This action is irreversible. Use with caution.
       </div>
 
-      <DeleteElectionDialog 
-        election={election} 
-        open={isDeleteDialogOpen} 
+      <DeleteElectionDialog
+        election={election}
+        open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onSuccess={handleSuccess}
       />

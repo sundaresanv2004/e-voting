@@ -31,7 +31,10 @@ import {
   ShieldKeyIcon,
   Image01Icon,
   UserAccountIcon,
+  Copy01Icon,
+  Tick01Icon,
 } from "@hugeicons/core-free-icons"
+import { cn } from "@/lib/utils"
 import { OrganizationCodeDialog } from "../../systems/_components/OrganizationCodeDialog"
 import { DeleteOrganizationDialog } from "./delete-organization-dialog"
 import { TransferOwnershipDialog } from "./TransferOwnershipDialog"
@@ -301,30 +304,47 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
 
 function CodeSection({ code }: { code: string }) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    toast.success("Organization code copied to clipboard")
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <>
       <div className="rounded-xl border border-amber-500/20 bg-card overflow-hidden">
         <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 flex-1">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
                 <HugeiconsIcon icon={ShieldKeyIcon} className="h-4 w-4" color="currentColor" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-sm font-semibold">Organization Access Code</h3>
                 <p className="text-[12px] text-muted-foreground">Used by voting systems to authenticate and sync with your organization.</p>
               </div>
             </div>
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2 shrink-0 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/5 active:scale-[0.98] transition-all"
-            >
-              <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
-              Reveal Code
-            </Button>
+            <div className="flex flex-row gap-2 w-full sm:w-auto shrink-0 mt-4 sm:mt-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+              >
+                <HugeiconsIcon icon={copied ? Tick01Icon : Copy01Icon} className={cn("h-4 w-4", copied && "text-green-500")} />
+                {copied ? "Copied" : "Copy Code"}
+              </Button>
+              <Button
+                onClick={() => setIsDialogOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
+                Reveal
+              </Button>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 px-6 py-3 bg-amber-500/5 border-t border-amber-500/20 text-[12px] text-amber-700 dark:text-amber-400 font-medium">

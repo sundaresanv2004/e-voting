@@ -152,7 +152,10 @@ export function NavUser({
             <DropdownMenuItem
               variant="destructive"
               className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
-              onClick={() => signOut({ callbackUrl: "/?logged_out=true" })}
+              onClick={async () => {
+                await signOut({ redirect: false })
+                window.location.href = "/?logged_out=true"
+              }}
             >
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} className="group-focus:text-destructive-foreground transition-colors" />
               <span>Log out</span>

@@ -23,6 +23,7 @@ export async function updateElectionSettingsAction(
   try {
     const access = await requireElectionAccess(session?.user, electionId, [
       UserRole.ORG_ADMIN,
+      UserRole.STAFF,
     ])
 
     const result = await db.$transaction(async (tx) => {
@@ -84,6 +85,7 @@ export async function updateElectionCoreAction(
   try {
     const access = await requireElectionAccess(session?.user, electionId, [
       UserRole.ORG_ADMIN,
+      UserRole.STAFF,
     ])
 
     const result = await db.$transaction(async (tx) => {

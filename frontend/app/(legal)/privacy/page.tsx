@@ -157,8 +157,8 @@ export default function PrivacyPolicyPage() {
                             For privacy questions, requests, or concerns, contact us at:
                         </p>
                         <p className="mt-2">
-                            <a href="mailto:privacy@sundaresan.dev" className="text-primary font-medium hover:underline">
-                                privacy@sundaresan.dev
+                            <a href="mailto:privacy@evoting.sundaresan.dev" className="text-primary font-medium hover:underline">
+                                privacy@evoting.sundaresan.dev
                             </a>
                         </p>
                     </CardContent>

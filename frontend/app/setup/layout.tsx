@@ -2,12 +2,14 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import SetTheme from "@/components/shared/setTheme"
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
-import { auth, signOut } from "@/auth"
+import { auth } from "@/auth"
+import { LogoutButton } from "@/components/shared/logout-button"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Logout01Icon } from '@hugeicons/core-free-icons'
 import { RootNavActions } from "../(root)/_components/nav-actions"
+import { HomeButton } from "@/components/shared/home-button"
 
 export default async function SetupLayout({ children }: { children: ReactNode }) {
     const session = await auth()
@@ -19,22 +21,13 @@ export default async function SetupLayout({ children }: { children: ReactNode })
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
+            <div className="absolute top-4 left-4 z-50">
+                <HomeButton />
+            </div>
+
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                 <RootNavActions />
-                <form action={async () => {
-                    "use server"
-                    await signOut({ redirectTo: "/?logged_out=true" })
-                }}>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        type="submit"
-                        className="text-destructive border-destructive/30 hover:border-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                        <HugeiconsIcon icon={Logout01Icon} className="w-4 h-4" />
-                        Logout
-                    </Button>
-                </form>
+                <LogoutButton />
                 <div className="w-px h-5 bg-border/50" />
                 <SetTheme />
             </div>

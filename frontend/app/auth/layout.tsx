@@ -1,20 +1,32 @@
-import type {ReactNode} from "react"
+"use client"
+
+import type { ReactNode } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import SetTheme from "@/components/shared/setTheme"
-import {BackButton} from "@/components/shared/back-button"
-import {BackgroundRippleEffect} from "@/components/ui/background-ripple-effect"
+import { BackButton } from "@/components/shared/back-button"
+import { HomeButton } from "@/components/shared/home-button"
+import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
 import { DownloadPrompt } from "@/components/auth/download-prompt"
 
-export default function AuthLayout({children}: { children: ReactNode }) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
+    const pathname = usePathname()
+
+    // Configuration for which button to show
+    const useBackButton = 
+        pathname?.includes("forgot-password") || 
+        pathname?.includes("verify-email") || 
+        pathname?.includes("error")
+
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
             <div className="absolute top-4 left-4 z-50">
-                <BackButton/>
+                {useBackButton ? <BackButton /> : <HomeButton />}
             </div>
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                 <DownloadPrompt />
-                <SetTheme/>
+                <SetTheme />
             </div>
 
             <div

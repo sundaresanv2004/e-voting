@@ -184,6 +184,7 @@ function VoteForm() {
                                     id="disclaimer"
                                     checked={hasAcceptedDisclaimer}
                                     onCheckedChange={(checked) => setHasAcceptedDisclaimer(!!checked)}
+                                    className="h-5 w-5 border-primary/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all duration-200"
                                 />
                             </div>
                             <p
