@@ -3,12 +3,17 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { UserRole } from "@prisma/client"
 
 import { RoleSchema, type RoleFormValues } from "@/lib/schemas/role"
+import { requireElectionAccess } from "@/lib/authz"
 
 export async function createRole(electionId: string, data: RoleFormValues) {
   const session = await auth()
-  if (!session?.user?.id || !session?.user?.organizationId) throw new Error("Unauthorized")
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
 
   try {
     const validatedFields = RoleSchema.safeParse(data)
@@ -23,7 +28,7 @@ export async function createRole(electionId: string, data: RoleFormValues) {
 
     // Verify election belongs to organization
     const election = await db.election.findFirst({
-      where: { id: electionId, organizationId: session.user.organizationId }
+      where: { id: electionId, organizationId: access.organizationId }
     })
     if (!election) throw new Error("Election not found")
 
@@ -46,7 +51,7 @@ export async function createRole(electionId: string, data: RoleFormValues) {
       const authorizedSystems = await db.authorizedSystem.count({
         where: {
           id: { in: finalSystemIds },
-          organizationId: session.user.organizationId
+          organizationId: access.organizationId
         }
       })
       if (authorizedSystems !== finalSystemIds.length) {
@@ -59,8 +64,8 @@ export async function createRole(electionId: string, data: RoleFormValues) {
         electionId,
         name,
         order,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id,
+        createdByUserId: access.userId,
+        updatedByUserId: access.userId,
         allowedSystems: {
           connect: finalSystemIds.map(id => ({ id }))
         }
@@ -77,7 +82,10 @@ export async function createRole(electionId: string, data: RoleFormValues) {
 
 export async function updateRole(roleId: string, electionId: string, data: RoleFormValues) {
   const session = await auth()
-  if (!session?.user?.id || !session?.user?.organizationId) throw new Error("Unauthorized")
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
 
   try {
     const validatedFields = RoleSchema.safeParse(data)
@@ -94,7 +102,7 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
     const role = await db.electionRole.findFirst({
       where: { 
         id: roleId,
-        election: { organizationId: session.user.organizationId }
+        election: { organizationId: access.organizationId }
       }
     })
     if (!role) throw new Error("Role not found")
@@ -119,7 +127,7 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
       const authorizedSystems = await db.authorizedSystem.count({
         where: {
           id: { in: finalSystemIds },
-          organizationId: session.user.organizationId
+          organizationId: access.organizationId
         }
       })
       if (authorizedSystems !== finalSystemIds.length) {
@@ -132,7 +140,7 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
       data: {
         name,
         order,
-        updatedByUserId: session.user.id,
+        updatedByUserId: access.userId,
         allowedSystems: {
           set: finalSystemIds.map(id => ({ id }))
         }
@@ -149,14 +157,17 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
 
 export async function deleteRole(roleId: string, electionId: string) {
   const session = await auth()
-  if (!session?.user?.organizationId) throw new Error("Unauthorized")
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
 
   try {
     // Verify role belongs to organization
     const role = await db.electionRole.findFirst({
       where: { 
         id: roleId,
-        election: { organizationId: session.user.organizationId }
+        election: { organizationId: access.organizationId }
       }
     })
     if (!role) throw new Error("Role not found")

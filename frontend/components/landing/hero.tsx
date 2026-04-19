@@ -60,7 +60,10 @@ export default function Hero() {
                             <span className="text-xs font-semibold text-primary/90 dark:text-blue-300">Secure Digital Elections</span>
                         </div>
 
-                        <div className="space-y-2 sm:space-y-3">
+                        <div className="space-y-3 sm:space-y-4">
+                            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80 dark:text-blue-300">
+                                E-Voting
+                            </p>
                             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground dark:text-white tracking-tight leading-tight">
                                 Modernize
                             </h1>
@@ -73,7 +76,7 @@ export default function Hero() {
                         </div>
 
                         <p className="text-sm sm:text-base md:text-lg text-muted-foreground dark:text-gray-300 max-w-xl lg:max-w-none leading-relaxed font-medium">
-                            Replace manual processes with a secure, transparent, and efficient digital voting system.
+                            E-Voting helps organizations replace manual processes with a secure, transparent, and efficient digital voting system.
                             Perfect for schools,
                             colleges, and organizations.
                         </p>
@@ -138,6 +141,15 @@ export default function Hero() {
                                 />
                                 <span className="font-medium">Real-Time</span>
                             </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 pt-2 text-sm text-muted-foreground dark:text-gray-400">
+                            <Link href="/privacy" className="font-medium underline-offset-4 hover:text-foreground hover:underline dark:hover:text-white">
+                                Privacy Policy
+                            </Link>
+                            <Link href="/terms" className="font-medium underline-offset-4 hover:text-foreground hover:underline dark:hover:text-white">
+                                Terms of Service
+                            </Link>
                         </div>
                     </div>
 

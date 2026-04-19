@@ -8,11 +8,13 @@ export default auth((req: any) => {
   const hasOrganization = !!organizationId
   const isGoogleUser = (req.auth?.user as any)?.provider === 'google'
   const isEmailVerified = !!(req.auth?.user as any)?.emailVerified || isGoogleUser
+  const isActive = (req.auth?.user as any)?.isActive !== false
 
   const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isVoteRoute = nextUrl.pathname.startsWith('/vote')
   const isPublicRoute = ['/', '/terms', '/privacy'].includes(nextUrl.pathname) || isVoteRoute
   const isAuthRoute = nextUrl.pathname.startsWith('/auth')
+  const isAuthErrorRoute = nextUrl.pathname === '/auth/error'
   const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
   const isUserRoute = nextUrl.pathname.startsWith('/user')
@@ -23,6 +25,11 @@ export default auth((req: any) => {
 
   // 2. Public and Auth-page handling
   if (isPublicRoute) return undefined
+
+  if (isLoggedIn && !isActive) {
+    if (isAuthErrorRoute) return undefined
+    return Response.redirect(new URL('/auth/error?error=AccessDenied', nextUrl))
+  }
 
   if (isAuthRoute) {
     if (isLoggedIn) {

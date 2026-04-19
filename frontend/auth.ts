@@ -46,6 +46,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
+        if (!user.isActive) {
+          await db.userAuditLog.create({
+            data: {
+              userId: user.id,
+              email: user.email,
+              action: "LOGIN",
+              status: AuditStatus.FAILURE,
+              reason: "Account is inactive"
+            }
+          })
+          return null
+        }
+
         const passwordsMatch = await bcrypt.compare(
           credentials.password as string,
           user.password
@@ -87,7 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.sub) {
         const freshUser = await db.user.findUnique({
           where: { id: token.sub },
-          select: { name: true, role: true, organizationId: true, emailVerified: true, image: true }
+          select: { name: true, role: true, organizationId: true, emailVerified: true, image: true, isActive: true }
         })
         
         if (freshUser) {
@@ -96,6 +109,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.organizationId = freshUser.organizationId
           token.emailVerified = freshUser.emailVerified || (token.provider === "google" ? new Date() : null)
           token.image = freshUser.image
+          token.isActive = freshUser.isActive
+        } else {
+          token.isActive = false
         }
       }
       
@@ -122,6 +138,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.emailVerified = token.emailVerified as Date | null
         session.user.image = token.image as string | null
         session.user.provider = token.provider as string
+        session.user.isActive = token.isActive as boolean | undefined
       }
 
       return session
@@ -132,6 +149,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         
         if (email) {
           try {
+            const existingUser = await db.user.findUnique({
+              where: { email },
+              select: { isActive: true }
+            })
+
+            if (existingUser && !existingUser.isActive) {
+              return false
+            }
+
             await db.user.updateMany({
               where: { email },
               data: { emailVerified: new Date() }

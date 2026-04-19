@@ -6,20 +6,16 @@ import { revalidatePath } from "next/cache"
 
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { CandidateSchema, type CandidateFormValues } from "@/lib/schemas/candidate"
+import { requireElectionAccess } from "@/lib/authz"
 
 export async function createCandidate(electionId: string, values: CandidateFormValues) {
   const session = await auth()
-  if (!session?.user?.id || !session?.user?.organizationId) {
-    return { success: false, error: "Unauthorized" }
-  }
-
-  // RBAC: Only ORG_ADMIN and STAFF can create candidates
-  const userRole = session.user.role as UserRole
-  if (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF) {
-    return { success: false, error: "Forbidden: Insufficient permissions" }
-  }
-
   try {
+    const access = await requireElectionAccess(session?.user, electionId, [
+      UserRole.ORG_ADMIN,
+      UserRole.STAFF,
+    ])
+
     const validatedFields = CandidateSchema.safeParse(values)
     if (!validatedFields.success) {
       return { success: false, error: validatedFields.error.flatten().fieldErrors }
@@ -29,7 +25,7 @@ export async function createCandidate(electionId: string, values: CandidateFormV
 
     // Verify election belongs to organization
     const election = await db.election.findFirst({
-      where: { id: electionId, organizationId: session.user.organizationId }
+      where: { id: electionId, organizationId: access.organizationId }
     })
     if (!election) return { success: false, error: "Election not found" }
 
@@ -46,8 +42,8 @@ export async function createCandidate(electionId: string, values: CandidateFormV
           name,
           profileImage: profileImage || null,
           symbolImage: symbolImage || null,
-          createdByUserId: session.user.id!,
-          updatedByUserId: session.user.id!,
+          createdByUserId: access.userId,
+          updatedByUserId: access.userId,
         }
       })
 
@@ -56,8 +52,8 @@ export async function createCandidate(electionId: string, values: CandidateFormV
           action: "CANDIDATE_ADDED",
           entityType: AuditEntityType.ELECTION,
           entityId: electionId,
-          adminId: session.user.id!,
-          organizationId: session.user.organizationId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { name, electionRoleId, candidateId: candidate.id },
         }
@@ -76,17 +72,12 @@ export async function createCandidate(electionId: string, values: CandidateFormV
 
 export async function updateCandidate(candidateId: string, electionId: string, values: CandidateFormValues) {
   const session = await auth()
-  if (!session?.user?.id || !session?.user?.organizationId) {
-    return { success: false, error: "Unauthorized" }
-  }
-
-  // RBAC: Only ORG_ADMIN and STAFF can update candidates
-  const userRole = session.user.role as UserRole
-  if (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF) {
-    return { success: false, error: "Forbidden: Insufficient permissions" }
-  }
-
   try {
+    const access = await requireElectionAccess(session?.user, electionId, [
+      UserRole.ORG_ADMIN,
+      UserRole.STAFF,
+    ])
+
     const validatedFields = CandidateSchema.safeParse(values)
     if (!validatedFields.success) {
       return { success: false, error: validatedFields.error.flatten().fieldErrors }
@@ -98,7 +89,7 @@ export async function updateCandidate(candidateId: string, electionId: string, v
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        role: { election: { organizationId: session.user.organizationId } }
+        role: { election: { organizationId: access.organizationId } }
       }
     })
 
@@ -123,7 +114,7 @@ export async function updateCandidate(candidateId: string, electionId: string, v
           electionRoleId,
           profileImage: profileImage || null,
           symbolImage: symbolImage || null,
-          updatedByUserId: session.user.id,
+          updatedByUserId: access.userId,
         }
       })
 
@@ -132,8 +123,8 @@ export async function updateCandidate(candidateId: string, electionId: string, v
           action: "CANDIDATE_UPDATED",
           entityType: AuditEntityType.ELECTION,
           entityId: electionId,
-          adminId: session.user.id!,
-          organizationId: session.user.organizationId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { 
             candidateId,
@@ -156,22 +147,17 @@ export async function updateCandidate(candidateId: string, electionId: string, v
 
 export async function deleteCandidate(candidateId: string, electionId: string) {
   const session = await auth()
-  if (!session?.user?.organizationId) {
-    return { success: false, error: "Unauthorized" }
-  }
-
-  // RBAC: Only ORG_ADMIN and STAFF can delete candidates
-  const userRole = session.user.role as UserRole
-  if (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF) {
-    return { success: false, error: "Forbidden: Insufficient permissions" }
-  }
-
   try {
+    const access = await requireElectionAccess(session?.user, electionId, [
+      UserRole.ORG_ADMIN,
+      UserRole.STAFF,
+    ])
+
     // Verify candidate belongs to organization through election
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        role: { election: { organizationId: session.user.organizationId } }
+        role: { election: { organizationId: access.organizationId } }
       }
     })
 
@@ -188,8 +174,8 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
           action: "CANDIDATE_REMOVED",
           entityType: AuditEntityType.ELECTION,
           entityId: electionId,
-          adminId: session.user.id!,
-          organizationId: session.user.organizationId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { candidateId, name: candidateData?.name, electionRoleId: candidateData?.electionRoleId },
         }

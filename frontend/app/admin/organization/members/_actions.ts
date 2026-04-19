@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { sendOrgInvitationEmail, sendElectionAssignmentEmail } from "@/lib/mail"
+import { validateOrganizationElectionIds } from "@/lib/authz"
 
 export async function getMembers() {
   const session = await auth()
@@ -136,6 +137,12 @@ export async function addMemberAction(
   }
 
   try {
+    const shouldUseGranularAccess = !hasAllAccess && (role === UserRole.STAFF || role === UserRole.VIEWER)
+    const validElections = shouldUseGranularAccess
+      ? await validateOrganizationElectionIds(orgId, electionIds)
+      : []
+    const validElectionIds = validElections.map((election) => election.id)
+
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, organizationId: true }
@@ -169,10 +176,10 @@ export async function addMemberAction(
           where: { userId }
         })
 
-        if (!hasAllAccess && electionIds.length > 0) {
+        if (!hasAllAccess && validElectionIds.length > 0) {
           // Add new specific access
           await tx.userElectionAccess.createMany({
-            data: electionIds.map(id => ({
+            data: validElectionIds.map(id => ({
               userId,
               electionId: id,
               createdByUserId: adminId!,
@@ -189,7 +196,7 @@ export async function addMemberAction(
               adminId: adminId!,
               organizationId: orgId!,
               status: AuditStatus.SUCCESS,
-              metadata: { electionIds, reason: "Initial member add" }
+              metadata: { electionIds: validElectionIds, reason: "Initial member add" }
             }
           })
         }
@@ -212,13 +219,8 @@ export async function addMemberAction(
     // 3. Send Notifications
     await sendOrgInvitationEmail(user.email, user.name || "User", org?.name || "Organization", role)
     
-    if (!hasAllAccess && electionIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
-       const elections = await db.election.findMany({
-         where: { id: { in: electionIds } },
-         select: { id: true, name: true }
-       })
-       
-       for (const election of elections) {
+    if (!hasAllAccess && validElections.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
+       for (const election of validElections) {
          await sendElectionAssignmentEmail(user.email, user.name || "User", org?.name || "Organization", election.name, role, election.id)
        }
     }
@@ -250,6 +252,12 @@ export async function updateMemberAction(
   }
 
   try {
+    const shouldUseGranularAccess = !hasAllAccess && (role === UserRole.STAFF || role === UserRole.VIEWER)
+    const validElections = shouldUseGranularAccess
+      ? await validateOrganizationElectionIds(orgId, electionIds)
+      : []
+    const validElectionIds = validElections.map((election) => election.id)
+
     const user = await db.user.findUnique({
       where: { id: userId, organizationId: orgId },
       select: { name: true, email: true }
@@ -267,7 +275,7 @@ export async function updateMemberAction(
       select: { electionId: true }
     })
     const existingIds = existingAccess.map(ea => ea.electionId)
-    const newlyAddedIds = electionIds.filter(id => !existingIds.includes(id))
+    const newlyAddedIds = validElectionIds.filter(id => !existingIds.includes(id))
 
     await db.$transaction(async (tx) => {
       const oldUser = await tx.user.findUnique({
@@ -296,10 +304,10 @@ export async function updateMemberAction(
         where: { userId }
       })
 
-      if (!hasAllAccess && electionIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
+      if (!hasAllAccess && validElectionIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
         // Add new specific access
         await tx.userElectionAccess.createMany({
-          data: electionIds.map(id => ({
+          data: validElectionIds.map(id => ({
             userId,
             electionId: id,
             createdByUserId: adminId!,
@@ -325,8 +333,8 @@ export async function updateMemberAction(
       })
 
       // 4. Log Access Changes
-      const addedIds = electionIds.filter(id => !oldIds.includes(id))
-      const removedIds = oldIds.filter(id => !electionIds.includes(id))
+      const addedIds = validElectionIds.filter(id => !oldIds.includes(id))
+      const removedIds = oldIds.filter(id => !validElectionIds.includes(id))
 
       if (addedIds.length > 0) {
         await tx.adminAuditLog.create({
@@ -359,12 +367,7 @@ export async function updateMemberAction(
 
     // 3. Send Notifications for new assignments
     if (!hasAllAccess && newlyAddedIds.length > 0 && (role === UserRole.STAFF || role === UserRole.VIEWER)) {
-       const elections = await db.election.findMany({
-         where: { id: { in: newlyAddedIds } },
-         select: { id: true, name: true }
-       })
-       
-       for (const election of elections) {
+       for (const election of validElections.filter((item) => newlyAddedIds.includes(item.id))) {
          await sendElectionAssignmentEmail(user.email, user.name || "User", org?.name || "Organization", election.name, role, election.id)
        }
     }
@@ -391,6 +394,15 @@ export async function removeMemberAction(userId: string) {
   }
 
   try {
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { ownerId: true },
+    })
+
+    if (organization?.ownerId === userId) {
+      throw new Error("The organization owner cannot be removed. Transfer ownership first.")
+    }
+
     await db.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },

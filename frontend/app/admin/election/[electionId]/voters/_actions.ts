@@ -5,38 +5,19 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { VoterSchema, VoterFormValues } from "@/lib/schemas/voter"
 import { UserRole, AuditEntityType, AuditStatus, Prisma } from "@prisma/client"
+import { requireElectionAccess } from "@/lib/authz"
 
 /**
  * Authorization helper to ensure user is permitted to manage voters
  */
 async function getAuthorizedUser(electionId: string) {
   const session = await auth()
-  if (!session?.user?.id || !session?.user?.organizationId) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true, organizationId: true }
-  })
-
-  if (!user || !user.organizationId || (user.role !== UserRole.ORG_ADMIN && user.role !== UserRole.STAFF)) {
-    throw new Error("Only admins and staff can manage voters")
-  }
-
-  // Verify election belongs to the organization
-  const election = await db.election.findFirst({
-    where: {
-      id: electionId,
-      organizationId: user.organizationId
-    }
-  })
-
-  if (!election) {
-    throw new Error("Election not found or unauthorized")
-  }
-
-  return { userId: session.user.id, organizationId: user.organizationId }
+  return { userId: access.userId, organizationId: access.organizationId }
 }
 
 /**
@@ -435,4 +416,3 @@ export async function importVotersBulk(electionId: string, voterData: any[]) {
     return { error: error.message || "Bulk import failed" }
   }
 }
-

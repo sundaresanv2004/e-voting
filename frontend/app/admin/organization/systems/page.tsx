@@ -4,11 +4,13 @@ import { redirect } from "next/navigation"
 import SystemsHero from "./_components/SystemsHero"
 import { SystemsList } from "./_components/SystemsList"
 import { syncSystemExpirations } from "./_actions"
+import { UserRole } from "@prisma/client"
 
 export default async function AuthorizedSystemsPage() {
   const session = await auth()
   const orgId = session?.user?.organizationId
   if (!orgId) redirect("/setup/organization")
+  if (session.user.role !== UserRole.ORG_ADMIN) redirect("/admin/election/no-access")
 
   // Auto-expire systems that have passed their authorization window via Action (skip revalidate to avoid render error)
   await syncSystemExpirations(orgId, false)

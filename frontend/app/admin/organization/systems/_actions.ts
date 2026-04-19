@@ -108,7 +108,11 @@ export async function updateSystemStatusAction(
 
 export async function syncSystemExpirations(organizationId: string, shouldRevalidate: boolean = true) {
   const session = await auth()
-  if (!session?.user?.organizationId || session.user.organizationId !== organizationId) {
+  if (
+    !session?.user?.organizationId ||
+    session.user.organizationId !== organizationId ||
+    session.user.role !== UserRole.ORG_ADMIN
+  ) {
     throw new Error("Unauthorized")
   }
 

@@ -216,7 +216,7 @@ export async function getOrganizationMembersAction() {
   const orgId = session?.user?.organizationId
   const userId = session?.user?.id
 
-  if (!orgId || !userId) {
+  if (!orgId || !userId || session?.user?.role !== UserRole.ORG_ADMIN) {
     throw new Error("Unauthorized")
   }
 
@@ -259,10 +259,14 @@ export async function transferOwnershipAction(newOwnerId: string) {
         throw new Error("Only the organization owner can transfer ownership.")
       }
 
-      const newOwner = await tx.user.findUnique({
-        where: { id: newOwnerId },
+      const newOwner = await tx.user.findFirst({
+        where: { id: newOwnerId, organizationId: orgId },
         select: { name: true, email: true }
       })
+
+      if (!newOwner) {
+        throw new Error("New owner must be an existing member of this organization.")
+      }
 
       // 2. Perform the transfer
       await tx.organization.update({
@@ -320,4 +324,3 @@ export async function transferOwnershipAction(newOwnerId: string) {
     return { success: false, error: error.message || "Failed to transfer ownership" }
   }
 }
-

@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
+import { requireElectionAccess } from "@/lib/authz"
 
 export async function updateElectionSettingsAction(
   electionId: string,
@@ -18,24 +19,29 @@ export async function updateElectionSettingsAction(
   }
 ) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!userId || !orgId || session.user.role !== UserRole.ORG_ADMIN) {
-    return { success: false, error: "Unauthorized" }
-  }
 
   try {
+    const access = await requireElectionAccess(session?.user, electionId, [
+      UserRole.ORG_ADMIN,
+    ])
+
     const result = await db.$transaction(async (tx) => {
-      const oldSettings = await tx.electionSettings.findUnique({
-        where: { electionId },
+      const oldSettings = await tx.electionSettings.findFirst({
+        where: {
+          electionId,
+          election: { organizationId: access.organizationId },
+        },
       })
 
+      if (!oldSettings) {
+        throw new Error("Election settings not found")
+      }
+
       const updatedSettings = await tx.electionSettings.update({
-        where: { electionId },
+        where: { id: oldSettings.id },
         data: {
           ...data,
-          updatedByUserId: userId,
+          updatedByUserId: access.userId,
         },
       })
 
@@ -44,8 +50,8 @@ export async function updateElectionSettingsAction(
           action: "ELECTION_SETTINGS_UPDATED",
           entityType: AuditEntityType.ELECTION,
           entityId: electionId,
-          adminId: userId!,
-          organizationId: orgId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldSettings,
@@ -74,17 +80,15 @@ export async function updateElectionCoreAction(
   }
 ) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!userId || !orgId || session.user.role !== UserRole.ORG_ADMIN) {
-    return { success: false, error: "Unauthorized" }
-  }
 
   try {
+    const access = await requireElectionAccess(session?.user, electionId, [
+      UserRole.ORG_ADMIN,
+    ])
+
     const result = await db.$transaction(async (tx) => {
       const oldElection = await tx.election.findUnique({
-        where: { id: electionId, organizationId: orgId },
+        where: { id: electionId, organizationId: access.organizationId },
         select: { name: true, startTime: true, endTime: true, status: true }
       })
 
@@ -99,12 +103,12 @@ export async function updateElectionCoreAction(
       const updatedElection = await tx.election.update({
         where: { 
           id: electionId,
-          organizationId: orgId
+          organizationId: access.organizationId
         },
         data: {
           ...data,
           status: newStatus,
-          updatedByUserId: userId,
+          updatedByUserId: access.userId,
         },
       })
 
@@ -113,8 +117,8 @@ export async function updateElectionCoreAction(
           action: "ELECTION_CORE_UPDATED",
           entityType: AuditEntityType.ELECTION,
           entityId: electionId,
-          adminId: userId!,
-          organizationId: orgId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldElection,
