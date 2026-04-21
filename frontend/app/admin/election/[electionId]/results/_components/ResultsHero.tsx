@@ -1,49 +1,51 @@
-"use client"
-
-import { ChartBarLineIcon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { cn } from "@/lib/utils"
+import type React from "react"
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Calendar02Icon, ChartBarLineIcon } from '@hugeicons/core-free-icons';
 
 interface ResultsHeroProps {
-  title: string
-  subtitle: string
-  className?: string
+    title?: string;
+    subtitle?: string;
+    children?: React.ReactNode;
+    actions?: React.ReactNode;
 }
 
-export default function ResultsHero({ 
-  title, 
-  subtitle,
-  className 
-}: ResultsHeroProps) {
-  return (
-    <div className={cn(
-      "w-full bg-emerald-600 dark:bg-emerald-500/20 px-8 py-10 relative overflow-hidden",
-      className
-    )}>
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-        <HugeiconsIcon icon={ChartBarLineIcon} size={180} />
-      </div>
-      
-      <div className="relative z-10 space-y-2">
-        <div className="flex items-center gap-2 text-emerald-100 dark:text-emerald-400 font-black uppercase tracking-[0.2em] text-[10px] opacity-80 mb-2">
-          <div className="p-1.5 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
-            <HugeiconsIcon icon={ChartBarLineIcon} className="w-4 h-4" />
-          </div>
-          Live Intelligence
+const ResultsHero: React.FC<ResultsHeroProps> = ({ title = "Election Results", subtitle, children, actions }) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    })
+
+    return (
+        <div className="relative overflow-hidden border-b bg-card/50 backdrop-blur-sm">
+            <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
+                <div className="flex items-center gap-5">
+                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 shadow-sm ring-1 ring-emerald-500/20 group transition-all duration-300 hover:rotate-3">
+                        <HugeiconsIcon icon={ChartBarLineIcon} className="h-7 w-7 relative z-10 transition-transform duration-300 group-hover:scale-110" color="currentColor" />
+                        <div className="absolute inset-0 bg-emerald-500/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-3xl">
+                            {title}
+                        </h1>
+                        <div className="flex items-center text-sm text-muted-foreground/80 font-semibold tracking-wide">
+                            <HugeiconsIcon icon={Calendar02Icon} className="mr-1.5 h-4 w-4 text-primary" color="currentColor" />
+                            <p>{subtitle || currentDate}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3 relative z-10 transition-all">
+                    {actions}
+                    {children}
+                </div>
+            </div>
+
+            {/* Premium Decorations */}
+            <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-emerald-500/5 rounded-full blur-3xl opacity-60" />
+            <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-64 w-64 bg-primary/5 rounded-full blur-3xl opacity-60" />
         </div>
-        
-        <h1 className="text-4xl font-black tracking-tight text-white dark:text-emerald-100 drop-shadow-sm">
-          {title}
-        </h1>
-        
-        <p className="text-emerald-100/70 dark:text-emerald-300/60 font-medium text-sm max-w-2xl leading-relaxed">
-          Analyzing data for: <span className="text-white dark:text-emerald-200 font-bold">{subtitle}</span>
-        </p>
-      </div>
-      
-      {/* Subtle bottom gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-    </div>
-  )
+    )
 }
+
+export default ResultsHero

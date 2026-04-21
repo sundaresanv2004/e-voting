@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import ResultsHero from "./_components/ResultsHero"
 import { ResultsDashboard } from "./_components/ResultsDashboard"
+import { LiveToggle } from "./_components/LiveToggle"
 
 export default async function ResultsPage({
   params
@@ -14,7 +15,7 @@ export default async function ResultsPage({
 
   if (!session?.user?.organizationId) redirect("/auth/login")
 
-  // Fetch election and core counters
+  // Fetch election with full context
   const election = await db.election.findUnique({
     where: { 
       id: electionId,
@@ -22,6 +23,9 @@ export default async function ResultsPage({
     },
     select: {
       name: true,
+      status: true,
+      startTime: true,
+      endTime: true,
       _count: {
         select: {
           ballots: true,
@@ -48,10 +52,50 @@ export default async function ResultsPage({
     }
   })
 
+  // Fetch ballot timeline data (votes over time, grouped by hour)
+  const ballots = await db.ballot.findMany({
+    where: { electionId },
+    select: {
+      createdAt: true,
+      system: {
+        select: { name: true }
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  })
+
   // Calculate results data
   const totalBallots = election._count.ballots
   const totalVoters = election._count.voters
   const turnoutPercentage = totalVoters > 0 ? (totalBallots / totalVoters) * 100 : 0
+
+  // System breakdown
+  const systemBreakdown: Record<string, number> = {}
+  ballots.forEach(b => {
+    const name = b.system.name || "Unknown System"
+    systemBreakdown[name] = (systemBreakdown[name] || 0) + 1
+  })
+  const systemData = Object.entries(systemBreakdown).map(([name, count]) => ({
+    name,
+    count,
+    percentage: totalBallots > 0 ? (count / totalBallots) * 100 : 0
+  })).sort((a, b) => b.count - a.count)
+
+  // Voting timeline (hourly)
+  const timelineMap: Record<string, number> = {}
+  ballots.forEach(b => {
+    const hour = new Date(b.createdAt).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      hour12: true
+    })
+    timelineMap[hour] = (timelineMap[hour] || 0) + 1
+  })
+  const timelineData = Object.entries(timelineMap).map(([time, count]) => ({
+    time,
+    count
+  }))
 
   const roleResults = rolesData.map(role => {
     const totalVotes = role.candidates.reduce((sum, c) => sum + c._count.votes, 0)
@@ -60,9 +104,10 @@ export default async function ResultsPage({
       id: candidate.id,
       name: candidate.name,
       profileImage: candidate.profileImage,
+      symbolImage: candidate.symbolImage,
       voteCount: candidate._count.votes,
       percentage: totalVotes > 0 ? (candidate._count.votes / totalVotes) * 100 : 0,
-      isLeading: false // We'll calculate this below
+      isLeading: false
     }))
 
     // Sort by vote count descending
@@ -76,26 +121,36 @@ export default async function ResultsPage({
     return {
       id: role.id,
       name: role.name,
+      order: role.order,
       candidates,
       totalVotes
     }
   })
 
+  const totalCandidates = rolesData.reduce((sum, r) => sum + r.candidates.length, 0)
+
   return (
     <div className="flex flex-col w-full min-h-screen">
       <ResultsHero 
         title="Election Results" 
-        subtitle={election.name} 
+        subtitle={election.name}
+        actions={<LiveToggle />}
       />
 
-      <div className="flex-1 py-10 px-4 md:px-8 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 py-8 px-4 md:px-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
         <ResultsDashboard 
+          electionName={election.name}
+          electionStatus={election.status}
           stats={{
             totalVoters,
             ballotsCast: totalBallots,
-            turnoutPercentage
+            turnoutPercentage,
+            totalRoles: rolesData.length,
+            totalCandidates
           }}
           roleResults={roleResults}
+          systemData={systemData}
+          timelineData={timelineData}
         />
       </div>
     </div>
