@@ -2,13 +2,15 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { UserGroupIcon } from "@hugeicons/core-free-icons"
+import { UserGroupIcon, ChartBarLineIcon } from "@hugeicons/core-free-icons"
 import { UserRole } from "@prisma/client"
 import CandidateHero from "./_components/candidate-hero"
 import { CandidateExport } from "./_components/CandidateExport"
 import { CreateCandidateTrigger } from "./_components/create-candidate-trigger"
 import { CandidatesList } from "./_components/CandidatesList"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function CandidatesPage({
   params
@@ -81,6 +83,7 @@ export default async function CandidatesPage({
         subtitle={election.name}
         actions={
           <div className="flex items-center gap-2">
+
             <CandidateExport
               data={candidates as any}
               electionName={election.name}

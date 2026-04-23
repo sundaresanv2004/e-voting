@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/select"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { ResultsExport } from "./ResultsExport"
 
 interface CandidateData {
   id: string
@@ -51,6 +54,8 @@ interface SystemData {
   count: number
   percentage: number
 }
+
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
 interface TimelineData {
   time: string
@@ -80,8 +85,20 @@ export function ResultsDashboard({
   systemData,
   timelineData
 }: ResultsDashboardProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  
+  const currentTab = searchParams.get("tab") || "standings"
   const [selectedRole, setSelectedRole] = React.useState<string>("all")
   const [searchQuery, setSearchQuery] = React.useState("")
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("tab", value)
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
 
   // Filter roles based on selection
   const filteredRoles = selectedRole === "all"
@@ -144,7 +161,7 @@ export function ResultsDashboard({
       </div>
 
       {/* ── Main Content with Tabs ── */}
-      <Tabs defaultValue="standings" className="space-y-6">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <TabsList>
             <TabsTrigger value="standings">
@@ -214,8 +231,10 @@ export function ResultsDashboard({
                     </div>
                     {role.totalVotes > 0 && role.candidates.length > 0 && role.candidates[0]?.isLeading && (
                       <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-black uppercase tracking-wider">
-                        <HugeiconsIcon icon={Crown02Icon} className="w-3 h-3" />
-                        Leading: {role.candidates[0].name}
+                        <HugeiconsIcon icon={Crown02Icon} className="w-3 h-3 mr-1" />
+                        {role.candidates.filter(c => c.isLeading).length > 1 
+                          ? `Tied: ${role.candidates.filter(c => c.isLeading).map(c => c.name).join(", ")}`
+                          : `Leader: ${role.candidates[0].name}`}
                       </Badge>
                     )}
                   </div>
@@ -229,14 +248,17 @@ export function ResultsDashboard({
                         </p>
                       </div>
                     ) : (
-                      candidates.map((candidate, index) => (
-                        <CandidateRow
-                          key={candidate.id}
-                          candidate={candidate}
-                          rank={index + 1}
-                          totalVotes={role.totalVotes}
-                        />
-                      ))
+                      candidates.map((candidate) => {
+                        const trueRank = role.candidates.findIndex(c => c.voteCount === candidate.voteCount) + 1;
+                        return (
+                          <CandidateRow
+                            key={candidate.id}
+                            candidate={candidate}
+                            rank={trueRank}
+                            totalVotes={role.totalVotes}
+                          />
+                        )
+                      })
                     )}
                   </div>
                 </div>
@@ -264,18 +286,38 @@ export function ResultsDashboard({
                 </Badge>
               </div>
               <div className="flex flex-col items-center justify-center py-4">
-                <div className="relative h-36 w-36">
-                  <svg className="h-36 w-36 -rotate-90" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="currentColor" strokeWidth="10" className="text-muted/30" />
-                    <circle
-                      cx="60" cy="60" r="50" fill="none"
-                      stroke="currentColor" strokeWidth="10"
-                      className="text-emerald-500 transition-all duration-1000 ease-out"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(stats.turnoutPercentage / 100) * 314.16} 314.16`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="relative h-40 w-40 flex items-center justify-center">
+                  <ChartContainer
+                    config={{
+                      turnout: {
+                        label: "Turnout",
+                        color: "#10b981", // emerald-500
+                      },
+                    }}
+                    className="h-full w-full absolute inset-0"
+                  >
+                    <RadialBarChart
+                      data={[{ name: "Turnout", value: stats.turnoutPercentage, fill: "var(--color-turnout)" }]}
+                      innerRadius="80%"
+                      outerRadius="100%"
+                      barSize={10}
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      <PolarAngleAxis
+                        type="number"
+                        domain={[0, 100]}
+                        angleAxisId={0}
+                        tick={false}
+                      />
+                      <RadialBar
+                        background={{ fill: "hsl(var(--muted)/0.3)" }}
+                        dataKey="value"
+                        cornerRadius={10}
+                      />
+                    </RadialBarChart>
+                  </ChartContainer>
+                  <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-3xl font-black tracking-tighter">{stats.turnoutPercentage.toFixed(1)}%</span>
                     <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Turnout</span>
                   </div>
@@ -335,29 +377,45 @@ export function ResultsDashboard({
             {timelineData.length > 0 && (
               <div className="rounded-2xl border bg-card p-6 space-y-5 lg:col-span-2">
                 <h3 className="text-sm font-bold tracking-tight uppercase text-muted-foreground">Voting Activity Timeline</h3>
-                <div className="flex items-end gap-1 h-40 overflow-x-auto no-scrollbar pb-6 relative">
-                  {timelineData.map((entry, i) => {
-                    const maxCount = Math.max(...timelineData.map(d => d.count))
-                    const heightPercent = maxCount > 0 ? (entry.count / maxCount) * 100 : 0
-                    return (
-                      <div
-                        key={i}
-                        className="flex flex-col items-center gap-1 flex-1 min-w-[40px] group"
-                      >
-                        <span className="text-[10px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-opacity tabular-nums">
-                          {entry.count}
-                        </span>
-                        <div
-                          className="w-full max-w-[32px] bg-emerald-500/80 rounded-t-md transition-all duration-500 ease-out group-hover:bg-emerald-400 cursor-default"
-                          style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                        />
-                        <span className="text-[8px] text-muted-foreground font-medium text-center leading-tight mt-1 w-full truncate">
-                          {entry.time}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Votes",
+                      color: "#10b981", // emerald-500
+                    },
+                  }}
+                  className="h-60 w-full mt-4"
+                >
+                  <BarChart data={timelineData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
+                    <XAxis
+                      dataKey="time"
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      fontSize={11}
+                      className="fill-muted-foreground"
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      fontSize={11}
+                      className="fill-muted-foreground"
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip
+                      cursor={{ fill: "hsl(var(--muted)/0.5)" }}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="var(--color-count)"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ChartContainer>
               </div>
             )}
           </div>
@@ -382,24 +440,28 @@ export function ResultsDashboard({
                     </Badge>
                   </div>
                   <div className="p-5 space-y-4">
-                    {winner ? (
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12 border-2 border-emerald-500/20 shadow-sm">
-                          <AvatarImage src={winner.profileImage || ""} />
-                          <AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-xs font-black">
-                            {winner.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-base font-bold truncate">{winner.name}</p>
-                            <HugeiconsIcon icon={Crown02Icon} className="w-4 h-4 text-amber-500 shrink-0" />
+                    {role.candidates.filter(c => c.isLeading).length > 0 ? (
+                      <div className="space-y-3">
+                        {role.candidates.filter(c => c.isLeading).map(winner => (
+                          <div key={winner.id} className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12 border-2 border-emerald-500/20 shadow-sm">
+                              <AvatarImage src={winner.profileImage || ""} />
+                              <AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-xs font-black">
+                                {winner.name.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-base font-bold truncate">{winner.name}</p>
+                                <HugeiconsIcon icon={Crown02Icon} className="w-4 h-4 text-amber-500 shrink-0" />
+                              </div>
+                              <p className="text-sm text-emerald-600 font-bold">{winner.percentage.toFixed(1)}% · {winner.voteCount} votes</p>
+                            </div>
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-black uppercase shrink-0">
+                              {role.candidates.filter(c => c.isLeading).length > 1 ? "Tied for Lead" : "Leading"}
+                            </Badge>
                           </div>
-                          <p className="text-sm text-emerald-600 font-bold">{winner.percentage.toFixed(1)}% · {winner.voteCount} votes</p>
-                        </div>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-black uppercase shrink-0">
-                          Leading
-                        </Badge>
+                        ))}
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground italic py-2">No votes cast yet</p>
@@ -432,13 +494,6 @@ export function ResultsDashboard({
         </TabsContent>
       </Tabs>
 
-      {/* Footer */}
-      {hasAnyVotes && (
-        <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-muted-foreground font-bold">
-          <HugeiconsIcon icon={Tick01Icon} className="h-3 w-3 text-emerald-600" />
-          Results are calculated in real-time from secure ballot data.
-        </div>
-      )}
     </div>
   )
 }

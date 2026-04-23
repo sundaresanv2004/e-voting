@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import ResultsHero from "./_components/ResultsHero"
 import { ResultsDashboard } from "./_components/ResultsDashboard"
 import { LiveToggle } from "./_components/LiveToggle"
+import { ResultsExport } from "./_components/ResultsExport"
 
 export default async function ResultsPage({
   params
@@ -17,9 +18,9 @@ export default async function ResultsPage({
 
   // Fetch election with full context
   const election = await db.election.findUnique({
-    where: { 
+    where: {
       id: electionId,
-      organizationId: session.user.organizationId 
+      organizationId: session.user.organizationId
     },
     select: {
       name: true,
@@ -99,7 +100,7 @@ export default async function ResultsPage({
 
   const roleResults = rolesData.map(role => {
     const totalVotes = role.candidates.reduce((sum, c) => sum + c._count.votes, 0)
-    
+
     const candidates = role.candidates.map(candidate => ({
       id: candidate.id,
       name: candidate.name,
@@ -113,9 +114,14 @@ export default async function ResultsPage({
     // Sort by vote count descending
     candidates.sort((a, b) => b.voteCount - a.voteCount)
 
-    // Mark the leading candidate(s)
+    // Mark the leading candidate(s) - handling ties
     if (candidates.length > 0 && candidates[0].voteCount > 0) {
-      candidates[0].isLeading = true
+      const topVoteCount = candidates[0].voteCount
+      candidates.forEach(c => {
+        if (c.voteCount === topVoteCount) {
+          c.isLeading = true
+        }
+      })
     }
 
     return {
@@ -131,14 +137,19 @@ export default async function ResultsPage({
 
   return (
     <div className="flex flex-col w-full min-h-screen">
-      <ResultsHero 
-        title="Election Results" 
+      <ResultsHero
+        title="Election Results"
         subtitle={election.name}
-        actions={<LiveToggle />}
+        actions={
+          <div className="flex items-center gap-6">
+            <LiveToggle />
+            <ResultsExport data={roleResults} electionName={election.name} />
+          </div>
+        }
       />
 
       <div className="flex-1 py-8 px-4 md:px-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <ResultsDashboard 
+        <ResultsDashboard
           electionName={election.name}
           electionStatus={election.status}
           stats={{
