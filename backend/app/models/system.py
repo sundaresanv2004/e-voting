@@ -22,6 +22,7 @@ class AuthorizedSystem(Base):
     ipAddress = Column(String, nullable=True)
     macAddress = Column(String, nullable=True)
     status = Column(Enum(SystemStatus, name="systemstatus"), default=SystemStatus.PENDING)
+    claimTokenHash = Column(String, nullable=True)
     secretTokenHash = Column(String, unique=True, nullable=True)
     tokenExpiresAt = Column(DateTime, nullable=True)
     approvedByUserId = Column(String, nullable=True)

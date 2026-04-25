@@ -16,6 +16,8 @@ export async function updateElectionSettingsAction(
     showCandidateProfiles?: boolean
     showCandidateSymbols?: boolean
     shuffleCandidates?: boolean
+    allowMultipleVotes?: boolean
+    maxVotesPerUser?: number
   }
 ) {
   const session = await auth()

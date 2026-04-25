@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum, Boolean
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum, Boolean, Integer
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
@@ -45,6 +45,8 @@ class ElectionSettings(Base):
     showCandidateProfiles = Column(Boolean, default=True)
     showCandidateSymbols = Column(Boolean, default=True)
     shuffleCandidates = Column(Boolean, default=True)
+    allowMultipleVotes = Column(Boolean, default=False)
+    maxVotesPerUser = Column(Integer, default=1)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     createdByUserId = Column(String, nullable=False)

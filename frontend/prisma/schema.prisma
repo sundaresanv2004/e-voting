@@ -243,6 +243,8 @@ model ElectionSettings {
   showCandidateProfiles Boolean  @default(true)
   showCandidateSymbols  Boolean  @default(true)
   shuffleCandidates     Boolean  @default(true)
+  allowMultipleVotes    Boolean  @default(false)
+  maxVotesPerUser       Int      @default(1)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   createdByUserId       String
@@ -340,6 +342,7 @@ model AuthorizedSystem {
   ipAddress        String?
   macAddress       String?
   status           SystemStatus @default(PENDING)
+  claimTokenHash   String?      // Store a hash of the terminal claim token used for polling and activation
   secretTokenHash  String?      @unique // Store a hash (e.g., Argon2) of the secret, never the plain text
   tokenExpiresAt   DateTime?
   approvedByUserId String?

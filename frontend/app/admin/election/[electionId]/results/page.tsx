@@ -148,7 +148,7 @@ export default async function ResultsPage({
         }
       />
 
-      <div className="flex-1 py-8 px-4 md:px-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 py-8 px-4 md:px-8 w-full">
         <ResultsDashboard
           electionName={election.name}
           electionStatus={election.status}

@@ -50,8 +50,18 @@ class ApiClient {
         });
     }
 
-    static async getStatus(systemId) {
-        return this.request(`/systems/${systemId}/status`);
+    static async getStatus(payload) {
+        return this.request('/systems/status', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    }
+
+    static async activateSystem(payload) {
+        return this.request('/systems/activate', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
     }
 
     static async verifyTerminal(payload) {
@@ -61,20 +71,15 @@ class ApiClient {
         });
     }
 
-    static async revokeSystem(systemId) {
-        return this.request(`/systems/${systemId}/revoke`, {
-            method: 'POST'
+    static async logoutSystem(payload) {
+        return this.request('/systems/logout', {
+            method: 'POST',
+            body: JSON.stringify(payload)
         });
     }
 
-    static async cancelRegistration(systemId) {
-        return this.request(`/systems/${systemId}`, {
-            method: 'DELETE'
-        });
-    }
-
-    static async reauthorizeSystem(payload) {
-        return this.request('/systems/reauthorize', {
+    static async cancelRegistration(payload) {
+        return this.request('/systems/cancel', {
             method: 'POST',
             body: JSON.stringify(payload)
         });

@@ -20,6 +20,9 @@ export default async function VotePage({
       },
       settings: true,
       roles: {
+        where: {
+          candidates: { some: {} }
+        },
         orderBy: { order: "asc" },
         include: {
           candidates: true

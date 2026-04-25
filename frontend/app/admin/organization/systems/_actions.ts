@@ -4,8 +4,14 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { SystemStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { addDays, addMinutes } from "date-fns"
+import { addDays } from "date-fns"
 import { sendSystemApprovedEmail, sendSystemExpiredEmail } from "@/lib/mail"
+import { createHash, randomBytes } from "crypto"
+
+function generateTerminalSessionHash() {
+  const rawToken = randomBytes(32).toString("hex")
+  return createHash("sha256").update(rawToken).digest("hex")
+}
 
 export async function updateSystemStatusAction(
   systemId: string,
@@ -38,13 +44,12 @@ export async function updateSystemStatusAction(
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
 
-        // Generate or refresh token with 30-day expiry
-        if (!oldSystem.secretTokenHash) {
-          updateData.secretTokenHash = crypto.randomUUID()
-          secretGenerated = true
-        }
+        // Mark approval with a fresh hashed session seed. The desktop terminal
+        // exchanges its private claim token for the real session token later.
+        updateData.secretTokenHash = generateTerminalSessionHash()
+        secretGenerated = true
         updateData.tokenExpiresAt = addDays(new Date(), 15)
-      } else if (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED) {
+      } else if (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) {
         // Clear token on revocation
         updateData.secretTokenHash = null
         updateData.tokenExpiresAt = null
@@ -204,11 +209,7 @@ export async function editSystemAction(
       if (status === SystemStatus.APPROVED && oldSystemSnapshot.status !== SystemStatus.APPROVED) {
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
-        if (!oldSystemSnapshot.secretTokenHash) {
-          // In a real scenario, we'd generate a token, show it once, and store the hash.
-          // For now, we'll store the UUID as the "hash" to satisfy the schema.
-          updateData.secretTokenHash = crypto.randomUUID()
-        }
+        updateData.secretTokenHash = generateTerminalSessionHash()
         updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (
         (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) &&

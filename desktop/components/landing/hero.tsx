@@ -62,7 +62,10 @@ export default function Hero() {
                             <span className="text-xs font-semibold text-primary/90 dark:text-blue-300">Secure Digital Elections</span>
                         </div>
 
-                        <div className="space-y-2 sm:space-y-3">
+                        <div className="space-y-3 sm:space-y-4">
+                            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80 dark:text-blue-300">
+                                E-Voting
+                            </p>
                             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground dark:text-white tracking-tight leading-tight">
                                 Modernize
                             </h1>
@@ -85,7 +88,7 @@ export default function Hero() {
                             <Button
                                 size="lg"
                                 className="group w-full sm:w-auto cursor-pointer"
-                                onClick={() => openExternalUrl(process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000")}
+                                onClick={() => openExternalUrl("/admin/organization")}
                             >
                                 <HugeiconsIcon icon={Building04Icon} className="w-5 h-5" strokeWidth={2} />
                                 Create Organisation
@@ -134,6 +137,21 @@ export default function Hero() {
                                 />
                                 <span className="font-medium">Real-Time</span>
                             </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 pt-2 text-sm text-muted-foreground dark:text-gray-400">
+                            <button 
+                                onClick={() => openExternalUrl("/privacy")}
+                                className="font-medium underline-offset-4 hover:text-foreground hover:underline dark:hover:text-white cursor-pointer transition-colors"
+                            >
+                                Privacy Policy
+                            </button>
+                            <button 
+                                onClick={() => openExternalUrl("/terms")}
+                                className="font-medium underline-offset-4 hover:text-foreground hover:underline dark:hover:text-white cursor-pointer transition-colors"
+                            >
+                                Terms of Service
+                            </button>
                         </div>
                     </div>
 

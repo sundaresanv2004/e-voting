@@ -1,50 +1,69 @@
-// electron/main.js
 const { app, BrowserWindow, ipcMain, shell, nativeTheme, safeStorage } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const { machineIdSync } = require('node-machine-id');
-
 const os = require('os');
 
 const ApiClient = require('./api_client');
 
-// Initialize Store
 const store = new Store();
 
-function clearLocalTerminalData() {
-    store.delete('systemId');
-    store.delete('secretToken');
-    store.delete('terminalStatus');
-    store.delete('organizationName');
-    store.delete('organizationLogo');
-    store.delete('organizationLogoCache');
-    store.delete('systemName');
-    store.set('terminalStatus', 'UNREGISTERED');
-    
-    if (mainWindow) {
-        mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
+function saveSecureValue(key, value) {
+  if (safeStorage.isEncryptionAvailable()) {
+    const encrypted = safeStorage.encryptString(value);
+    store.set(key, encrypted.toString('base64'));
+    return true;
+  }
+  return false;
+}
+
+function getSecureValue(key) {
+  const encryptedBase64 = store.get(key);
+  if (encryptedBase64 && safeStorage.isEncryptionAvailable()) {
+    try {
+      return safeStorage.decryptString(Buffer.from(encryptedBase64, 'base64'));
+    } catch (e) {
+      console.error(`Failed to decrypt ${key}:`, e);
+      return null;
     }
+  }
+  return null;
+}
+
+function clearSecureValue(key) {
+  store.delete(key);
+}
+
+function clearLocalTerminalData() {
+  store.delete('systemId');
+  clearSecureValue('claimToken');
+  clearSecureValue('secretToken');
+  store.delete('terminalStatus');
+  store.delete('organizationName');
+  store.delete('organizationLogo');
+  store.delete('organizationLogoCache');
+  store.delete('systemName');
+  store.set('terminalStatus', 'UNREGISTERED');
+
+  if (mainWindow) {
+    mainWindow.webContents.send('terminal:status-updated', 'UNREGISTERED');
+  }
 }
 
 function handleApiResult(result) {
-    if (result && result.networkError && mainWindow) {
-        mainWindow.webContents.send('terminal:network-error', 'backend');
-    }
-    // If the record was deleted from the dashboard (404), purge local state
-    if (result && result.status === 404) {
-        clearLocalTerminalData();
-    }
-    return result;
+  if (result && result.networkError && mainWindow) {
+    mainWindow.webContents.send('terminal:network-error', 'backend');
+  }
+  if (result && result.status === 404) {
+    clearLocalTerminalData();
+  }
+  return result;
 }
 
-/**
- * Captures basic system information for registration.
- */
 function getSystemInfo() {
   const networkInterfaces = os.networkInterfaces();
-  let macAddress = machineIdSync(); // Fallback to machineId
-  
-  // Try to find a real MAC address
+  let macAddress = machineIdSync();
+
   for (const interfaceName in networkInterfaces) {
     const interfaces = networkInterfaces[interfaceName];
     for (const iface of interfaces) {
@@ -59,43 +78,10 @@ function getSystemInfo() {
     macAddress,
     hostName: os.hostname(),
     platform: os.platform(),
-    ipAddress: '127.0.0.1' // In a real app, you might fetch external IP
+    ipAddress: '127.0.0.1'
   };
 }
 
-/**
- * Securely saves the secret token using Electron's safeStorage API.
- */
-function saveSecretToken(token) {
-  if (safeStorage.isEncryptionAvailable()) {
-    const encrypted = safeStorage.encryptString(token);
-    store.set('secretToken', encrypted.toString('base64'));
-    return true;
-  }
-  return false;
-}
-
-/**
- * Retrieves and decrypts the secret token.
- */
-function getSecretToken() {
-  const encryptedBase64 = store.get('secretToken');
-  if (encryptedBase64 && safeStorage.isEncryptionAvailable()) {
-    try {
-        return safeStorage.decryptString(Buffer.from(encryptedBase64, 'base64'));
-    } catch (e) {
-        console.error("Failed to decrypt token:", e);
-        return null;
-    }
-  }
-  return null;
-}
-
-app.setName('E-Voting');
-
-/**
- * Downloads a logo from a URL and caches it as a Base64 string in the store.
- */
 async function cacheLogo(url) {
   if (!url) return;
   try {
@@ -106,11 +92,108 @@ async function cacheLogo(url) {
     const dataUrl = `data:${mimeType};base64,${base64}`;
     store.set('organizationLogoCache', dataUrl);
   } catch (e) {
-    console.error("Failed to cache logo:", e);
+    console.error('Failed to cache logo:', e);
   }
 }
 
-// Phase 3: Registration & Verification Logic
+function updateApprovedTerminalState(data) {
+  const oldLogoUrl = store.get('organizationLogo');
+  store.set('terminalStatus', 'APPROVED');
+  store.set('organizationName', data.organizationName);
+  store.set('organizationLogo', data.organizationLogo);
+  store.set('systemName', data.systemName);
+
+  if (data.organizationLogo) {
+    if (data.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
+      cacheLogo(data.organizationLogo);
+    }
+  } else {
+    store.delete('organizationLogoCache');
+  }
+}
+
+async function activateApprovedSystem(systemId, claimToken) {
+  const sysInfo = getSystemInfo();
+  const result = handleApiResult(await ApiClient.activateSystem({
+    systemId,
+    claimToken,
+    macAddress: sysInfo.macAddress
+  }));
+
+  if (result.success && result.data?.success && result.data.secretToken) {
+    saveSecureValue('secretToken', result.data.secretToken);
+    updateApprovedTerminalState(result.data);
+    if (mainWindow) {
+      mainWindow.webContents.send('terminal:status-updated', 'APPROVED');
+    }
+    return { success: true, status: 'APPROVED' };
+  }
+
+  if (result.success && result.data) {
+    const nextStatus = result.data.status || 'PENDING';
+    store.set('terminalStatus', nextStatus === 'SUSPENDED' ? 'REVOKED' : nextStatus);
+    if (mainWindow) {
+      mainWindow.webContents.send('terminal:status-updated', store.get('terminalStatus'));
+    }
+    return { success: false, status: store.get('terminalStatus') };
+  }
+
+  return { success: false, status: store.get('terminalStatus') || 'UNREGISTERED' };
+}
+
+let pollInterval;
+function stopStatusPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+function startStatusPolling(systemId) {
+  const claimToken = getSecureValue('claimToken');
+  if (!claimToken) return;
+
+  stopStatusPolling();
+
+  pollInterval = setInterval(async () => {
+    try {
+      const result = handleApiResult(await ApiClient.getStatus({ systemId, claimToken }));
+      if (result.success && result.data) {
+        const data = result.data;
+
+        if (data.status === 'APPROVED' && data.activationReady) {
+          const activation = await activateApprovedSystem(systemId, claimToken);
+          if (activation.success) {
+            stopStatusPolling();
+          }
+          return;
+        }
+
+        if (data.status === 'REJECTED') {
+          store.set('terminalStatus', 'REJECTED');
+          if (mainWindow) {
+            mainWindow.webContents.send('terminal:status-updated', 'REJECTED');
+          }
+          stopStatusPolling();
+          return;
+        }
+
+        if (['PENDING', 'EXPIRED', 'REVOKED', 'SUSPENDED'].includes(data.status)) {
+          const mappedStatus = data.status === 'SUSPENDED' ? 'REVOKED' : data.status;
+          store.set('terminalStatus', mappedStatus);
+          if (mainWindow) {
+            mainWindow.webContents.send('terminal:status-updated', mappedStatus);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Polling error:', e);
+    }
+  }, 5000);
+}
+
+app.setName('E-Voting');
+
 ipcMain.handle('terminal:get-identity', async () => {
   return {
     systemId: store.get('systemId'),
@@ -118,250 +201,177 @@ ipcMain.handle('terminal:get-identity', async () => {
     organizationName: store.get('organizationName'),
     organizationLogo: store.get('organizationLogoCache') || store.get('organizationLogo'),
     machineId: machineIdSync(),
-    hasToken: !!store.get('secretToken')
+    hasToken: !!getSecureValue('secretToken'),
+    hasClaimToken: !!getSecureValue('claimToken')
   };
 });
 
 ipcMain.handle('terminal:get-status', async () => {
-    const systemId = store.get('systemId');
-    const token = getSecretToken();
-    const storedStatus = store.get('terminalStatus');
-    
-    if (!systemId) return 'UNREGISTERED';
-    
-    // If we have a stored status that isn't APPROVED (like REJECTED), use it.
-    if (storedStatus && storedStatus !== 'APPROVED') {
-        return storedStatus;
-    }
+  const systemId = store.get('systemId');
+  const token = getSecureValue('secretToken');
+  const claimToken = getSecureValue('claimToken');
+  const storedStatus = store.get('terminalStatus');
 
-    if (!token) return 'PENDING';
-    return storedStatus || 'APPROVED';
+  if (!systemId) return 'UNREGISTERED';
+  if (storedStatus && storedStatus !== 'APPROVED') return storedStatus;
+  if (!claimToken && !token) return 'UNREGISTERED';
+  if (!token) return storedStatus || 'PENDING';
+  return storedStatus || 'APPROVED';
 });
 
 ipcMain.handle('terminal:register', async (event, { organizationCode, systemName }) => {
-    const sysInfo = getSystemInfo();
-    
-    try {
-        const result = handleApiResult(await ApiClient.connectSystem({
-            organizationCode,
-            systemName,
-            macAddress: sysInfo.macAddress,
-            hostName: sysInfo.hostName,
-            ipAddress: sysInfo.ipAddress
-        }));
+  const sysInfo = getSystemInfo();
 
-        if (result.success && result.data?.success) {
-            const data = result.data;
-            store.set('systemId', data.systemId);
-            store.set('systemName', systemName);
-            store.set('organizationName', data.organizationName);
-            store.set('terminalStatus', 'PENDING');
-            
-            // Start polling for approval immediately
-            startStatusPolling(data.systemId);
-            
-            return { success: true, systemId: data.systemId };
-        } else {
-            return { success: false, error: result.error || 'Registration failed' };
-        }
-    } catch (error) {
-        return { success: false, error: 'Connection failed. Is the backend running?' };
+  try {
+    const result = handleApiResult(await ApiClient.connectSystem({
+      organizationCode,
+      systemName,
+      macAddress: sysInfo.macAddress,
+      hostName: sysInfo.hostName,
+      ipAddress: sysInfo.ipAddress
+    }));
+
+    if (result.success && result.data?.success && result.data.claimToken) {
+      const data = result.data;
+      store.set('systemId', data.systemId);
+      store.set('systemName', systemName);
+      store.set('organizationName', data.organizationName);
+      saveSecureValue('claimToken', data.claimToken);
+      clearSecureValue('secretToken');
+      store.set('terminalStatus', 'PENDING');
+      startStatusPolling(data.systemId);
+      return { success: true, systemId: data.systemId };
     }
+
+    return { success: false, error: result.error || 'Registration failed' };
+  } catch (error) {
+    return { success: false, error: 'Connection failed. Is the backend running?' };
+  }
 });
 
 ipcMain.handle('terminal:logout', async () => {
-    const systemId = store.get('systemId');
-    try {
-        if (systemId) {
-            handleApiResult(await ApiClient.revokeSystem(systemId));
-        }
-    } catch (e) {
-        console.error("Logout API call failed:", e);
-    } finally {
-        // Use the centralized purge helper
-        clearLocalTerminalData();
+  const systemId = store.get('systemId');
+  const secretToken = getSecureValue('secretToken');
+  try {
+    if (systemId && secretToken) {
+      handleApiResult(await ApiClient.logoutSystem({ systemId, secretToken }));
     }
-    return { success: true };
+  } catch (e) {
+    console.error('Logout API call failed:', e);
+  } finally {
+    stopStatusPolling();
+    clearLocalTerminalData();
+  }
+  return { success: true };
 });
 
-// Verification Poller (to check for approval)
-let pollInterval;
-function startStatusPolling(systemId) {
-    if (pollInterval) clearInterval(pollInterval);
-    
-    pollInterval = setInterval(async () => {
-        try {
-            const result = handleApiResult(await ApiClient.getStatus(systemId));
-            if (result.success && result.data) {
-                const data = result.data;
-                if (data.status === 'APPROVED' && data.secretToken) {
-                    saveSecretToken(data.secretToken);
-                    store.set('terminalStatus', 'APPROVED');
-                    const oldLogoUrl = store.get('organizationLogo');
-                    store.set('organizationLogo', data.organizationLogo);
-                    
-                    if (data.organizationLogo) {
-                        // Only re-cache if URL changed or cache is missing
-                        if (data.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
-                            cacheLogo(data.organizationLogo);
-                        }
-                    } else {
-                        // Logo was removed from server, clear local cache
-                        store.delete('organizationLogoCache');
-                    }
-
-                    if (mainWindow) {
-                        mainWindow.webContents.send('terminal:status-updated', 'APPROVED');
-                    }
-                    clearInterval(pollInterval);
-                } else if (data.status === 'REJECTED') {
-                    // Admin rejected the request. Update status but don't clear ID yet
-                    // so the UI can show the "Denied" message.
-                    store.set('terminalStatus', 'REJECTED');
-
-                    if (mainWindow) {
-                        mainWindow.webContents.send('terminal:status-updated', 'REJECTED');
-                    }
-                    clearInterval(pollInterval);
-                }
-            }
-        } catch (e) {
-            console.error("Polling error:", e);
-        }
-    }, 5000);
-}
-
 ipcMain.handle('terminal:cancel-registration', async () => {
-    const systemId = store.get('systemId');
-    try {
-        if (systemId) {
-            // Call the backend DELETE endpoint as requested
-            handleApiResult(await ApiClient.cancelRegistration(systemId));
-        }
-    } catch (e) {
-        console.error("Cancel registration API call failed:", e);
-    } finally {
-        // Use the centralized purge helper
-        clearLocalTerminalData();
+  const systemId = store.get('systemId');
+  const claimToken = getSecureValue('claimToken');
+  try {
+    if (systemId && claimToken) {
+      handleApiResult(await ApiClient.cancelRegistration({ systemId, claimToken }));
     }
-    return { success: true };
+  } catch (e) {
+    console.error('Cancel registration API call failed:', e);
+  } finally {
+    stopStatusPolling();
+    clearLocalTerminalData();
+  }
+  return { success: true };
 });
 
 ipcMain.handle('terminal:reset-registration-state', async () => {
-    // This just clears local state without calling the DELETE API.
-    clearLocalTerminalData();
-    return { success: true };
+  stopStatusPolling();
+  clearLocalTerminalData();
+  return { success: true };
 });
 
 ipcMain.handle('terminal:verify-handshake', async () => {
-    const systemId = store.get('systemId');
-    const status = store.get('terminalStatus');
-    const secretToken = getSecretToken();
+  const systemId = store.get('systemId');
+  const status = store.get('terminalStatus');
+  const secretToken = getSecureValue('secretToken');
+  const claimToken = getSecureValue('claimToken');
 
-    if (!systemId) return { success: false, status: 'UNREGISTERED' };
+  if (!systemId) return { success: false, status: 'UNREGISTERED' };
 
-    // 2. If PENDING, EXPIRED, or REVOKED, start polling for approval/renewal/restores
-    if (status === 'PENDING' || status === 'EXPIRED' || status === 'REVOKED') {
-        startStatusPolling(systemId);
-        return { success: true, status };
-    }
+  if (status === 'PENDING' || status === 'EXPIRED' || status === 'REVOKED') {
+    startStatusPolling(systemId);
+    return { success: true, status };
+  }
 
-    // 3. If REJECTED, there's nothing to poll, we stay in REJECTED state
-    if (status === 'REJECTED') {
-        return { success: true, status: 'REJECTED' };
-    }
+  if (status === 'REJECTED') {
+    return { success: true, status: 'REJECTED' };
+  }
 
-    // 4. If APPROVED, perform a Handshake (Verify)
-    if (status === 'APPROVED' && secretToken) {
-        try {
-            const sysInfo = getSystemInfo();
-            const result = handleApiResult(await ApiClient.verifyTerminal({
-                systemId,
-                secretToken,
-                macAddress: sysInfo.macAddress
-            }));
+  if (status === 'APPROVED' && secretToken) {
+    try {
+      const sysInfo = getSystemInfo();
+      const result = handleApiResult(await ApiClient.verifyTerminal({
+        systemId,
+        secretToken,
+        macAddress: sysInfo.macAddress
+      }));
 
-            if (result.success && result.data) {
-                const data = result.data;
-            
-                if (data.valid) {
-                    store.set('terminalStatus', 'APPROVED');
-                    // Update cache with fresh data
-                    const oldLogoUrl = store.get('organizationLogo');
-                    store.set('organizationName', data.organizationName);
-                    store.set('organizationLogo', data.organizationLogo);
-                    store.set('systemName', data.systemName);
+      if (result.success && result.data) {
+        const data = result.data;
 
-                    // Background cache the image for offline usage
-                    if (data.organizationLogo) {
-                        // Only re-cache if URL changed or cache is missing
-                        if (data.organizationLogo !== oldLogoUrl || !store.has('organizationLogoCache')) {
-                            cacheLogo(data.organizationLogo);
-                        }
-                    } else {
-                        // Logo was removed from server, clear local cache
-                        store.delete('organizationLogoCache');
-                    }
-                    return { success: true, status: 'APPROVED' };
-                } else {
-                    // VERIFICATION FAILED - Be precise about the new status
-                    const serverStatus = data.status;
-                    
-                    if (serverStatus === 'PENDING') {
-                        store.set('terminalStatus', 'PENDING');
-                        startStatusPolling(systemId);
-                    } else if (serverStatus === 'APPROVED') {
-                        // STALE KEY CASE: System is approved on server but our local token is rejected.
-                        // Likely due to admin re-approving and rotating the secret token.
-                        // We request a re-authorization to go back to PENDING.
-                        try {
-                            const sysInfo = getSystemInfo();
-                            await ApiClient.reauthorizeSystem({
-                                systemId,
-                                macAddress: sysInfo.macAddress
-                            });
-                        } catch (e) {
-                            console.error("Auto-reauthorize failed:", e);
-                        }
-                        
-                        store.set('terminalStatus', 'PENDING');
-                        store.delete('secretToken'); // Clear the stale token
-                        startStatusPolling(systemId);
-                    } else if (serverStatus === 'REJECTED') {
-                        store.set('terminalStatus', 'REJECTED');
-                    } else if (serverStatus === 'REVOKED' || serverStatus === 'SUSPENDED') {
-                        store.set('terminalStatus', 'REVOKED');
-                        store.delete('secretToken');
-                        startStatusPolling(systemId);
-                    } else if (serverStatus === 'EXPIRED') {
-                        store.set('terminalStatus', 'EXPIRED');
-                        startStatusPolling(systemId);
-                    } else {
-                        // Fallback for missing/deleted records
-                        store.delete('systemId');
-                        store.delete('secretToken');
-                        store.delete('systemName');
-                        store.delete('organizationName');
-                        store.delete('organizationLogo');
-                        store.delete('organizationLogoCache');
-                        store.set('terminalStatus', 'UNREGISTERED');
-                    }
-                    return { success: false, status: store.get('terminalStatus') };
-                }
-            }
-        } catch (e) {
-            console.error("Startup handshake failed:", e);
-            // On network error, we stay "APPROVED" but in an offline/cached mode
-            return { success: false, status: 'APPROVED', networkError: true };
+        if (data.valid) {
+          updateApprovedTerminalState(data);
+          return { success: true, status: 'APPROVED' };
         }
-    }
 
-    return { success: false, status: store.get('terminalStatus') || 'UNREGISTERED' };
+        const serverStatus = data.status;
+
+        if (serverStatus === 'TOKEN_ROTATED') {
+          clearSecureValue('secretToken');
+          if (claimToken) {
+            const activation = await activateApprovedSystem(systemId, claimToken);
+            if (activation.success) {
+              return activation;
+            }
+          }
+          store.set('terminalStatus', 'PENDING');
+          startStatusPolling(systemId);
+          return { success: false, status: 'PENDING' };
+        }
+
+        if (serverStatus === 'REJECTED') {
+          store.set('terminalStatus', 'REJECTED');
+        } else if (serverStatus === 'REVOKED' || serverStatus === 'SUSPENDED') {
+          store.set('terminalStatus', 'REVOKED');
+          clearSecureValue('secretToken');
+          startStatusPolling(systemId);
+        } else if (serverStatus === 'EXPIRED') {
+          store.set('terminalStatus', 'EXPIRED');
+          clearSecureValue('secretToken');
+          startStatusPolling(systemId);
+        } else if (serverStatus === 'PENDING') {
+          store.set('terminalStatus', 'PENDING');
+          clearSecureValue('secretToken');
+          startStatusPolling(systemId);
+        } else {
+          clearLocalTerminalData();
+        }
+
+        return { success: false, status: store.get('terminalStatus') };
+      }
+    } catch (e) {
+      console.error('Startup handshake failed:', e);
+      return { success: false, status: 'APPROVED', networkError: true };
+    }
+  }
+
+  if (!secretToken && claimToken) {
+    startStatusPolling(systemId);
+    return { success: true, status: status || 'PENDING' };
+  }
+
+  return { success: false, status: store.get('terminalStatus') || 'UNREGISTERED' };
 });
 
-// Auto-start
 app.whenReady().then(async () => {
-    createWindow();
+  createWindow();
 });
 
 ipcMain.on('open-external', (event, url) => {
@@ -369,7 +379,7 @@ ipcMain.on('open-external', (event, url) => {
 });
 
 ipcMain.on('set-theme', (event, theme) => {
-  nativeTheme.themeSource = theme; // 'light', 'dark', or 'system'
+  nativeTheme.themeSource = theme;
 });
 
 let mainWindow;
@@ -387,7 +397,6 @@ function createWindow() {
     }
   });
 
-  // Force external links to open in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -395,8 +404,6 @@ function createWindow() {
 
   mainWindow.maximize();
 
-  // Dev -> loads your Next.js dev server
-  // Production -> loads built static files
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
   if (isDev) {
@@ -408,12 +415,11 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-// app.whenReady is handled in the Handshake section below
-
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+  stopStatusPolling();
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });

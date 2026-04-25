@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class SystemConnectRequest(BaseModel):
     systemName: str
     organizationCode: str
@@ -8,13 +9,38 @@ class SystemConnectRequest(BaseModel):
     macAddress: Optional[str] = None
     ipAddress: Optional[str] = None
 
+
 class SystemConnectResponse(BaseModel):
     success: bool
     message: str
     systemId: Optional[str] = None
     organizationName: Optional[str] = None
+    claimToken: Optional[str] = None
+
+
+class SystemStatusRequest(BaseModel):
+    systemId: str
+    claimToken: str
+
 
 class SystemStatusResponse(BaseModel):
+    status: str
+    message: str
+    systemName: Optional[str] = None
+    organizationName: Optional[str] = None
+    organizationLogo: Optional[str] = None
+    tokenExpiresAt: Optional[str] = None
+    activationReady: bool = False
+
+
+class SystemActivateRequest(BaseModel):
+    systemId: str
+    claimToken: str
+    macAddress: Optional[str] = None
+
+
+class SystemActivateResponse(BaseModel):
+    success: bool
     status: str
     message: str
     secretToken: Optional[str] = None
@@ -23,10 +49,12 @@ class SystemStatusResponse(BaseModel):
     organizationLogo: Optional[str] = None
     tokenExpiresAt: Optional[str] = None
 
+
 class SystemVerifyRequest(BaseModel):
     systemId: str
     secretToken: Optional[str] = None
     macAddress: Optional[str] = None
+
 
 class SystemVerifyResponse(BaseModel):
     valid: bool
@@ -36,6 +64,12 @@ class SystemVerifyResponse(BaseModel):
     organizationName: Optional[str] = None
     organizationLogo: Optional[str] = None
 
-class SystemReauthorizeRequest(BaseModel):
+
+class SystemClaimRequest(BaseModel):
     systemId: str
-    macAddress: str
+    claimToken: str
+
+
+class SystemLogoutRequest(BaseModel):
+    systemId: str
+    secretToken: str
