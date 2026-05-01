@@ -8,6 +8,7 @@ import { cookies } from "next/headers"
 import { sendElectionCreatedNotificationEmail } from "@/lib/mail"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
+import { requireOrgAdmin, requireOrganizationRole } from "@/lib/authz"
 
 function generateCode(orgName: string = "EV") {
   // Sanitize the organization name to create a meaningful prefix
@@ -29,13 +30,9 @@ export async function createElection(formData: {
   endTime: Date
 }) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
-
-  if (!userId || !orgId || userRole !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized - Only Organization Admins can create elections")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const userId = access.userId
+  const orgId = access.organizationId
 
   const validatedFields = ElectionSchema.safeParse(formData)
 
@@ -110,8 +107,8 @@ export async function createElection(formData: {
     })
 
     // 5. Notify the owner and creator
-    const creatorName = session?.user?.name || "An Administrator"
-    const creatorEmail = session?.user?.email
+    const creatorName = access.name || "An Administrator"
+    const creatorEmail = access.email
 
     // Notification for Creator (if they have an email)
     if (creatorEmail) {
@@ -167,13 +164,12 @@ export async function updateElection(
   }
 ) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
-
-  if (!userId || !orgId || (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF)) {
-    throw new Error("Unauthorized - Only Organization Admins and Staff can update elections")
-  }
+  const access = await requireOrganizationRole(session?.user, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
+  const userId = access.userId
+  const orgId = access.organizationId
 
   const validatedFields = ElectionSchema.safeParse(formData)
 
@@ -236,12 +232,8 @@ export async function updateElection(
 
 export async function deleteElection(id: string) {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
-
-  if (!orgId || userRole !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized - Only Organization Admins can delete elections")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
 
   try {
     await db.$transaction(async (tx) => {
@@ -257,7 +249,7 @@ export async function deleteElection(id: string) {
           action: "ELECTION_DELETED",
           entityType: AuditEntityType.ELECTION,
           entityId: id,
-          adminId: session?.user?.id!,
+          adminId: access.userId,
           organizationId: orgId!,
           status: AuditStatus.SUCCESS,
           metadata: { name: election.name, code: election.code },
@@ -282,13 +274,12 @@ export async function deleteElection(id: string) {
 
 export async function toggleElectionStatus(id: string) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
-
-  if (!userId || !orgId || (userRole !== UserRole.ORG_ADMIN && userRole !== UserRole.STAFF)) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrganizationRole(session?.user, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+  ])
+  const userId = access.userId
+  const orgId = access.organizationId
 
   try {
     const result = await db.$transaction(async (tx) => {

@@ -5,13 +5,19 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, OrganizationType, AuditEntityType, AuditStatus } from "@prisma/client"
 import { sendOwnershipTransferredEmail } from "@/lib/mail"
+import { requireOrgAdmin, requireOrganizationOwner } from "@/lib/authz"
 
 export async function getOrganizationData() {
   const session = await auth()
-  const orgId = session?.user?.organizationId as string
-  const userRole = session?.user?.role as UserRole
-  
-  if (!orgId || userRole !== UserRole.ORG_ADMIN) return null
+
+  let access
+  try {
+    access = await requireOrgAdmin(session?.user)
+  } catch {
+    return null
+  }
+
+  const orgId = access.organizationId
 
   const organization = await db.organization.findUnique({
     where: { id: orgId },
@@ -22,12 +28,11 @@ export async function getOrganizationData() {
 
   // If settings don't exist for some reason, create them
   if (organization && !organization.settings) {
-    const adminId = session?.user?.id as string
     const settings = await db.organizationSettings.create({
       data: {
         organizationId: orgId,
-        createdByUserId: adminId,
-        updatedByUserId: adminId
+        createdByUserId: access.userId,
+        updatedByUserId: access.userId
       }
     })
     organization.settings = settings
@@ -42,12 +47,9 @@ export async function updateOrganizationAction(
   logo?: string
 ) {
   const session = await auth()
-  const adminId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const adminId = access.userId
+  const orgId = access.organizationId
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -113,12 +115,9 @@ export async function updateOrganizationSettingsAction(data: {
   maxSystems: number | null
 }) {
   const session = await auth()
-  const adminId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const adminId = access.userId
+  const orgId = access.organizationId
 
   try {
     await db.$transaction(async (tx) => {
@@ -162,11 +161,8 @@ export async function updateOrganizationSettingsAction(data: {
 
 export async function deleteOrganizationAction() {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
 
   try {
     await db.$transaction(async (tx) => {
@@ -191,7 +187,7 @@ export async function deleteOrganizationAction() {
           action: "ORGANIZATION_DELETED",
           entityType: AuditEntityType.ORGANIZATION,
           entityId: orgId,
-          adminId: session?.user?.id!,
+          adminId: access.userId,
           organizationId: orgId!,
           status: AuditStatus.SUCCESS,
           metadata: { name: organization.name, code: organization.code }
@@ -213,12 +209,9 @@ export async function deleteOrganizationAction() {
 
 export async function getOrganizationMembersAction() {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-  const userId = session?.user?.id
-
-  if (!orgId || !userId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
+  const userId = access.userId
 
   // Fetch all members of the organization except the current user
   const members = await db.user.findMany({
@@ -240,12 +233,9 @@ export async function getOrganizationMembersAction() {
 
 export async function transferOwnershipAction(newOwnerId: string) {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-  const currentUserId = session?.user?.id
-
-  if (!orgId || !currentUserId) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrganizationOwner(session?.user)
+  const orgId = access.organizationId
+  const currentUserId = access.userId
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -255,8 +245,8 @@ export async function transferOwnershipAction(newOwnerId: string) {
         select: { ownerId: true, name: true }
       })
 
-      if (!organization || organization.ownerId !== currentUserId) {
-        throw new Error("Only the organization owner can transfer ownership.")
+      if (!organization) {
+        throw new Error("Organization not found.")
       }
 
       const newOwner = await tx.user.findFirst({
@@ -302,8 +292,8 @@ export async function transferOwnershipAction(newOwnerId: string) {
         newOwnerEmail: newOwner?.email, 
         newOwnerName: newOwner?.name, 
         orgName: organization.name,
-        previousOwnerName: session.user?.name || "Previous Owner",
-        previousOwnerEmail: session.user?.email || ""
+        previousOwnerName: access.name || "Previous Owner",
+        previousOwnerEmail: access.email
       }
     })
 

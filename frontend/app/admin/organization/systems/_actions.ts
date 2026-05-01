@@ -2,11 +2,12 @@
 
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { SystemStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
+import { SystemStatus, AuditEntityType, AuditStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { addDays } from "date-fns"
 import { sendSystemApprovedEmail, sendSystemExpiredEmail } from "@/lib/mail"
 import { createHash, randomBytes } from "crypto"
+import { requireOrgAdmin } from "@/lib/authz"
 
 function generateTerminalSessionHash() {
   const rawToken = randomBytes(32).toString("hex")
@@ -18,12 +19,9 @@ export async function updateSystemStatusAction(
   status: SystemStatus
 ) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const userId = access.userId
+  const orgId = access.organizationId
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -99,7 +97,7 @@ export async function updateSystemStatusAction(
         result.hostName || "Unknown",
         result.ipAddress || "Unknown",
         result.organization.name,
-        session?.user?.name || "Admin"
+        access.name || "Admin"
       )
     }
 
@@ -113,11 +111,9 @@ export async function updateSystemStatusAction(
 
 export async function syncSystemExpirations(organizationId: string, shouldRevalidate: boolean = true) {
   const session = await auth()
-  if (
-    !session?.user?.organizationId ||
-    session.user.organizationId !== organizationId ||
-    session.user.role !== UserRole.ORG_ADMIN
-  ) {
+  const access = await requireOrgAdmin(session?.user)
+
+  if (access.organizationId !== organizationId) {
     throw new Error("Unauthorized")
   }
 
@@ -183,12 +179,9 @@ export async function editSystemAction(
   status: SystemStatus
 ) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    return { success: false, error: "Unauthorized" }
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const userId = access.userId
+  const orgId = access.organizationId
 
   try {
     const oldSystemSnapshot = await db.authorizedSystem.findUnique({
@@ -259,7 +252,7 @@ export async function editSystemAction(
           result.hostName || "Unknown",
           result.ipAddress || "Unknown",
           result.organization.name,
-          session?.user?.name || "Admin"
+          access.name || "Admin"
         )
     }
 
@@ -273,12 +266,9 @@ export async function editSystemAction(
 
 export async function deleteSystemAction(systemId: string) {
   const session = await auth()
-  const userId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    return { success: false, error: "Unauthorized" }
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const userId = access.userId
+  const orgId = access.organizationId
 
   try {
     await db.$transaction(async (tx) => {

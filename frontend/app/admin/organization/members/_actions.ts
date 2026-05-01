@@ -5,16 +5,19 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { sendOrgInvitationEmail, sendElectionAssignmentEmail } from "@/lib/mail"
-import { validateOrganizationElectionIds } from "@/lib/authz"
+import { requireOrgAdmin, validateOrganizationElectionIds } from "@/lib/authz"
 
 export async function getMembers() {
   const session = await auth()
-  const orgId = session?.user?.organizationId as string
-  const userRole = session?.user?.role
 
-  if (!orgId || userRole !== UserRole.ORG_ADMIN) {
+  let access
+  try {
+    access = await requireOrgAdmin(session?.user)
+  } catch {
     return { members: [], orgCreatorId: undefined }
   }
+
+  const orgId = access.organizationId
 
   const org = await db.organization.findUnique({
     where: { id: orgId },
@@ -73,12 +76,8 @@ export async function getMembers() {
 
 export async function searchPotentialMember(query: string) {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
-
-  if (!orgId || userRole !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
 
   if (!query || query.length < 3) {
     return { success: false, error: "Search term must be at least 3 characters" }
@@ -129,12 +128,9 @@ export async function addMemberAction(
   electionIds: string[]
 ) {
   const session = await auth()
-  const adminId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const adminId = access.userId
+  const orgId = access.organizationId
 
   try {
     const shouldUseGranularAccess = !hasAllAccess && (role === UserRole.STAFF || role === UserRole.VIEWER)
@@ -240,12 +236,9 @@ export async function updateMemberAction(
   electionIds: string[]
 ) {
   const session = await auth()
-  const adminId = session?.user?.id
-  const orgId = session?.user?.organizationId
-
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const adminId = access.userId
+  const orgId = access.organizationId
 
   if (userId === adminId) {
     throw new Error("Self-modification of organization role is not allowed. Please have another administrator update your role.")
@@ -382,13 +375,10 @@ export async function updateMemberAction(
 
 export async function removeMemberAction(userId: string) {
   const session = await auth()
-  const orgId = session?.user?.organizationId
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
+  const currentUserId = access.userId
 
-  if (!orgId || session?.user?.role !== UserRole.ORG_ADMIN) {
-    throw new Error("Unauthorized")
-  }
-
-  const currentUserId = session?.user?.id
   if (userId === currentUserId) {
     throw new Error("Self-removal from organization is not allowed. Please have another administrator remove you.")
   }
@@ -409,11 +399,11 @@ export async function removeMemberAction(userId: string) {
         select: { name: true, email: true }
       })
 
-      const access = await tx.userElectionAccess.findMany({
+      const revokedAccess = await tx.userElectionAccess.findMany({
         where: { userId },
         select: { electionId: true }
       })
-      const electionIds = access.map(a => a.electionId)
+      const electionIds = revokedAccess.map(a => a.electionId)
 
       await tx.user.update({
         where: { id: userId, organizationId: orgId },
@@ -434,7 +424,7 @@ export async function removeMemberAction(userId: string) {
           action: "MEMBER_REMOVED",
           entityType: AuditEntityType.USER,
           entityId: userId,
-          adminId: session?.user?.id!,
+          adminId: access.userId,
           organizationId: orgId!,
           status: AuditStatus.SUCCESS,
           metadata: { name: user?.name, email: user?.email }
@@ -447,7 +437,7 @@ export async function removeMemberAction(userId: string) {
             action: "ACCESS_REVOKED",
             entityType: AuditEntityType.USER,
             entityId: userId,
-            adminId: session?.user?.id!,
+            adminId: access.userId,
             organizationId: orgId!,
             status: AuditStatus.SUCCESS,
             metadata: { electionIds, reason: "Member removed from organization" }
@@ -466,10 +456,14 @@ export async function removeMemberAction(userId: string) {
 
 export async function getElectionsForAssignment() {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-  const userRole = session?.user?.role
+  let access
+  try {
+    access = await requireOrgAdmin(session?.user)
+  } catch {
+    return []
+  }
 
-  if (!orgId || userRole !== UserRole.ORG_ADMIN) return []
+  const orgId = access.organizationId
 
   return await db.election.findMany({
     where: { organizationId: orgId },

@@ -33,7 +33,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
     const candidates = React.useMemo(() => {
         if (!currentRole) return []
         let cands = [...(currentRole.candidates || [])]
-        
+
         // Shuffle candidates if enabled
         if (settings.shuffleCandidates) {
             for (let i = cands.length - 1; i > 0; i--) {
@@ -41,16 +41,16 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                 [cands[i], cands[j]] = [cands[j], cands[i]];
             }
         }
-        
+
         // Append NOTA if enabled
         if (settings.allowNota) {
-            cands.push({ 
-                id: "NOTA", 
-                name: "None of the Above (NOTA)", 
-                isNota: true 
+            cands.push({
+                id: "NOTA",
+                name: "None of the Above (NOTA)",
+                isNota: true
             })
         }
-        
+
         return cands
     }, [currentRole, settings.shuffleCandidates, settings.allowNota])
 
@@ -150,8 +150,8 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                         key={currentRole.id}
                     >
                         {/* Role Title */}
-                        <div className="text-center mb-8 sm:mb-10 space-y-1">
-                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                        <div className="text-center mb-10 sm:mb-12 space-y-2">
+                            <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-primary/80">
                                 Select your candidate
                             </p>
                             <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
@@ -159,17 +159,17 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                             </h3>
                         </div>
 
-                        {/* Candidate Grid */}
+                        {/* Candidate Grid - Vertical Cards */}
                         <RadioGroup
                             value={votes[currentRole.id] || ""}
                             onValueChange={(val) => handleVoteChange(currentRole.id, val)}
-                            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                            className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5"
                         >
                             {candidates.map((candidate: any) => {
                                 const isSelected = votes[currentRole.id] === candidate.id
 
                                 return (
-                                    <div key={candidate.id} className="relative">
+                                    <div key={candidate.id} className="relative group">
                                         <RadioGroupItem
                                             value={candidate.id}
                                             id={`candidate-${candidate.id}`}
@@ -178,63 +178,104 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                         <Label
                                             htmlFor={`candidate-${candidate.id}`}
                                             className={cn(
-                                                "flex items-center gap-4 rounded-2xl border-2 p-4 cursor-pointer transition-all duration-300 hover:shadow-lg",
+                                                "relative flex flex-col justify-between text-left rounded-2xl border-2 p-4 sm:p-5 cursor-pointer transition-all duration-400 overflow-hidden",
                                                 isSelected
-                                                    ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/15 scale-[1.01]"
-                                                    : "border-border/60 bg-card hover:border-primary/40 hover:bg-card/90"
+                                                    ? "border-primary bg-primary/[0.04] shadow-[0_0_30px_-5px] shadow-primary/25 scale-[1.02]"
+                                                    : "border-border/40 bg-card/80 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5"
                                             )}
                                         >
-                                            {/* Profile / Symbol Cluster */}
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                {settings.showCandidateProfiles && !candidate.isNota && (
-                                                    <div className="relative w-16 h-20 rounded-xl border border-border/50 bg-muted flex items-center justify-center overflow-hidden shadow-sm">
-                                                        {candidate.profileImage ? (
-                                                            <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
-                                                        ) : (
-                                                            <HugeiconsIcon icon={UserIcon} className="w-6 h-6 text-muted-foreground/40" />
+                                            <div className="flex w-full items-start justify-between gap-3 mb-4">
+                                                {/* Left side: Profile Photo / NOTA */}
+                                                {!candidate.isNota ? (
+                                                    <div className="relative shrink-0">
+                                                        {settings.showCandidateProfiles && (
+                                                            <div className={cn(
+                                                                "relative w-20 h-24 sm:w-24 sm:h-32 rounded-xl border-2 bg-muted flex items-center justify-center overflow-hidden transition-all duration-300",
+                                                                isSelected
+                                                                    ? "border-primary/40 shadow-lg shadow-primary/10"
+                                                                    : "border-border/50 shadow-sm group-hover:border-border"
+                                                            )}>
+                                                                {candidate.profileImage ? (
+                                                                    <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" sizes="96px" />
+                                                                ) : (
+                                                                    <HugeiconsIcon icon={UserIcon} className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground/30" />
+                                                                )}
+                                                            </div>
                                                         )}
-                                                    </div>
-                                                )}
-
-                                                {settings.showCandidateSymbols && !candidate.isNota && (
-                                                    <div className="relative w-10 h-14 rounded-lg flex items-center justify-center overflow-hidden">
-                                                        {candidate.symbolImage ? (
-                                                            <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
-                                                        ) : (
-                                                            <div className="w-full h-full border border-dashed border-border/40 rounded-lg flex items-center justify-center">
-                                                                <HugeiconsIcon icon={Image01Icon} className="w-4 h-4 text-muted-foreground/30" />
+                                                        {!settings.showCandidateProfiles && (
+                                                            <div className={cn(
+                                                                "w-20 h-24 sm:w-24 sm:h-32 rounded-xl border-2 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center transition-all duration-300",
+                                                                isSelected
+                                                                    ? "border-primary/40"
+                                                                    : "border-border/50 group-hover:border-border"
+                                                            )}>
+                                                                <span className="text-2xl sm:text-3xl font-black text-primary/50">
+                                                                    {candidate.name?.charAt(0)?.toUpperCase()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
-                                                )}
-                                                
-                                                {candidate.isNota && (
-                                                    <div className="relative w-16 h-20 rounded-xl border border-border/50 bg-muted flex items-center justify-center overflow-hidden shadow-sm">
-                                                        <span className="font-black text-xl text-muted-foreground/50">X</span>
+                                                ) : (
+                                                    <div className="relative shrink-0">
+                                                        <div className={cn(
+                                                            "w-20 h-24 sm:w-24 sm:h-32 rounded-xl border-2 border-dashed bg-muted/50 flex items-center justify-center transition-all duration-300",
+                                                            isSelected
+                                                                ? "border-primary/40 bg-primary/5"
+                                                                : "border-border/60 group-hover:border-muted-foreground/30"
+                                                        )}>
+                                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className={cn("transition-colors duration-300", isSelected ? "text-primary" : "text-muted-foreground/40")}>
+                                                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                                            </svg>
+                                                        </div>
                                                     </div>
                                                 )}
+
+                                                {/* Right side: Checkmark and Symbol */}
+                                                <div className="flex flex-col items-end justify-between h-24 sm:h-32">
+                                                    <div
+                                                        className={cn(
+                                                            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0",
+                                                            isSelected
+                                                                ? "bg-primary border-primary text-primary-foreground scale-100"
+                                                                : "border-muted-foreground/20 bg-transparent scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
+                                                        )}
+                                                    >
+                                                        {isSelected && (
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="animate-in zoom-in-50 duration-200">
+                                                                <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+
+                                                    {settings.showCandidateSymbols && !candidate.isNota && (
+                                                        <div className="mt-auto">
+                                                            {candidate.symbolImage ? (
+                                                                <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                                                                    <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" sizes="48px" />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-dashed border-border/30 flex items-center justify-center">
+                                                                    <HugeiconsIcon icon={Image01Icon} className="w-4 h-4 text-muted-foreground/25" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            {/* Name */}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-lg font-bold text-foreground leading-tight truncate">
-                                                    {candidate.name}
+                                            {/* Candidate Name */}
+                                            <div className="w-full text-left mt-auto">
+                                                <p className={cn(
+                                                    "text-sm sm:text-base font-bold leading-tight transition-colors duration-300 max-w-full",
+                                                    isSelected ? "text-foreground" : "text-foreground/80 group-hover:text-foreground"
+                                                )}>
+                                                    {candidate.isNota ? "NOTA" : candidate.name}
                                                 </p>
-                                            </div>
 
-                                            {/* Selection Indicator */}
-                                            <div
-                                                className={cn(
-                                                    "shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-                                                    isSelected
-                                                        ? "bg-primary border-primary text-primary-foreground scale-110"
-                                                        : "border-muted-foreground/25 bg-transparent"
-                                                )}
-                                            >
-                                                {isSelected && (
-                                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="animate-in zoom-in-50 duration-200">
-                                                        <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
+                                                {candidate.isNota && (
+                                                    <p className="text-[10px] text-muted-foreground/60 font-medium mt-1">
+                                                        None of the Above
+                                                    </p>
                                                 )}
                                             </div>
                                         </Label>
@@ -246,22 +287,22 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                 ) : (
                     /* ─── Review Screen ─── */
                     <div className="w-full max-w-2xl animate-in zoom-in-95 fade-in duration-300">
-                        <div className="text-center mb-8 sm:mb-10 space-y-2">
-                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 mb-2">
-                                <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-7 h-7" />
+                        <div className="text-center mb-10 sm:mb-12 space-y-3">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 mb-2">
+                                <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-8 h-8" />
                             </div>
                             <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
                                 Review Your Ballot
                             </h3>
-                            <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto">
-                                Please confirm your selections before casting your vote. This action cannot be undone.
+                            <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+                                Please confirm your selections below before casting your vote. This action cannot be undone.
                             </p>
                         </div>
 
                         <div className="space-y-3">
-                            {roles.map((role: any) => {
+                            {roles.map((role: any, roleIndex: number) => {
                                 const selectedCandidateId = votes[role.id]
-                                
+
                                 // Reconstruct candidate including NOTA
                                 let candidate = role.candidates.find((c: any) => c.id === selectedCandidateId)
                                 if (selectedCandidateId === "NOTA") {
@@ -271,39 +312,57 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                 return (
                                     <div
                                         key={role.id}
-                                        className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border bg-card hover:bg-muted/30 transition-colors"
+                                        className="group relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm hover:border-border hover:shadow-lg hover:shadow-black/5 transition-all duration-300"
+                                        style={{ animationDelay: `${roleIndex * 80}ms` }}
                                     >
-                                        <div className="flex items-center gap-4 min-w-0">
-                                            {/* Candidate Photo Thumbnail */}
-                                            {candidate && settings.showCandidateProfiles && !candidate.isNota && (
-                                                <div className="relative w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0 border border-border/50">
-                                                    {candidate.profileImage ? (
-                                                        <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
-                                                    ) : (
-                                                        <div className="flex items-center justify-center w-full h-full">
-                                                            <HugeiconsIcon icon={UserIcon} className="w-4 h-4 text-muted-foreground/40" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {candidate && candidate.isNota && (
-                                                <div className="relative w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0 border border-border/50 flex items-center justify-center">
-                                                    <span className="font-black text-sm text-muted-foreground/50">X</span>
-                                                </div>
-                                            )}
-                                            <div className="space-y-0.5 min-w-0">
-                                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{role.name}</p>
-                                                {candidate ? (
-                                                    <p className="text-base font-bold text-foreground truncate">{candidate.name}</p>
+                                        {/* Left: Selection indicator line */}
+                                        <div className={cn(
+                                            "absolute left-0 top-3 bottom-3 w-1 rounded-full transition-colors duration-300",
+                                            candidate ? "bg-primary/60" : "bg-destructive/60"
+                                        )} />
+
+                                        {/* Candidate Photo */}
+                                        {candidate && !candidate.isNota && (
+                                            <div className="relative w-12 h-16 rounded-xl bg-muted overflow-hidden shrink-0 border-2 border-border/50 shadow-sm">
+                                                {settings.showCandidateProfiles && candidate.profileImage ? (
+                                                    <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" sizes="48px" />
                                                 ) : (
-                                                    <p className="text-base font-bold text-destructive">No Selection</p>
+                                                    <div className="flex items-center justify-center w-full h-full bg-primary/5">
+                                                        <span className="text-sm font-black text-primary/40">
+                                                            {candidate.name?.charAt(0)?.toUpperCase()}
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
+                                        )}
+                                        {candidate && candidate.isNota && (
+                                            <div className="w-12 h-16 rounded-xl bg-muted/50 border-2 border-dashed border-border/50 flex items-center justify-center shrink-0">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-muted-foreground/40">
+                                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                        {!candidate && (
+                                            <div className="w-12 h-16 rounded-xl bg-destructive/5 border-2 border-dashed border-destructive/20 flex items-center justify-center shrink-0">
+                                                <span className="text-destructive/50 font-bold text-lg">?</span>
+                                            </div>
+                                        )}
+
+                                        {/* Role & Candidate Name */}
+                                        <div className="flex-1 min-w-0 space-y-0.5">
+                                            <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-muted-foreground/70">{role.name}</p>
+                                            {candidate ? (
+                                                <p className="text-base sm:text-lg font-bold text-foreground truncate">{candidate.name}</p>
+                                            ) : (
+                                                <p className="text-base font-bold text-destructive">No Selection</p>
+                                            )}
                                         </div>
+
+                                        {/* Edit Button */}
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5"
+                                            className="text-xs font-bold text-muted-foreground hover:text-primary shrink-0 gap-1.5 rounded-xl opacity-60 group-hover:opacity-100 transition-opacity duration-200"
                                             onClick={() => {
                                                 setIsReviewing(false)
                                                 setActiveRoleIndex(roles.findIndex((r: any) => r.id === role.id))
@@ -355,6 +414,14 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                         <p className="text-[11px] font-bold text-muted-foreground truncate max-w-[140px]">
                             {voterData.name}
                         </p>
+                        {voterData.maxVotes > 1 && (
+                            <>
+                                <div className="w-[1px] h-3 bg-border mx-1" />
+                                <span className="text-[10px] font-black text-primary/80 uppercase tracking-tighter">
+                                    {voterData.maxVotes - voterData.ballotsCount} Remaining
+                                </span>
+                            </>
+                        )}
                     </div>
 
                     {!isReviewing ? (

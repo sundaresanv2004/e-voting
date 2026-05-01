@@ -96,6 +96,11 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => { })
         }
+        setIsVoting(false)
+        setVoterData(null)
+        setHasConfirmedIdentity(false)
+        setLastUsedId("")
+        form.reset()
         toast.info("Session Concluded", {
             description: "You have safely exited the election portal."
         })
@@ -136,6 +141,7 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             }
 
             if (result.voter) {
+                router.refresh() // Update the cached election data from server
                 setVoterData(result.voter)
                 setHasConfirmedIdentity(false) // Reset for new voter
                 setIsIdDialogOpen(false)
@@ -179,8 +185,14 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             const result = await submitBallotAction(election.id, voterData.id, votes)
 
             if (result.error) {
-                toast.error(result.error)
-                setIsSubmittingBallot(false)
+                if (result.status === "PAUSED") {
+                    setIsSubmittingBallot(false)
+                    setIsVoting(false) // Exit the ballot interface
+                    setIsPausedDialogOpen(true)
+                } else {
+                    toast.error(result.error)
+                    setIsSubmittingBallot(false)
+                }
                 return
             }
 

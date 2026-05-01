@@ -16,6 +16,10 @@ model User {
   role                    UserRole               @default(USER)
   organizationId          String?
   isActive                Boolean                @default(true)
+  failedLoginCount        Int                    @default(0)
+  lockedUntil             DateTime?
+  lastLoginAt             DateTime?
+  lastFailedLoginAt       DateTime?
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   accounts                Account[]
@@ -120,20 +124,32 @@ model Session {
 }
 
 model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
+  identifier    String
+  token         String
+  expires       DateTime
+  attemptCount  Int       @default(0)
+  lastSentAt    DateTime  @default(now())
+  lastAttemptAt DateTime?
+  consumedAt    DateTime?
 
   @@id([identifier, token])
+  @@index([identifier])
+  @@index([expires])
 }
 
 model PasswordResetToken {
-  id      String   @id @default(cuid())
-  email   String
-  token   String   @unique
-  expires DateTime
+  id            String    @id @default(cuid())
+  email         String
+  token         String    @unique
+  expires       DateTime
+  attemptCount  Int       @default(0)
+  lastSentAt    DateTime  @default(now())
+  lastAttemptAt DateTime?
+  consumedAt    DateTime?
 
   @@unique([email, token])
+  @@index([email])
+  @@index([expires])
 }
 
 model Authenticator {

@@ -2,25 +2,44 @@
 
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { OrganizationType, UserRole, AuditStatus, AuditEntityType } from "@prisma/client"
+import { UserRole, AuditStatus, AuditEntityType } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { sendOrgCreatedEmail } from "@/lib/mail"
+import { randomBytes } from "crypto"
 
-import { OrganizationFormValues } from "@/lib/schemas/org"
+import { OrganizationFormValues, OrganizationSchema } from "@/lib/schemas/org"
+import { requireVerifiedSetupUser } from "@/lib/authz"
+
+const ORG_SETUP_INELIGIBLE = "ORG_SETUP_INELIGIBLE"
+
+function generateCodeSuffix(length: number = 6) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  const bytes = randomBytes(length)
+
+  return Array.from(bytes, (byte) => chars[byte % chars.length]).join("")
+}
 
 export async function createOrganization(values: OrganizationFormValues) {
   const session = await auth()
+  const user = await requireVerifiedSetupUser(session?.user)
 
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized")
+  if (user.organizationId) {
+    return {
+      success: false,
+      error: "Your account is already linked to an organization.",
+    }
   }
 
-  const { name, type } = values
-
-  if (!name || !type) {
-    throw new Error("Missing required fields")
+  const validatedFields = OrganizationSchema.safeParse(values)
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      error: validatedFields.error.flatten().fieldErrors.name?.[0] || "Invalid organization details",
+    }
   }
+
+  const { name, type } = validatedFields.data
 
   const prefix = name
     .split(/\s+/)
@@ -33,11 +52,7 @@ export async function createOrganization(values: OrganizationFormValues) {
   let isUnique = false
 
   while (!isUnique) {
-    const randomSuffix = Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase()
-
+    const randomSuffix = generateCodeSuffix()
     code = prefix ? `${prefix}-${randomSuffix}` : randomSuffix
 
     const existing = await db.organization.findUnique({
@@ -54,27 +69,36 @@ export async function createOrganization(values: OrganizationFormValues) {
           name,
           type,
           code,
-          createdByUserId: session.user.id!,
-          ownerId: session.user.id!,
-          updatedByUserId: session.user.id!,
+          createdByUserId: user.userId,
+          ownerId: user.userId,
+          updatedByUserId: user.userId,
         },
       })
 
       await tx.organizationSettings.create({
         data: {
           organizationId: organization.id,
-          createdByUserId: session.user.id!,
-          updatedByUserId: session.user.id!,
+          createdByUserId: user.userId,
+          updatedByUserId: user.userId,
         },
       })
 
-      await tx.user.update({
-        where: { id: session.user.id },
+      const userUpdate = await tx.user.updateMany({
+        where: {
+          id: user.userId,
+          isActive: true,
+          emailVerified: { not: null },
+          organizationId: null,
+        },
         data: {
           role: UserRole.ORG_ADMIN,
           organizationId: organization.id,
         },
       })
+
+      if (userUpdate.count !== 1) {
+        throw new Error(ORG_SETUP_INELIGIBLE)
+      }
 
       const headerList = await headers()
       const ip = headerList.get("x-forwarded-for") || "unknown"
@@ -85,7 +109,7 @@ export async function createOrganization(values: OrganizationFormValues) {
           action: "ORGANIZATION_CREATED",
           entityType: AuditEntityType.ORGANIZATION,
           entityId: organization.id,
-          adminId: session.user.id!,
+          adminId: user.userId,
           organizationId: organization.id,
           description: `Created organization: ${name}`,
           status: AuditStatus.SUCCESS,
@@ -98,22 +122,26 @@ export async function createOrganization(values: OrganizationFormValues) {
       return organization
     })
 
-    if (session.user.email) {
-        await sendOrgCreatedEmail(
-            session.user.email,
-            session.user.name || "User",
-            name,
-            code
-        )
-    }
+    await sendOrgCreatedEmail(
+      user.email,
+      user.name || "User",
+      name,
+      code
+    )
 
     revalidatePath("/")
     revalidatePath("/admin/organization")
 
     return { success: true, data: result }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create organization:", error)
-    if (error.code === 'P2002') {
+    if (error instanceof Error && error.message === ORG_SETUP_INELIGIBLE) {
+      return {
+        success: false,
+        error: "Your account is no longer eligible to create an organization. Please refresh and try again.",
+      }
+    }
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
       return { success: false, error: "Organization code already exists" }
     }
     return { success: false, error: "Failed to create organization" }

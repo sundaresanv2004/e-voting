@@ -11,9 +11,9 @@ import {
     DialogDescription,
     DialogFooter
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import Image from "next/image"
+import { Badge } from '@/components/ui/badge'
 
 interface VoterConfirmDialogProps {
     open: boolean
@@ -24,6 +24,8 @@ interface VoterConfirmDialogProps {
         name: string;
         image?: string | null;
         additionalDetails?: any | null;
+        ballotsCount?: number;
+        maxVotes?: number;
     } | null
     hasConfirmed: boolean
     onConfirmChange: (confirmed: boolean) => void
@@ -86,6 +88,23 @@ export function VoterConfirmDialog({
                                 </div>
                             </div>
                         ))}
+
+                        {/* Multiple Votes Info */}
+                        {voterData?.maxVotes && voterData.maxVotes > 1 && (
+                            <div className="border-t border-border/50 mt-3 pt-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-none mb-1">Ballot Status</span>
+                                        <span className="text-sm font-semibold text-foreground">
+                                            {voterData.ballotsCount || 0} / {voterData.maxVotes} Votes Cast
+                                        </span>
+                                    </div>
+                                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-black uppercase tracking-tighter">
+                                        {voterData.maxVotes - (voterData.ballotsCount || 0)} Remaining
+                                    </Badge>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div

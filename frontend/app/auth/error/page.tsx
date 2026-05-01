@@ -14,6 +14,10 @@ enum ErrorType {
     Configuration = "Configuration",
     AccessDenied = "AccessDenied",
     Verification = "Verification",
+    OAuthAccountNotLinked = "OAuthAccountNotLinked",
+    OAuthEmailUnverified = "OAuthEmailUnverified",
+    OAuthDomainDenied = "OAuthDomainDenied",
+    OAuthMissingEmail = "OAuthMissingEmail",
     Default = "Default"
 }
 
@@ -29,6 +33,22 @@ const errorMessages: Record<string, { title: string; description: string }> = {
     [ErrorType.Verification]: {
         title: "Link Expired",
         description: "The verification link has expired or has already been used. Please try signing in again."
+    },
+    [ErrorType.OAuthAccountNotLinked]: {
+        title: "Account Linking Blocked",
+        description: "This email already has an account. Please sign in with your existing method before linking Google."
+    },
+    [ErrorType.OAuthEmailUnverified]: {
+        title: "Google Email Not Verified",
+        description: "Your Google account email must be verified before it can be used to sign in."
+    },
+    [ErrorType.OAuthDomainDenied]: {
+        title: "Email Domain Not Allowed",
+        description: "This Google account is outside the allowed email domain for this application."
+    },
+    [ErrorType.OAuthMissingEmail]: {
+        title: "Email Not Available",
+        description: "Google did not provide an email address for this account. Please use another sign-in method."
     },
     [ErrorType.Default]: {
         title: "Auth Error",

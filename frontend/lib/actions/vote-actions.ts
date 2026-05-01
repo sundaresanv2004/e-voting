@@ -55,7 +55,9 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
                 uniqueId: voter.uniqueId,
                 name: voter.name,
                 image: voter.image,
-                additionalDetails: voter.additionalDetails
+                additionalDetails: voter.additionalDetails,
+                ballotsCount: voter.ballots.length,
+                maxVotes: maxVotes
             }
         }
     } catch (error) {
@@ -156,7 +158,12 @@ export async function submitBallotAction(electionId: string, voterId: string, vo
             : 1;
 
         if (voter.ballots.length >= maxVotes) return { error: "A vote has already been cast using this ID." }
-        if (voter.election.status !== "ACTIVE") return { error: "This election is not active." }
+        if (voter.election.status !== "ACTIVE") {
+            if (voter.election.status === "PAUSED") {
+                return { error: "This election is currently paused.", status: "PAUSED" }
+            }
+            return { error: "This election is not active.", status: voter.election.status }
+        }
 
         // Find or create a default "Web Voting Portal" authorized system for this organization
         let webSystem = await db.authorizedSystem.findFirst({
@@ -179,7 +186,7 @@ export async function submitBallotAction(electionId: string, voterId: string, vo
         // Prepare the votes creation payload
         const voteEntries = Object.entries(votes).map(([roleId, candidateId]) => ({
             electionRoleId: roleId,
-            candidateId: candidateId
+            candidateId: candidateId === "NOTA" ? null : candidateId
         }))
 
         // Execute ballot creation and vote entries inside a transaction
