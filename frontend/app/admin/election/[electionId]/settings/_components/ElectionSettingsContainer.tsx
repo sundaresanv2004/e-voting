@@ -60,6 +60,7 @@ interface ElectionSettingsContainerProps {
       showCandidateSymbols: boolean
       shuffleCandidates: boolean
       allowMultipleVotes: boolean
+      allowNota: boolean
       maxVotesPerUser: number
     } | null
   }
@@ -812,40 +813,88 @@ function MultipleVotesSection({ election }: { election: any }) {
   }
 
   return (
+    <div className="space-y-4">
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+                <HugeiconsIcon icon={IdentificationIcon} className="h-4 w-4" color="currentColor" />
+              </div>
+              <div className="space-y-4 w-full">
+                <div>
+                  <h3 className="text-sm font-semibold">Multiple Votes Per User</h3>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed mt-1">
+                    Allow users to cast more than one vote. If enabled, configure the maximum number of votes each user can submit.
+                  </p>
+                </div>
+
+                {enabled && (
+                  <div className="space-y-4 pt-4 border-t w-full max-w-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Max Votes Per User</span>
+                      <Badge variant="secondary">{maxVotes[0]}</Badge>
+                    </div>
+                    <Slider
+                      defaultValue={[election.settings?.maxVotesPerUser ?? 1]}
+                      value={maxVotes}
+                      onValueChange={handleSliderChange}
+                      onValueCommit={handleSliderCommit}
+                      max={10}
+                      min={1}
+                      step={1}
+                      disabled={isPending}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0 pt-1">
+              <Switch checked={enabled} onCheckedChange={handleToggle} disabled={isPending} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <NotaSection election={election} />
+    </div>
+  )
+}
+
+function NotaSection({ election }: { election: any }) {
+  const [isPending, setIsPending] = React.useState(false)
+  const [enabled, setEnabled] = React.useState(election.settings?.allowNota ?? false)
+
+  const handleToggle = async (checked: boolean) => {
+    setEnabled(checked)
+    setIsPending(true)
+    try {
+      const result = await updateElectionSettingsAction(election.id, { allowNota: checked })
+      if (result.success) toast.success("NOTA option updated")
+      else toast.error(result.error)
+    } catch {
+      toast.error("Failed to update NOTA setting")
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 flex-1">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-600">
               <HugeiconsIcon icon={IdentificationIcon} className="h-4 w-4" color="currentColor" />
             </div>
             <div className="space-y-4 w-full">
               <div>
-                <h3 className="text-sm font-semibold">Multiple Votes Per User</h3>
+                <h3 className="text-sm font-semibold">Allow NOTA (None of the Above)</h3>
                 <p className="text-[13px] text-muted-foreground leading-relaxed mt-1">
-                  Allow users to cast more than one vote. If enabled, configure the maximum number of votes each user can submit.
+                  When enabled, voters will have an explicit option to skip or abstain from voting for a specific role.
                 </p>
               </div>
-
-              {enabled && (
-                <div className="space-y-4 pt-4 border-t w-full max-w-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Max Votes Per User</span>
-                    <Badge variant="secondary">{maxVotes[0]}</Badge>
-                  </div>
-                  <Slider
-                    defaultValue={[election.settings?.maxVotesPerUser ?? 1]}
-                    value={maxVotes}
-                    onValueChange={handleSliderChange}
-                    onValueCommit={handleSliderCommit}
-                    max={10}
-                    min={1}
-                    step={1}
-                    disabled={isPending}
-                    className="w-full"
-                  />
-                </div>
-              )}
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0 pt-1">

@@ -173,10 +173,10 @@ function VoteForm() {
                                 <div className="space-y-3 text-[13px]">
                                     <p className="font-medium text-amber-600 dark:text-amber-400">Important Disclaimer:</p>
                                     <p>
-                                        Any configuration changes made to the election dashboard (e.g., adding candidates, updating roles, or modifying settings) while you are in this session will not be reflected immediately.
+                                        To ensure a fast and smooth voting experience, especially for in-person setups, election data (like roles and candidates) is <strong>cached locally</strong> on your device.
                                     </p>
                                     <p className="italic text-muted-foreground">
-                                        To receive the latest updates, you must exit and re-enter the election portal (except when the election is paused).
+                                        This means any changes made to the election dashboard will not appear immediately. If you need the latest updates, you must exit and re-enter the election portal.
                                     </p>
                                 </div>
                             </div>

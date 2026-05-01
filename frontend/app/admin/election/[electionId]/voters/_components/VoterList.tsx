@@ -123,7 +123,7 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
             <AlertDialogTitle>Remove Voter?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently remove <strong>{voterToDelete?.name}</strong> from this election. This action cannot be undone. 
-              {voterToDelete?.ballot && (
+              {voterToDelete?.ballots && voterToDelete.ballots.length > 0 && (
                 <span className="block mt-2 font-bold text-destructive">
                   Warning: Action not possible as this voter has already cast a ballot.
                 </span>
@@ -134,7 +134,7 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
             <AlertDialogCancel disabled={isPending} onClick={() => setVoterToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete} 
-              disabled={isPending || !!voterToDelete?.ballot}
+              disabled={isPending || (voterToDelete?.ballots && voterToDelete.ballots.length > 0)}
               className="bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors"
             >
               {isPending && <Spinner className="mr-2" color="currentColor" />}

@@ -46,6 +46,7 @@ class ElectionSettings(Base):
     showCandidateSymbols = Column(Boolean, default=True)
     shuffleCandidates = Column(Boolean, default=True)
     allowMultipleVotes = Column(Boolean, default=False)
+    allowNota = Column(Boolean, default=False)
     maxVotesPerUser = Column(Integer, default=1)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

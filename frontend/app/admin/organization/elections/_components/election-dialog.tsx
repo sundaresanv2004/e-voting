@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { isBefore, addHours } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { InformationCircleIcon } from "@hugeicons/core-free-icons"
@@ -45,6 +46,7 @@ export function ElectionDialog({
   onOpenChange: setControlledOpen,
   initialData,
 }: ElectionDialogProps) {
+  const router = useRouter()
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
@@ -106,7 +108,8 @@ export function ElectionDialog({
       if (result.success) {
         toast.success(`Election ${initialData ? "updated" : "created"} successfully!`)
         setOpen(false)
-        if (!initialData) {
+        if (!initialData && result.election?.id) {
+          router.push(`/admin/election/${result.election.id}`)
           reset({
             name: "",
             startTime: new Date(),

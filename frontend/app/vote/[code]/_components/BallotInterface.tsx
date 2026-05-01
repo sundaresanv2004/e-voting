@@ -5,8 +5,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserIcon, Image01Icon, Tick02Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, Image01Icon, Tick02Icon, ArrowLeft01Icon, ArrowRight01Icon, CheckmarkBadge01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 interface BallotInterfaceProps {
     election: any
@@ -28,17 +29,43 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
     const currentRole = roles[activeRoleIndex]
     const currentVote = currentRole ? votes[currentRole.id] : null
 
+    // Prepare candidates for the current role
+    const candidates = React.useMemo(() => {
+        if (!currentRole) return []
+        let cands = [...(currentRole.candidates || [])]
+        
+        // Shuffle candidates if enabled
+        if (settings.shuffleCandidates) {
+            for (let i = cands.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cands[i], cands[j]] = [cands[j], cands[i]];
+            }
+        }
+        
+        // Append NOTA if enabled
+        if (settings.allowNota) {
+            cands.push({ 
+                id: "NOTA", 
+                name: "None of the Above (NOTA)", 
+                isNota: true 
+            })
+        }
+        
+        return cands
+    }, [currentRole, settings.shuffleCandidates, settings.allowNota])
+
     const handleVoteChange = (roleId: string, candidateId: string) => {
         setVotes(prev => ({ ...prev, [roleId]: candidateId }))
 
         // Auto-advance after a short delay for better UX
-        if (activeRoleIndex < roles.length - 1) {
-            setTimeout(() => {
+        setTimeout(() => {
+            if (activeRoleIndex < roles.length - 1) {
                 setActiveRoleIndex(prev => prev + 1)
-            }, 600)
-        } else {
-            // If it's the last role, we don't automatically jump to review to let them see their selection
-        }
+            } else {
+                // Last role — go straight to review
+                setIsReviewing(true)
+            }
+        }, 600)
     }
 
     const handleNext = () => {
@@ -62,221 +89,296 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
         onSubmitBallot(votes)
     }
 
+    const allVoted = Object.keys(votes).length === roles.length
+    const progress = isReviewing ? 100 : ((activeRoleIndex) / roles.length) * 100
+
     if (!roles.length) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 max-w-md mx-auto min-h-[400px]">
-                <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
-                    <HugeiconsIcon icon={Tick02Icon} className="w-8 h-8 opacity-40" />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 max-w-md mx-auto px-4">
+                <div className="h-20 w-20 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                    <HugeiconsIcon icon={Tick02Icon} className="w-10 h-10 opacity-50" />
                 </div>
-                <div className="space-y-6">
-                    <div className="space-y-2">
-                        <h3 className="text-2xl font-bold tracking-tight">Ballot Not Configured</h3>
-                        <p className="text-muted-foreground font-medium leading-relaxed">
-                            No election roles or candidates have been assigned to this session yet. Please contact your organization's election coordinator for support.
-                        </p>
-                    </div>
-                    <Button
-                        variant="outline"
-                        onClick={onBack}
-                    >
-                        Return to Vote Screen
-                    </Button>
+                <div className="space-y-3">
+                    <h3 className="text-2xl font-bold tracking-tight">Ballot Not Configured</h3>
+                    <p className="text-muted-foreground font-medium leading-relaxed text-sm">
+                        No election roles or candidates have been assigned to this session yet. Please contact your organization&apos;s election coordinator for support.
+                    </p>
                 </div>
+                <Button variant="outline" onClick={onBack} className="rounded-xl px-6">
+                    Return to Vote Screen
+                </Button>
             </div>
         )
     }
 
     return (
-        <>
-            <div className="w-full max-w-5xl mx-auto space-y-8 pb-32 z-10 animate-in fade-in duration-500">
-                {/* Header */}
-                <div className="text-center space-y-4">
-                    <h2 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">{election.name}</h2>
+        <div className="flex flex-col min-h-screen">
+            {/* ─── Top Bar: Election Name (centered, full width) ─── */}
+            <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
+                <div className="w-full flex items-center justify-center px-6 py-4 sm:px-8 sm:py-5">
+                    <h2 className="text-base sm:text-lg font-bold text-foreground text-center">{election.name}</h2>
                 </div>
+            </header>
 
-                {/* Main Content Area - Integrated into page (No card wrapper) */}
-                <div className="min-h-[500px] flex flex-col relative">
-                    {!isReviewing ? (
-                        <div className="flex-1 space-y-12 animate-in slide-in-from-right-8 fade-in duration-300" key={currentRole.id}>
-                            <div className="border-b border-border/50 pb-4 text-center">
-                                <h3 className="text-3xl font-bold tracking-tight text-foreground">{currentRole.name}</h3>
-                            </div>
+            {/* ─── Step indicator: fixed top-right corner ─── */}
+            <div className="fixed top-3 right-4 sm:top-4 sm:right-6 z-40 flex items-center gap-2.5 bg-background/70 backdrop-blur-md rounded-full px-3 py-1.5 border border-border/40">
+                <span className="text-xs font-bold text-muted-foreground tabular-nums">
+                    {isReviewing ? "Review" : `${activeRoleIndex + 1} / ${roles.length}`}
+                </span>
+                <div className="flex gap-1.5">
+                    {roles.map((_: any, i: number) => (
+                        <div
+                            key={i}
+                            className={cn(
+                                "h-2 rounded-full transition-all duration-500",
+                                i < activeRoleIndex || isReviewing
+                                    ? "w-5 bg-primary"
+                                    : i === activeRoleIndex && !isReviewing
+                                        ? "w-8 bg-primary"
+                                        : "w-3 bg-muted-foreground/20"
+                            )}
+                        />
+                    ))}
+                </div>
+            </div>
 
-                            <RadioGroup
-                                value={votes[currentRole.id] || ""}
-                                onValueChange={(val) => handleVoteChange(currentRole.id, val)}
-                                className="flex flex-wrap justify-center gap-6 p-4 md:p-8"
-                            >
-                                {currentRole.candidates.map((candidate: any) => {
-                                    const isSelected = votes[currentRole.id] === candidate.id
-
-                                    return (
-                                        <div key={candidate.id} className="relative w-full sm:w-[260px]">
-                                            <RadioGroupItem
-                                                value={candidate.id}
-                                                id={`candidate-${candidate.id}`}
-                                                className="peer sr-only"
-                                            />
-                                            <Label
-                                                htmlFor={`candidate-${candidate.id}`}
-                                                className={`flex flex-col h-full rounded-3xl border-2 p-3 cursor-pointer transition-all duration-300 hover:shadow-xl ${isSelected
-                                                    ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20 scale-[1.02]"
-                                                    : "border-border bg-card/80 hover:border-primary/40 hover:bg-card"
-                                                    }`}
-                                            >
-                                                <div className="flex flex-col items-center text-center gap-4">
-                                                    {/* Media Container (Side by Side) */}
-                                                    <div className="flex items-end justify-center gap-3">
-                                                        {/* Profile Image */}
-                                                        {settings.showCandidateProfiles && (
-                                                            <div className="relative aspect-[3/4] w-24 shrink-0 rounded-2xl border border-border/50 bg-muted flex items-center justify-center overflow-hidden shadow-sm">
-                                                                {candidate.profileImage ? (
-                                                                    <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
-                                                                ) : (
-                                                                    <HugeiconsIcon icon={UserIcon} className="w-8 h-8 text-muted-foreground/40" />
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Symbol Image */}
-                                                        {settings.showCandidateSymbols && (
-                                                            <div className="relative aspect-[3/4] w-16 shrink-0 bg-transparent rounded-xl flex items-center justify-center overflow-hidden">
-                                                                {candidate.symbolImage ? (
-                                                                    <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
-                                                                ) : (
-                                                                    <div className="w-full h-full border border-dashed border-border/50 rounded-xl flex items-center justify-center">
-                                                                        <HugeiconsIcon icon={Image01Icon} className="w-5 h-5 text-muted-foreground/40" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex flex-col w-full mt-2">
-                                                        <p className="text-xl font-bold text-foreground break-words px-1 leading-tight">{candidate.name}</p>
-                                                    </div>
-
-                                                    {/* Selection Indicator (Small Size) */}
-                                                    <div className={`absolute top-4 right-4 shrink-0 w-4 h-4 rounded-full border flex items-center justify-center transition-all duration-300 ${isSelected
-                                                        ? "bg-primary border-primary text-primary-foreground"
-                                                        : "border-muted-foreground/30 bg-card"
-                                                        }`}>
-                                                        {isSelected && <div className="w-2 h-2 rounded-full bg-current" />}
-                                                    </div>
-                                                </div>
-                                            </Label>
-                                        </div>
-                                    )
-                                })}
-                            </RadioGroup>
+            {/* ─── Main Content (centered) ─── */}
+            <main className="flex-1 flex items-start justify-center overflow-y-auto pb-32 pt-6 sm:pt-10 px-4">
+                {!isReviewing ? (
+                    <div
+                        className="w-full max-w-2xl animate-in fade-in slide-in-from-right-6 duration-300"
+                        key={currentRole.id}
+                    >
+                        {/* Role Title */}
+                        <div className="text-center mb-8 sm:mb-10 space-y-1">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                                Select your candidate
+                            </p>
+                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                                {currentRole.name}
+                            </h3>
                         </div>
-                    ) : (
-                        <div className="flex-1 space-y-8 animate-in zoom-in-95 fade-in duration-300">
-                            <div className="space-y-2 border-b border-border/50 pb-6 text-center">
-                                <h3 className="text-3xl font-bold tracking-tight text-foreground">Review Your Selections</h3>
-                                <p className="text-sm text-muted-foreground font-medium">Please confirm your choices before casting your ballot.</p>
-                            </div>
 
-                            <div className="space-y-4 max-w-3xl mx-auto">
-                                {roles.map((role: any) => {
-                                    const selectedCandidateId = votes[role.id]
-                                    const candidate = role.candidates.find((c: any) => c.id === selectedCandidateId)
+                        {/* Candidate Grid */}
+                        <RadioGroup
+                            value={votes[currentRole.id] || ""}
+                            onValueChange={(val) => handleVoteChange(currentRole.id, val)}
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                        >
+                            {candidates.map((candidate: any) => {
+                                const isSelected = votes[currentRole.id] === candidate.id
 
-                                    return (
-                                        <div key={role.id} className="flex items-center justify-between p-4 rounded-2xl border border-border bg-muted/20">
-                                            <div className="space-y-1">
-                                                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{role.name}</p>
-                                                {candidate ? (
-                                                    <p className="text-lg font-bold text-foreground">{candidate.name}</p>
-                                                ) : (
-                                                    <p className="text-lg font-bold text-destructive">No Selection Made</p>
+                                return (
+                                    <div key={candidate.id} className="relative">
+                                        <RadioGroupItem
+                                            value={candidate.id}
+                                            id={`candidate-${candidate.id}`}
+                                            className="peer sr-only"
+                                        />
+                                        <Label
+                                            htmlFor={`candidate-${candidate.id}`}
+                                            className={cn(
+                                                "flex items-center gap-4 rounded-2xl border-2 p-4 cursor-pointer transition-all duration-300 hover:shadow-lg",
+                                                isSelected
+                                                    ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/15 scale-[1.01]"
+                                                    : "border-border/60 bg-card hover:border-primary/40 hover:bg-card/90"
+                                            )}
+                                        >
+                                            {/* Profile / Symbol Cluster */}
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                {settings.showCandidateProfiles && !candidate.isNota && (
+                                                    <div className="relative w-16 h-20 rounded-xl border border-border/50 bg-muted flex items-center justify-center overflow-hidden shadow-sm">
+                                                        {candidate.profileImage ? (
+                                                            <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
+                                                        ) : (
+                                                            <HugeiconsIcon icon={UserIcon} className="w-6 h-6 text-muted-foreground/40" />
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {settings.showCandidateSymbols && !candidate.isNota && (
+                                                    <div className="relative w-10 h-14 rounded-lg flex items-center justify-center overflow-hidden">
+                                                        {candidate.symbolImage ? (
+                                                            <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
+                                                        ) : (
+                                                            <div className="w-full h-full border border-dashed border-border/40 rounded-lg flex items-center justify-center">
+                                                                <HugeiconsIcon icon={Image01Icon} className="w-4 h-4 text-muted-foreground/30" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {candidate.isNota && (
+                                                    <div className="relative w-16 h-20 rounded-xl border border-border/50 bg-muted flex items-center justify-center overflow-hidden shadow-sm">
+                                                        <span className="font-black text-xl text-muted-foreground/50">X</span>
+                                                    </div>
                                                 )}
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="font-bold border border-border/50 hover:bg-background"
-                                                onClick={() => {
-                                                    setIsReviewing(false)
-                                                    setActiveRoleIndex(roles.findIndex(r => r.id === role.id))
-                                                }}
+
+                                            {/* Name */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-lg font-bold text-foreground leading-tight truncate">
+                                                    {candidate.name}
+                                                </p>
+                                            </div>
+
+                                            {/* Selection Indicator */}
+                                            <div
+                                                className={cn(
+                                                    "shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                                                    isSelected
+                                                        ? "bg-primary border-primary text-primary-foreground scale-110"
+                                                        : "border-muted-foreground/25 bg-transparent"
+                                                )}
                                             >
-                                                Edit
-                                            </Button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Footer Navigation */}
-                    <div className="pt-8 mt-auto border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={handleBack}
-                            disabled={activeRoleIndex === 0 && !isReviewing || isSubmitting}
-                            className="h-12 w-full md:w-auto px-8 rounded-xl font-bold order-2 md:order-1"
-                        >
-                            {isReviewing ? "Back to Ballot" : "Previous"}
-                        </Button>
-
-                        {/* Progress - Bottom Center */}
-                        <div className="w-full max-w-sm flex-1 order-1 md:order-2">
-                            {/* Progress Bar */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-xs font-bold text-muted-foreground px-1">
-                                    <span>{isReviewing ? "Review" : `Step ${activeRoleIndex + 1} of ${roles.length}`}</span>
-                                    <span>{Object.keys(votes).length} / {roles.length} Selected</span>
-                                </div>
-                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary transition-all duration-500 ease-in-out"
-                                        style={{ width: isReviewing ? '100%' : `${((activeRoleIndex) / roles.length) * 100}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {!isReviewing ? (
-                            <Button
-                                size="lg"
-                                onClick={handleNext}
-                                disabled={!currentVote}
-                                className="h-12 w-full md:w-auto px-8 rounded-xl font-bold bg-primary hover:bg-primary/90 order-3"
-                            >
-                                {activeRoleIndex === roles.length - 1 ? "Review Choices" : "Next"}
-                            </Button>
-                        ) : (
-                            <Button
-                                size="lg"
-                                onClick={handleSubmit}
-                                disabled={isSubmitting || Object.keys(votes).length < roles.length}
-                                className="h-12 w-full md:w-auto px-8 rounded-xl font-black bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 order-3"
-                            >
-                                {isSubmitting ? "Submitting..." : "Cast Ballot"}
-                            </Button>
-                        )}
+                                                {isSelected && (
+                                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="animate-in zoom-in-50 duration-200">
+                                                        <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </Label>
+                                    </div>
+                                )
+                            })}
+                        </RadioGroup>
                     </div>
-                </div>
-            </div>
-
-            {/* Fixed Voter Info Badge */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 bg-card/90 border border-border py-2 px-4 rounded-full w-fit max-w-[90vw] z-50 animate-in slide-in-from-bottom-5">
-                <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 border border-border bg-muted">
-                    {voterData.image ? (
-                        <Image src={voterData.image} alt={voterData.name} fill className="object-cover" />
-                    ) : (
-                        <div className="flex items-center justify-center w-full h-full bg-primary/10 text-primary">
-                            <HugeiconsIcon icon={UserIcon} className="w-3.5 h-3.5" />
+                ) : (
+                    /* ─── Review Screen ─── */
+                    <div className="w-full max-w-2xl animate-in zoom-in-95 fade-in duration-300">
+                        <div className="text-center mb-8 sm:mb-10 space-y-2">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 mb-2">
+                                <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                                Review Your Ballot
+                            </h3>
+                            <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto">
+                                Please confirm your selections before casting your vote. This action cannot be undone.
+                            </p>
                         </div>
+
+                        <div className="space-y-3">
+                            {roles.map((role: any) => {
+                                const selectedCandidateId = votes[role.id]
+                                
+                                // Reconstruct candidate including NOTA
+                                let candidate = role.candidates.find((c: any) => c.id === selectedCandidateId)
+                                if (selectedCandidateId === "NOTA") {
+                                    candidate = { id: "NOTA", name: "None of the Above (NOTA)", isNota: true }
+                                }
+
+                                return (
+                                    <div
+                                        key={role.id}
+                                        className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border bg-card hover:bg-muted/30 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            {/* Candidate Photo Thumbnail */}
+                                            {candidate && settings.showCandidateProfiles && !candidate.isNota && (
+                                                <div className="relative w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0 border border-border/50">
+                                                    {candidate.profileImage ? (
+                                                        <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center w-full h-full">
+                                                            <HugeiconsIcon icon={UserIcon} className="w-4 h-4 text-muted-foreground/40" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {candidate && candidate.isNota && (
+                                                <div className="relative w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0 border border-border/50 flex items-center justify-center">
+                                                    <span className="font-black text-sm text-muted-foreground/50">X</span>
+                                                </div>
+                                            )}
+                                            <div className="space-y-0.5 min-w-0">
+                                                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{role.name}</p>
+                                                {candidate ? (
+                                                    <p className="text-base font-bold text-foreground truncate">{candidate.name}</p>
+                                                ) : (
+                                                    <p className="text-base font-bold text-destructive">No Selection</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5"
+                                            onClick={() => {
+                                                setIsReviewing(false)
+                                                setActiveRoleIndex(roles.findIndex((r: any) => r.id === role.id))
+                                            }}
+                                        >
+                                            <HugeiconsIcon icon={PencilEdit01Icon} className="w-3.5 h-3.5" />
+                                            Edit
+                                        </Button>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            {/* ─── Fixed Bottom Navigation ─── */}
+            <div className="fixed bottom-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-t border-border/50">
+                {/* Progress Bar */}
+                <div className="h-0.5 w-full bg-muted">
+                    <div
+                        className="h-full bg-primary transition-all duration-700 ease-out"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+
+                <div className="max-w-3xl mx-auto w-full flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 gap-4">
+                    <Button
+                        variant="ghost"
+                        size="lg"
+                        onClick={handleBack}
+                        disabled={(activeRoleIndex === 0 && !isReviewing) || isSubmitting}
+                    >
+                        <HugeiconsIcon icon={ArrowLeft01Icon} className="w-3 h-3" />
+                        {isReviewing ? "Edit Ballot" : "Back"}
+                    </Button>
+
+                    {/* Center: Voter Badge */}
+                    <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                        <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 border border-border bg-muted">
+                            {voterData.image ? (
+                                <Image src={voterData.image} alt={voterData.name} fill className="object-cover" />
+                            ) : (
+                                <div className="flex items-center justify-center w-full h-full bg-primary/10 text-primary">
+                                    <HugeiconsIcon icon={UserIcon} className="w-3 h-3" />
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[11px] font-bold text-muted-foreground truncate max-w-[140px]">
+                            {voterData.name}
+                        </p>
+                    </div>
+
+                    {!isReviewing ? (
+                        <Button
+                            size="lg"
+                            onClick={handleNext}
+                            disabled={!currentVote}
+                        >
+                            {activeRoleIndex === roles.length - 1 ? "Review" : "Next"}
+                            <HugeiconsIcon icon={ArrowRight01Icon} className="w-3 h-3" />
+                        </Button>
+                    ) : (
+                        <Button
+                            size="lg"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting || !allVoted}
+                            className="bg-emerald-600 hover:bg-emerald-500"
+                        >
+                            {isSubmitting ? "Submitting..." : "Cast Ballot"}
+                            {!isSubmitting && <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-3 h-3" />}
+                        </Button>
                     )}
                 </div>
-                <p className="text-xs font-bold text-muted-foreground truncate">
-                    Voting as: <span className="text-foreground">{voterData.name}</span> <span className="opacity-70 font-medium">({voterData.uniqueId})</span>
-                </p>
             </div>
-        </>
+        </div>
     )
 }

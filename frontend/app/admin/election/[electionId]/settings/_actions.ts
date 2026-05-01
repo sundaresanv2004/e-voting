@@ -17,6 +17,7 @@ export async function updateElectionSettingsAction(
     showCandidateSymbols?: boolean
     shuffleCandidates?: boolean
     allowMultipleVotes?: boolean
+    allowNota?: boolean
     maxVotesPerUser?: number
   }
 ) {

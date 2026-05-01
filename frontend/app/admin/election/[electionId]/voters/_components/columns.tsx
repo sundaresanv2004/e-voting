@@ -37,7 +37,7 @@ export type VoterColumn = {
 
   dob: Date | null
   electionId: string
-  ballot?: { id: string; createdAt: string | Date } | null
+  ballots: { id: string; createdAt: string | Date }[]
   createdAt: string | Date
   updatedAt?: string | Date
   createdBy?: {
@@ -151,7 +151,7 @@ export const columns = (
       id: "votedAt",
       header: "Voted At",
       cell: ({ row }) => {
-        const votedAt = row.original.ballot?.createdAt
+        const votedAt = row.original.ballots?.[0]?.createdAt
         if (!votedAt) return <span className="text-[10px] font-bold text-muted-foreground/30">—</span>
 
         return (
@@ -163,12 +163,12 @@ export const columns = (
     },
     {
       id: "status",
-      accessorFn: (row) => row.ballot ? "voted" : "not-voted",
+      accessorFn: (row) => row.ballots?.length > 0 ? "voted" : "not-voted",
       filterFn: "equals",
       enableColumnFilter: true,
       header: "Status",
       cell: ({ row }) => {
-        const hasVoted = !!row.original.ballot
+        const hasVoted = row.original.ballots?.length > 0
         return (
           <Badge
             variant="outline"
@@ -216,7 +216,7 @@ export const columns = (
                       Edit Voter
                     </DropdownMenuItem>
 
-                    {voter.ballot && (
+                    {voter.ballots?.length > 0 && (
                       <DropdownMenuItem onSelect={() => onReset(voter)}>
                         <HugeiconsIcon icon={Refresh01Icon} className="h-4 w-4" color="currentColor" />
                         Reset Vote

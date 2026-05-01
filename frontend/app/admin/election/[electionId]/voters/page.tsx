@@ -44,7 +44,7 @@ export default async function VotersPage({
       createdAt: "desc"
     },
     include: {
-      ballot: {
+      ballots: {
         select: { id: true, createdAt: true }
       },
       createdBy: {

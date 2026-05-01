@@ -300,7 +300,7 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
 
             {/* Voting Interface */}
             {isVoting && voterData && (
-                <div className="absolute inset-0 overflow-y-auto no-scrollbar z-20 px-4 py-8 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="absolute inset-0 overflow-y-auto no-scrollbar z-20 bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <BallotInterface
                         election={election}
                         voterData={voterData}

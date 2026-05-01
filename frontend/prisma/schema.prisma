@@ -244,6 +244,7 @@ model ElectionSettings {
   showCandidateSymbols  Boolean  @default(true)
   shuffleCandidates     Boolean  @default(true)
   allowMultipleVotes    Boolean  @default(false)
+  allowNota             Boolean  @default(false)
   maxVotesPerUser       Int      @default(1)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -306,7 +307,7 @@ model Ballot {
 
   election Election         @relation(fields: [electionId], references: [id], onDelete: Cascade)
   system   AuthorizedSystem @relation(fields: [systemId], references: [id])
-  voterId  String?          @unique
+  voterId  String?
   voter    Voter?           @relation(fields: [voterId], references: [id])
   votes    Vote[]
 
@@ -416,7 +417,7 @@ model Voter {
   additionalDetails Json?
 
   election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  ballot   Ballot?
+  ballots  Ballot[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

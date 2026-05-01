@@ -208,10 +208,10 @@ export async function deleteVoter(voterId: string, electionId: string) {
     // Check if voter has already cast a ballot
     const voter = await db.voter.findUnique({
       where: { id: voterId },
-      include: { ballot: true }
+      include: { ballots: true }
     })
 
-    if (voter?.ballot) {
+    if (voter?.ballots && voter.ballots.length > 0) {
       return { error: "Cannot delete a voter who has already cast a ballot" }
     }
 
@@ -253,11 +253,11 @@ export async function resetVoterVote(voterId: string, electionId: string) {
     // Check if voter has actually cast a ballot
     const voter = await db.voter.findUnique({
       where: { id: voterId },
-      include: { ballot: true }
+      include: { ballots: true }
     })
 
-    if (!voter?.ballot) {
-      return { error: "This voter has not cast a ballot yet." }
+    if (!voter?.ballots || voter.ballots.length === 0) {
+      return { error: "This voter has not cast any ballots yet." }
     }
 
     await db.$transaction(async (tx) => {
@@ -275,13 +275,19 @@ export async function resetVoterVote(voterId: string, electionId: string) {
           adminId: userId,
           organizationId: organizationId,
           status: AuditStatus.SUCCESS,
-          metadata: { voterId, name: voterData?.name, uniqueId: voterData?.uniqueId, ballotId: voter.ballot?.id }
+          metadata: { 
+            voterId, 
+            name: voterData?.name, 
+            uniqueId: voterData?.uniqueId, 
+            ballotCount: voter.ballots.length,
+            ballotIds: voter.ballots.map(b => b.id)
+          }
         }
       })
 
-      // Delete the ballot (this cascades and deletes associated votes as defined in schema)
-      await tx.ballot.delete({
-        where: { id: voter.ballot!.id }
+      // Delete all ballots for this voter
+      await tx.ballot.deleteMany({
+        where: { voterId: voterId }
       })
     })
 

@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { ElectionStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
+import { cookies } from "next/headers"
 import { sendElectionCreatedNotificationEmail } from "@/lib/mail"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
@@ -141,6 +142,13 @@ export async function createElection(formData: {
         result.id
       )
     }
+    
+    // Set the cookie for the newly created election so it becomes active in the sidebar
+    const cookieStore = await cookies()
+    cookieStore.set("last_election_id", result.id, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30 // 30 days
+    })
 
     revalidatePath("/admin/organization/elections")
     return { success: true, election: result }

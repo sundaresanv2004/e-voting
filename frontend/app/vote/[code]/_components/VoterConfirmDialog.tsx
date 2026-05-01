@@ -77,12 +77,7 @@ export function VoterConfirmDialog({
                                 <p className="text-xl font-bold text-foreground leading-none">{voterData?.name}</p>
                             </div>
                         </div>
-                        <div className="border-t border-border/50 pt-3 pb-1">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground font-medium">Unique ID</span>
-                                <span className="font-mono font-bold text-primary">{voterData?.uniqueId}</span>
-                            </div>
-                        </div>
+
                         {Object.entries(details).map(([key, value]) => (
                             <div key={key} className="border-t border-border/50 pt-3 pb-1">
                                 <div className="flex justify-between items-center text-sm">

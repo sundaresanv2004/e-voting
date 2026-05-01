@@ -58,9 +58,12 @@ export function AppSidebar({
   const urlElectionId = params.electionId as string
   const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
 
+  // Ensure we don't use the literal string "undefined" which can happen with some router edge cases
+  const isValidId = (id: string | undefined) => id && id !== "undefined" && id !== ""
+
   const activeElectionId =
-    urlElectionId ??
-    cookieElectionId ??
+    isValidId(urlElectionId) ? urlElectionId :
+    isValidId(cookieElectionId) ? cookieElectionId :
     _elections[0]?.id
 
   // 2. Format elections for switcher

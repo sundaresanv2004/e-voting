@@ -57,8 +57,8 @@ export function VoterExport({ data, electionName }: VoterExportProps) {
         const row: any = {
           "Unique ID": voter.uniqueId,
           "Full Name": voter.name,
-          "Voting Status": voter.ballot ? "Voted" : "Not Voted",
-          "Voted At": voter.ballot ? new Date(voter.ballot.createdAt).toLocaleString() : "—",
+          "Voting Status": voter.ballots?.length > 0 ? "Voted" : "Not Voted",
+          "Voted At": voter.ballots?.[0] ? new Date(voter.ballots[0].createdAt).toLocaleString() : "—",
         }
 
         // Add metadata columns

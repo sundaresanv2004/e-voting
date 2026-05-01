@@ -40,7 +40,7 @@ export type VoterDetails = {
   image: string | null
   dob: Date | null
   electionId: string
-  ballot?: { id: string; createdAt: string | Date } | null
+  ballots: { id: string; createdAt: string | Date }[]
   createdAt: string | Date
   updatedAt?: string | Date
   additionalDetails?: any
@@ -98,7 +98,7 @@ export function VoterDetailsSheet({
 }: VoterDetailsSheetProps) {
   if (!voter) return null
 
-  const hasVoted = !!voter.ballot
+  const hasVoted = voter.ballots?.length > 0
   const canManage = userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF
   const initials = voter.name
     .split(" ")
@@ -196,13 +196,13 @@ export function VoterDetailsSheet({
                       : "This voter is registered but has not participated in the election yet."}
                   </p>
                 </div>
-                {hasVoted && voter.ballot?.createdAt && (
+                {hasVoted && voter.ballots?.[0]?.createdAt && (
                   <div className="text-right shrink-0 relative z-10">
                     <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 uppercase tracking-tighter bg-green-500/10 text-green-600 border-none">
                       Cast
                     </Badge>
                     <p className="text-[10px] text-muted-foreground font-medium whitespace-nowrap mt-1">
-                      {format(new Date(voter.ballot.createdAt), "MMM d, h:mm a")}
+                      {format(new Date(voter.ballots[0].createdAt), "MMM d, h:mm a")}
                     </p>
                   </div>
                 )}

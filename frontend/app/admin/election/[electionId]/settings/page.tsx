@@ -104,6 +104,9 @@ export default async function ElectionSettingsPage({
                   showCandidateProfiles: election.settings.showCandidateProfiles,
                   showCandidateSymbols: election.settings.showCandidateSymbols,
                   shuffleCandidates: election.settings.shuffleCandidates,
+                  allowMultipleVotes: election.settings.allowMultipleVotes,
+                  allowNota: election.settings.allowNota,
+                  maxVotesPerUser: election.settings.maxVotesPerUser,
                 } : null
               }} 
             />

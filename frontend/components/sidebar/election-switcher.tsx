@@ -46,12 +46,14 @@ export function ElectionSwitcher({
   }, [])
 
   // Find the active election based on URL, then Cookie, then latest
-  const activeElectionId = params.electionId as string
+  const urlElectionId = params.electionId as string
   const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
 
+  const isValidId = (id: string | undefined) => id && id !== "undefined" && id !== ""
+
   const activeElection =
-    elections.find(e => e.id === activeElectionId) ??
-    elections.find(e => e.id === cookieElectionId) ??
+    (isValidId(urlElectionId) ? elections.find(e => e.id === urlElectionId) : null) ??
+    (isValidId(cookieElectionId) ? elections.find(e => e.id === cookieElectionId) : null) ??
     elections[0]
 
   // Persist discovery

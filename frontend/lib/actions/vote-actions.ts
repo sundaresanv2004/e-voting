@@ -14,33 +14,38 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
                 }
             },
             include: {
-                ballot: true,
+                ballots: true,
                 election: {
                     select: {
-                        status: true
+                        status: true,
+                        settings: true
                     }
                 }
             }
         })
 
         if (!voter) {
-            return { error: "Validation failed: The provided Unique ID was not found in the authorized voter roll for this election." }
+            return { error: "We couldn't find this Voter ID. Please double-check and try again." }
         }
 
         // --- Live Status Check ---
         if (voter.election.status !== "ACTIVE") {
             if (voter.election.status === "PAUSED") {
                 return { 
-                    error: "Access Suspended: This election has been temporarily paused by the administrator. Identification and voting are currently unavailable.",
+                    error: "This election is currently paused by the administrator. Please wait and try again later.",
                     status: "PAUSED"
                 }
             }
-            return { error: "Access Denied: This election is currently not in an active state. Please contact your organization for details." }
+            return { error: "This election is not currently active. Please contact your organization." }
         }
         // -------------------------
 
-        if (voter.ballot) {
-            return { error: "Access Denied: Our records show that a ballot has already been submitted for this Unique ID. Each voter is restricted to a single submission." }
+        const maxVotes = voter.election.settings?.allowMultipleVotes 
+            ? (voter.election.settings.maxVotesPerUser || 1) 
+            : 1;
+
+        if (voter.ballots.length >= maxVotes) {
+            return { error: "It looks like a vote has already been cast using this ID." }
         }
 
         return { 
@@ -55,7 +60,7 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
         }
     } catch (error) {
         console.error("Voter verification error:", error)
-        return { error: "An error occurred during identification. Please try again." }
+        return { error: "Something went wrong. Please try again." }
     }
 }
 
@@ -75,7 +80,7 @@ export async function validateElectionCodeAction(code: string) {
         })
 
         if (!election) {
-            return { error: "The election session you're looking for was not found. Please verify your code and try again." }
+            return { error: "Election not found. Please check your code and try again." }
         }
 
         // --- Lazy Status Sync ---
@@ -106,31 +111,31 @@ export async function validateElectionCodeAction(code: string) {
 
         // 1. Check if online voting is allowed
         if (!election.settings?.allowOnlineVoting) {
-            return { error: "Web-based voting is currently disabled for this election. If you are a voter, please contact your administrator." }
+            return { error: "Online voting is disabled for this election." }
         }
 
         // 2. Check lifecycle status
         if (election.status !== "ACTIVE") {
             if (election.status === "UPCOMING") {
                 const formattedDate = election.startTime ? format(election.startTime, "dd/MM/yyyy, hh:mm a") : "its scheduled time"
-                return { error: `This election is scheduled to begin on ${formattedDate}. Please return then to cast your vote.` }
+                return { error: `This election starts on ${formattedDate}.` }
             }
             if (election.status === "COMPLETED") {
-                return { error: "This election has already been concluded. Results will be published by the administrator." }
+                return { error: "This election has ended." }
             }
             if (election.status === "CANCELLED") {
-                return { error: "This election has been cancelled by the organization." }
+                return { error: "This election has been cancelled." }
             }
             if (election.status === "PAUSED") {
-                return { error: "This election is currently paused by the administrator. Please try again later." }
+                return { error: "This election is currently paused. Please try again later." }
             }
-            return { error: "This election is currently not available for voting." }
+            return { error: "This election is not active." }
         }
 
         return { success: true, electionId: election.id, name: election.name }
     } catch (error) {
         console.error("Validation error:", error)
-        return { error: "An unexpected error occurred while verifying the election code. Please try again." }
+        return { error: "Something went wrong. Please try again." }
     }
 }
 
@@ -139,14 +144,19 @@ export async function submitBallotAction(electionId: string, voterId: string, vo
         const voter = await db.voter.findUnique({
             where: { id: voterId },
             include: {
-                election: { include: { organization: true } },
-                ballot: true
+                election: { include: { organization: true, settings: true } },
+                ballots: true
             }
         })
 
-        if (!voter) return { error: "Voter not found. The session may be invalid." }
-        if (voter.ballot) return { error: "Our records show that a ballot has already been submitted for this identity." }
-        if (voter.election.status !== "ACTIVE") return { error: "The election is not currently active." }
+        if (!voter) return { error: "Voter not found. Please try again." }
+        
+        const maxVotes = voter.election.settings?.allowMultipleVotes 
+            ? (voter.election.settings.maxVotesPerUser || 1) 
+            : 1;
+
+        if (voter.ballots.length >= maxVotes) return { error: "A vote has already been cast using this ID." }
+        if (voter.election.status !== "ACTIVE") return { error: "This election is not active." }
 
         // Find or create a default "Web Voting Portal" authorized system for this organization
         let webSystem = await db.authorizedSystem.findFirst({
@@ -191,8 +201,8 @@ export async function submitBallotAction(electionId: string, voterId: string, vo
     } catch (error: any) {
         console.error("Ballot submission error:", error)
         if (error?.code === 'P2002') {
-            return { error: "A ballot has already been recorded for this voter." } // Prisma unique constraint handling
+            return { error: "A vote has already been recorded for this ID." } // Prisma unique constraint handling
         }
-        return { error: "An unexpected error occurred while submitting your ballot. Please try again." }
+        return { error: "Something went wrong while submitting your ballot. Please try again." }
     }
 }
