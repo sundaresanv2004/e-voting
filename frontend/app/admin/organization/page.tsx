@@ -10,14 +10,12 @@ import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
 import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
 import { AutoRefresh } from "@/components/auto-refresh"
+import { requireOrgAdmin } from "@/lib/authz"
 
 export default async function OrganizationDashboardPage() {
   const session = await auth()
-  const orgId = session?.user?.organizationId
-
-  if (!orgId) {
-    redirect("/setup/organization")
-  }
+  const access = await requireOrgAdmin(session?.user)
+  const orgId = access.organizationId
 
   // Fetch all dashboard data in parallel for maximum performance
   const [

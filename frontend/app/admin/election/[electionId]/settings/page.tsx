@@ -9,7 +9,8 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { LockKeyIcon } from "@hugeicons/core-free-icons"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { db } from "@/lib/db"
-import { AuditEntityType, AuditStatus } from "@prisma/client"
+import { AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
+import { requireElectionAccess } from "@/lib/authz"
 
 export default async function ElectionSettingsPage({
   params
@@ -19,7 +20,11 @@ export default async function ElectionSettingsPage({
   const session = await auth()
   const electionId = (await params).electionId
 
-  if (!session?.user?.organizationId) redirect("/auth/login")
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+    UserRole.VIEWER,
+  ])
 
   let election = await getElectionData(electionId)
 
@@ -27,8 +32,7 @@ export default async function ElectionSettingsPage({
     redirect("/admin/organization/elections")
   }
 
-  const isViewer = session.user.role === "VIEWER"
-  const isOrgAdmin = session.user.role === "ORG_ADMIN"
+  const isViewer = access.role === UserRole.VIEWER
 
   // Lazy sync status with time
   const calculated = getCalculatedElectionStatus(election.startTime, election.endTime)
@@ -51,8 +55,8 @@ export default async function ElectionSettingsPage({
           action: "ELECTION_STATUS_SYNC",
           entityType: AuditEntityType.ELECTION,
           entityId: currentElectionId,
-          adminId: session.user.id,
-          organizationId: session.user.organizationId!,
+          adminId: access.userId,
+          organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: { 
             oldStatus: currentElectionStatus, 

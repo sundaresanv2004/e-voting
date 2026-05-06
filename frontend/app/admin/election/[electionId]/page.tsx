@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { 
   UserGroupIcon, 
@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { format } from "date-fns"
+import { requireElectionAccess } from "@/lib/authz"
+import { UserRole } from "@prisma/client"
 
 export default async function ElectionDashboardPage({
     params
@@ -25,12 +27,15 @@ export default async function ElectionDashboardPage({
 }) {
     const session = await auth()
     const electionId = (await params).electionId
-    const orgId = session?.user?.organizationId
 
-    if (!orgId) redirect("/auth/login")
+    const access = await requireElectionAccess(session?.user, electionId, [
+        UserRole.ORG_ADMIN,
+        UserRole.STAFF,
+        UserRole.VIEWER,
+    ])
 
     const election = await db.election.findUnique({
-        where: { id: electionId, organizationId: orgId },
+        where: { id: electionId, organizationId: access.organizationId },
         include: {
             _count: {
                 select: {

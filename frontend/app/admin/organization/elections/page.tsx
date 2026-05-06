@@ -1,21 +1,21 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MapsIcon } from "@hugeicons/core-free-icons"
 
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { AuditEntityType, AuditStatus } from "@prisma/client"
+import { requireOrgAdmin } from "@/lib/authz"
 import ElectionHero from "./_components/electionHero"
 import { CreateElectionTrigger } from "./_components/create-election-trigger"
 import { ElectionsList } from "./_components/ElectionsList"
 
 export default async function OrganizationElectionsPage() {
   const session = await auth()
-  if (!session?.user?.organizationId) redirect("/setup/organization")
+  const access = await requireOrgAdmin(session?.user)
 
   let elections = await db.election.findMany({
-    where: { organizationId: session.user.organizationId },
+    where: { organizationId: access.organizationId },
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {
@@ -55,8 +55,8 @@ export default async function OrganizationElectionsPage() {
             action: "ELECTION_STATUS_SYNC",
             entityType: AuditEntityType.ELECTION,
             entityId: e.id,
-            adminId: session.user.id,
-            organizationId: session.user.organizationId!,
+            adminId: access.userId,
+            organizationId: access.organizationId,
             status: AuditStatus.SUCCESS,
             metadata: { 
               oldStatus: e.status, 
@@ -70,7 +70,7 @@ export default async function OrganizationElectionsPage() {
 
     // Refetch to get updated data
     elections = await db.election.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: access.organizationId },
       orderBy: { createdAt: "desc" },
       include: {
         createdBy: {

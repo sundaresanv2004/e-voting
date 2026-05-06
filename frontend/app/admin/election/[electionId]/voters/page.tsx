@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserCircleIcon } from "@hugeicons/core-free-icons"
 import { UserRole } from "@prisma/client"
+import { requireElectionAccess } from "@/lib/authz"
 import { Badge } from "@/components/ui/badge"
 
 import VoterHero from "./_components/voter-hero"
@@ -20,16 +21,19 @@ export default async function VotersPage({
   const session = await auth()
   const electionId = (await params).electionId
 
-  if (!session?.user?.organizationId) redirect("/auth/login")
-
-  const userRole = session?.user?.role as UserRole
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+    UserRole.VIEWER,
+  ])
+  const userRole = access.role
   const canManage = userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF
 
   // Verify election exists and belongs to the organization
   const election = await db.election.findFirst({
     where: {
       id: electionId,
-      organizationId: session.user.organizationId
+      organizationId: access.organizationId
     },
     select: { name: true }
   })
@@ -38,7 +42,8 @@ export default async function VotersPage({
 
   const voters = await db.voter.findMany({
     where: {
-      electionId
+      electionId,
+      election: { organizationId: access.organizationId }
     },
     orderBy: {
       createdAt: "desc"

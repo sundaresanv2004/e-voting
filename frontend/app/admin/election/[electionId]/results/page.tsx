@@ -5,6 +5,8 @@ import ResultsHero from "./_components/ResultsHero"
 import { ResultsDashboard } from "./_components/ResultsDashboard"
 import { LiveToggle } from "./_components/LiveToggle"
 import { ResultsExport } from "./_components/ResultsExport"
+import { requireElectionAccess } from "@/lib/authz"
+import { UserRole } from "@prisma/client"
 
 export default async function ResultsPage({
   params
@@ -14,13 +16,17 @@ export default async function ResultsPage({
   const session = await auth()
   const electionId = (await params).electionId
 
-  if (!session?.user?.organizationId) redirect("/auth/login")
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+    UserRole.VIEWER,
+  ])
 
   // Fetch election with full context
   const election = await db.election.findUnique({
     where: {
       id: electionId,
-      organizationId: session.user.organizationId
+      organizationId: access.organizationId
     },
     select: {
       name: true,
@@ -40,7 +46,7 @@ export default async function ResultsPage({
 
   // Fetch all roles with their candidates and vote counts
   const rolesData = await db.electionRole.findMany({
-    where: { electionId },
+    where: { electionId, election: { organizationId: access.organizationId } },
     orderBy: { order: "asc" },
     include: {
       candidates: {
@@ -55,7 +61,7 @@ export default async function ResultsPage({
 
   // Fetch ballot timeline data (votes over time, grouped by hour)
   const ballots = await db.ballot.findMany({
-    where: { electionId },
+    where: { electionId, election: { organizationId: access.organizationId } },
     select: {
       createdAt: true,
       system: {

@@ -3,7 +3,9 @@
 import { AuditStatus } from "@prisma/client"
 
 import { db } from "@/lib/db"
-import { auth } from "@/auth"
+import { auth, signIn } from "@/auth"
+import { AuthError } from "next-auth"
+
 import {
   generateVerificationToken,
   generatePasswordResetToken,
@@ -15,8 +17,10 @@ import {
 import { sendVerificationEmail, sendPasswordResetEmail, sendPasswordResetConfirmationEmail } from "@/lib/mail"
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
-import { ForgotPasswordSchema, ResetPasswordSchema } from "@/lib/schemas/auth"
+import { ForgotPasswordSchema, ResetPasswordSchema, LoginSchema } from "@/lib/schemas/auth"
+import { z } from "zod"
 import { headers } from "next/headers"
+
 
 export const getPasswordResetTokenByToken = async (token: string) => {
     try {
@@ -293,3 +297,23 @@ export const resendVerificationCode = async (emailToken?: string) => {
         return { success: false, error: "Failed to resend code" }
     }
 }
+
+export const loginAction = async (values: z.infer<typeof LoginSchema>) => {
+    try {
+        await signIn("credentials", {
+            email: values.email,
+            password: values.password,
+            redirect: false,
+        })
+        return { success: true }
+    } catch (error) {
+        if (error instanceof AuthError) {
+            return { 
+                success: false, 
+                error: error.type === "CredentialsSignin" ? (error.cause?.err as any)?.code || "CredentialsSignin" : error.type 
+            }
+        }
+        throw error
+    }
+}
+

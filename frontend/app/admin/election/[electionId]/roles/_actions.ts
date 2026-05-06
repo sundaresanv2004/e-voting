@@ -102,6 +102,7 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
     const role = await db.electionRole.findFirst({
       where: { 
         id: roleId,
+        electionId,
         election: { organizationId: access.organizationId }
       }
     })
@@ -167,6 +168,7 @@ export async function deleteRole(roleId: string, electionId: string) {
     const role = await db.electionRole.findFirst({
       where: { 
         id: roleId,
+        electionId,
         election: { organizationId: access.organizationId }
       }
     })

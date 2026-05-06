@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+import NextAuth, { CredentialsSignin } from "next-auth"
 import type { Account, Profile, Session, User } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import authConfig from "./auth.config"
@@ -13,6 +13,14 @@ import { UserRole, AuditStatus } from "@prisma/client"
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5
 const LOGIN_LOCKOUT_MS = 15 * 60 * 1000
+
+class AccountLockedError extends CredentialsSignin {
+  constructor() {
+    super()
+    this.code = "AccountLocked"
+  }
+}
+
 
 type AppJWT = JWT & {
   provider?: string
@@ -139,7 +147,8 @@ async function recordFailedCredentialLogin(user: {
   lockedUntil: Date | null
 }) {
   const now = new Date()
-  const previousCount = isAccountLocked(user.lockedUntil) ? user.failedLoginCount : 0
+  const isLockoutExpired = user.lockedUntil && user.lockedUntil.getTime() < now.getTime()
+  const previousCount = isLockoutExpired ? 0 : user.failedLoginCount
   const failedLoginCount = previousCount + 1
   const lockedUntil =
     failedLoginCount >= MAX_FAILED_LOGIN_ATTEMPTS
@@ -162,7 +171,10 @@ async function recordFailedCredentialLogin(user: {
     failedLoginCount,
     lockedUntil,
   })
+
+  return lockedUntil
 }
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -214,7 +226,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             failedLoginCount: user.failedLoginCount,
             lockedUntil: user.lockedUntil,
           })
-          return null
+          throw new AccountLockedError()
         }
 
         const passwordsMatch = await bcrypt.compare(
@@ -234,7 +246,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return user
         }
 
-        await recordFailedCredentialLogin(user)
+        const lockedUntil = await recordFailedCredentialLogin(user)
+
+        if (lockedUntil) {
+          throw new AccountLockedError()
+        }
 
         return null
       }
@@ -457,8 +473,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   },
   logger: {
-    error(error: Error) {
-      if (error?.name === "CredentialsSignin") {
+    error(error: any) {
+      if (error?.name === "CredentialsSignin" || error?.code === "AccountLocked" || error?.name === "AccountLockedError") {
         return
       }
       console.error(error)

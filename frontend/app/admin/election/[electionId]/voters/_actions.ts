@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { VoterSchema, VoterFormValues } from "@/lib/schemas/voter"
 import { UserRole, AuditEntityType, AuditStatus, Prisma } from "@prisma/client"
 import { requireElectionAccess } from "@/lib/authz"
+import { randomBytes } from "crypto"
 
 /**
  * Authorization helper to ensure user is permitted to manage voters
@@ -29,10 +30,8 @@ async function generateSafeUniqueId(electionId: string): Promise<string> {
   let code = ""
   
   while (!isUnique) {
-    let raw = ""
-    for (let i = 0; i < 8; i++) {
-      raw += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
+    const bytes = randomBytes(8)
+    const raw = Array.from(bytes, (byte) => chars[byte % chars.length]).join("")
     code = raw.slice(0, 4) + "-" + raw.slice(4)
     
     // Check DB for collision
@@ -161,12 +160,16 @@ export async function updateVoter(voterId: string, electionId: string, values: V
 
     await db.$transaction(async (tx) => {
       const oldVoter = await tx.voter.findUnique({
-        where: { id: voterId },
+        where: { id: voterId, electionId },
         select: { name: true, uniqueId: true }
       })
 
+      if (!oldVoter) {
+        throw new Error("Voter not found")
+      }
+
       await tx.voter.update({
-        where: { id: voterId },
+        where: { id: voterId, electionId },
         data: {
           name,
           uniqueId,
@@ -207,9 +210,13 @@ export async function deleteVoter(voterId: string, electionId: string) {
 
     // Check if voter has already cast a ballot
     const voter = await db.voter.findUnique({
-      where: { id: voterId },
+      where: { id: voterId, electionId },
       include: { ballots: true }
     })
+
+    if (!voter) {
+      return { error: "Voter not found" }
+    }
 
     if (voter?.ballots && voter.ballots.length > 0) {
       return { error: "Cannot delete a voter who has already cast a ballot" }
@@ -217,9 +224,13 @@ export async function deleteVoter(voterId: string, electionId: string) {
 
     await db.$transaction(async (tx) => {
       const voterData = await tx.voter.findUnique({
-        where: { id: voterId },
+        where: { id: voterId, electionId },
         select: { name: true, uniqueId: true }
       })
+
+      if (!voterData) {
+        throw new Error("Voter not found")
+      }
 
       await tx.adminAuditLog.create({
         data: {
@@ -234,7 +245,7 @@ export async function deleteVoter(voterId: string, electionId: string) {
       })
 
       await tx.voter.delete({
-        where: { id: voterId }
+        where: { id: voterId, electionId }
       })
     })
 
@@ -252,9 +263,13 @@ export async function resetVoterVote(voterId: string, electionId: string) {
 
     // Check if voter has actually cast a ballot
     const voter = await db.voter.findUnique({
-      where: { id: voterId },
+      where: { id: voterId, electionId },
       include: { ballots: true }
     })
+
+    if (!voter) {
+      return { error: "Voter not found" }
+    }
 
     if (!voter?.ballots || voter.ballots.length === 0) {
       return { error: "This voter has not cast any ballots yet." }
@@ -262,9 +277,13 @@ export async function resetVoterVote(voterId: string, electionId: string) {
 
     await db.$transaction(async (tx) => {
       const voterData = await tx.voter.findUnique({
-        where: { id: voterId },
+        where: { id: voterId, electionId },
         select: { name: true, uniqueId: true }
       })
+
+      if (!voterData) {
+        throw new Error("Voter not found")
+      }
 
       // Log the reset action
       await tx.adminAuditLog.create({

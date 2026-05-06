@@ -31,7 +31,11 @@ export async function createCandidate(electionId: string, values: CandidateFormV
 
     // Verify role belongs to this election
     const role = await db.electionRole.findFirst({
-      where: { id: electionRoleId, electionId }
+      where: {
+        id: electionRoleId,
+        electionId,
+        election: { organizationId: access.organizationId },
+      }
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
 
@@ -89,7 +93,10 @@ export async function updateCandidate(candidateId: string, electionId: string, v
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        role: { election: { organizationId: access.organizationId } }
+        role: {
+          electionId,
+          election: { organizationId: access.organizationId },
+        }
       }
     })
 
@@ -97,7 +104,11 @@ export async function updateCandidate(candidateId: string, electionId: string, v
 
     // Verify role belongs to this election
     const role = await db.electionRole.findFirst({
-      where: { id: electionRoleId, electionId }
+      where: {
+        id: electionRoleId,
+        electionId,
+        election: { organizationId: access.organizationId },
+      }
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
 
@@ -157,7 +168,10 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
     const candidate = await db.candidate.findFirst({
       where: { 
         id: candidateId,
-        role: { election: { organizationId: access.organizationId } }
+        role: {
+          electionId,
+          election: { organizationId: access.organizationId },
+        }
       }
     })
 

@@ -7,6 +7,8 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
+import { loginAction } from "@/lib/actions/auth-actions"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
@@ -43,11 +45,13 @@ function LoginForm() {
     const queryError =
         authErrorParam === "CredentialsSignin"
             ? "Invalid email or password. If this account was created with Google, please use Google sign-in."
-            : authErrorParam === "AccessDenied"
-                ? "Access denied for this account. Please contact support."
-                : authErrorParam
-                    ? "Authentication failed. Please try again."
-                    : null
+            : authErrorParam === "AccountLocked"
+                ? "Your account is temporarily locked due to multiple failed login attempts. Please try again in 15 minutes."
+                : authErrorParam === "AccessDenied"
+                    ? "Access denied for this account. Please contact support."
+                    : authErrorParam
+                        ? "Authentication failed. Please try again."
+                        : null
 
     const visibleError = error ?? queryError
 
@@ -56,22 +60,15 @@ function LoginForm() {
 
         startTransition(async () => {
             try {
-                const result = await signIn("credentials", {
-                    email: values.email,
-                    password: values.password,
-                    redirect: false,
-                })
+                const result = await loginAction(values)
 
-                if (!result) {
-                    setError("Unable to contact authentication service. Please try again.")
-                    return
-                }
-
-                if (result.error || result.ok === false || (typeof result.status === "number" && result.status >= 400)) {
+                if (!result.success) {
                     if (result.error === "CredentialsSignin") {
                         setError("Invalid email or password. If this account was created with Google, please use Google sign-in.")
+                    } else if (result.error === "AccountLocked") {
+                        setError("Your account is temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.")
                     } else {
-                        setError("Login failed. Please check your credentials and try again.")
+                        setError(result.error || "Login failed. Please check your credentials and try again.")
                     }
                     return
                 }

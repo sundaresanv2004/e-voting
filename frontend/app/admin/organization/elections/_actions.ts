@@ -3,12 +3,12 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { ElectionStatus, UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
+import { ElectionStatus, AuditEntityType, AuditStatus } from "@prisma/client"
 import { cookies } from "next/headers"
 import { sendElectionCreatedNotificationEmail } from "@/lib/mail"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
-import { requireOrgAdmin, requireOrganizationRole } from "@/lib/authz"
+import { requireOrgAdmin } from "@/lib/authz"
 
 function generateCode(orgName: string = "EV") {
   // Sanitize the organization name to create a meaningful prefix
@@ -164,10 +164,7 @@ export async function updateElection(
   }
 ) {
   const session = await auth()
-  const access = await requireOrganizationRole(session?.user, [
-    UserRole.ORG_ADMIN,
-    UserRole.STAFF,
-  ])
+  const access = await requireOrgAdmin(session?.user)
   const userId = access.userId
   const orgId = access.organizationId
 
@@ -274,10 +271,7 @@ export async function deleteElection(id: string) {
 
 export async function toggleElectionStatus(id: string) {
   const session = await auth()
-  const access = await requireOrganizationRole(session?.user, [
-    UserRole.ORG_ADMIN,
-    UserRole.STAFF,
-  ])
+  const access = await requireOrgAdmin(session?.user)
   const userId = access.userId
   const orgId = access.organizationId
 

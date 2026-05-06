@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ShieldKeyIcon } from "@hugeicons/core-free-icons"
 import { UserRole } from "@prisma/client"
+import { requireElectionAccess } from "@/lib/authz"
 
 import RoleHero from "./_components/role-hero"
 import { CreateRoleTrigger } from "./_components/create-role-trigger"
@@ -18,16 +19,19 @@ export default async function RolesPage({
   const session = await auth()
   const electionId = (await params).electionId
 
-  if (!session?.user?.organizationId) redirect("/auth/login")
-
-  const userRole = session?.user?.role as UserRole
+  const access = await requireElectionAccess(session?.user, electionId, [
+    UserRole.ORG_ADMIN,
+    UserRole.STAFF,
+    UserRole.VIEWER,
+  ])
+  const userRole = access.role
   const canManage = userRole === UserRole.ORG_ADMIN || userRole === UserRole.STAFF
 
   // Verify election exists and belongs to the organization
   const election = await db.election.findFirst({
     where: {
       id: electionId,
-      organizationId: session.user.organizationId
+      organizationId: access.organizationId
     },
     select: { name: true }
   })
@@ -36,7 +40,8 @@ export default async function RolesPage({
 
   const roles = await db.electionRole.findMany({
     where: {
-      electionId
+      electionId,
+      election: { organizationId: access.organizationId }
     },
     orderBy: {
       order: "asc"
@@ -62,7 +67,7 @@ export default async function RolesPage({
 
   const systems = await db.authorizedSystem.findMany({
     where: {
-      organizationId: session.user.organizationId,
+      organizationId: access.organizationId,
       status: "APPROVED"
     },
     select: {
