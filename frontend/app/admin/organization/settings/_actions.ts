@@ -178,7 +178,9 @@ export async function deleteOrganizationAction() {
         data: {
           organizationId: null,
           role: UserRole.USER,
-          isActive: true
+          isActive: true,
+          hasAllElectionsAccess: false,
+          authVersion: { increment: 1 },
         }
       })
 
@@ -266,7 +268,10 @@ export async function transferOwnershipAction(newOwnerId: string) {
 
       await tx.user.update({
         where: { id: newOwnerId },
-        data: { role: UserRole.ORG_ADMIN }
+        data: {
+          role: UserRole.ORG_ADMIN,
+          authVersion: { increment: 1 },
+        }
       })
 
       // 3. Log the transfer

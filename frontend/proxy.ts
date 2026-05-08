@@ -18,8 +18,6 @@ export default auth((req: any) => {
   const isVerifyRoute = nextUrl.pathname === '/auth/verify-email'
   const isSetupRoute = nextUrl.pathname.startsWith('/setup')
   const isUserRoute = nextUrl.pathname.startsWith('/user')
-  const isAdminRoute = nextUrl.pathname.startsWith('/admin')
-
   // 1. Allow API Auth routes
   if (isApiAuthRoute) return undefined
 

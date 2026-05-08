@@ -20,6 +20,14 @@ import bcrypt from "bcryptjs"
 import { ForgotPasswordSchema, ResetPasswordSchema, LoginSchema } from "@/lib/schemas/auth"
 import { z } from "zod"
 import { headers } from "next/headers"
+import {
+    enforceRateLimit,
+    formatRetryMessage,
+    getClientIp,
+    normalizeRateLimitEmail,
+    RateLimitError,
+} from "@/lib/rate-limit"
+import { findLoginLockByEmail } from "@/lib/auth/users"
 
 
 export const getPasswordResetTokenByToken = async (token: string) => {
@@ -40,7 +48,7 @@ export const getPasswordResetTokenByToken = async (token: string) => {
 }
 
 export const resetPassword = async (formData: FormData) => {
-    const email = formData.get("email") as string
+    const email = normalizeRateLimitEmail(formData.get("email") as string) || ""
 
     const validatedFields = ForgotPasswordSchema.safeParse({ email })
 
@@ -49,6 +57,14 @@ export const resetPassword = async (formData: FormData) => {
     }
 
     try {
+        const ip = await getClientIp()
+        await enforceRateLimit({
+            action: "password-reset",
+            identifiers: [`ip:${ip}`, `email:${email}`],
+            limit: 5,
+            windowMs: 60 * 60 * 1000,
+        })
+
         const existingUser = await db.user.findUnique({
             where: { email }
         })
@@ -68,9 +84,6 @@ export const resetPassword = async (formData: FormData) => {
             throw error
         }
 
-        const headerList = await headers()
-        const ip = headerList.get("x-forwarded-for") || "unknown"
-
         await db.userAuditLog.create({
             data: {
                 userId: existingUser.id,
@@ -84,6 +97,9 @@ export const resetPassword = async (formData: FormData) => {
 
         return { success: true }
     } catch (error) {
+        if (error instanceof RateLimitError) {
+            return { success: false, error: formatRetryMessage(error.retryAfterSeconds) }
+        }
         console.error("Reset password request error:", error)
         return { success: false, error: "Something went wrong" }
     }
@@ -144,6 +160,7 @@ export async function newPassword(password: string, confirmPassword: string, tok
                     failedLoginCount: 0,
                     lockedUntil: null,
                     lastFailedLoginAt: null,
+                    authVersion: { increment: 1 },
                 }
             }),
             db.passwordResetToken.delete({
@@ -175,13 +192,21 @@ export async function newPassword(password: string, confirmPassword: string, tok
 
 export const verifyEmail = async (otp: string, emailToken?: string) => {
   const session = await auth()
-  const email = session?.user?.email || emailToken
+  const email = normalizeRateLimitEmail(session?.user?.email || emailToken)
 
   if (!email) {
     return { success: false, error: "Unauthorized or missing email" }
   }
 
   try {
+    const ip = await getClientIp()
+    await enforceRateLimit({
+      action: "email-verify",
+      identifiers: [`ip:${ip}`, `email:${email}`],
+      limit: 8,
+      windowMs: 15 * 60 * 1000,
+    })
+
     const existingToken = await getVerificationTokenByRawToken(email, otp)
 
     if (!existingToken) {
@@ -219,7 +244,10 @@ export const verifyEmail = async (otp: string, emailToken?: string) => {
     await db.$transaction([
       db.user.update({
         where: { email },
-        data: { emailVerified: new Date() }
+        data: {
+          emailVerified: new Date(),
+          authVersion: { increment: 1 },
+        }
       }),
       db.verificationToken.delete({
         where: {
@@ -230,9 +258,6 @@ export const verifyEmail = async (otp: string, emailToken?: string) => {
         }
       })
     ])
-
-    const headerList = await headers()
-    const ip = headerList.get("x-forwarded-for") || "unknown"
 
     await db.userAuditLog.create({
         data: {
@@ -249,6 +274,9 @@ export const verifyEmail = async (otp: string, emailToken?: string) => {
 
     return { success: true }
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { success: false, error: formatRetryMessage(error.retryAfterSeconds) }
+    }
     console.error("Verification error:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
@@ -256,13 +284,21 @@ export const verifyEmail = async (otp: string, emailToken?: string) => {
 
 export const resendVerificationCode = async (emailToken?: string) => {
     const session = await auth()
-    const email = session?.user?.email || emailToken
+    const email = normalizeRateLimitEmail(session?.user?.email || emailToken)
 
     if (!email) {
         return { success: false, error: "Unauthorized or missing email" }
     }
 
     try {
+        const ip = await getClientIp()
+        await enforceRateLimit({
+            action: "email-verification-resend",
+            identifiers: [`ip:${ip}`, `email:${email}`],
+            limit: 5,
+            windowMs: 60 * 60 * 1000,
+        })
+
         const existingUser = await db.user.findUnique({
             where: { email },
             select: { emailVerified: true }
@@ -274,9 +310,6 @@ export const resendVerificationCode = async (emailToken?: string) => {
 
         const verificationToken = await generateVerificationToken(email)
         await sendVerificationEmail(verificationToken.identifier, verificationToken.token)
-
-        const headerList = await headers()
-        const ip = headerList.get("x-forwarded-for") || "unknown"
 
         await db.userAuditLog.create({
             data: {
@@ -290,8 +323,11 @@ export const resendVerificationCode = async (emailToken?: string) => {
 
         return { success: true }
     } catch (error) {
+        if (error instanceof RateLimitError) {
+            return { success: false, error: formatRetryMessage(error.retryAfterSeconds) }
+        }
         if (error instanceof TokenThrottleError) {
-            return { success: false, error: error.message }
+            return { success: false, error: formatRetryMessage(error.retryAfterSeconds) }
         }
         console.error("Resend error:", error)
         return { success: false, error: "Failed to resend code" }
@@ -301,13 +337,23 @@ export const resendVerificationCode = async (emailToken?: string) => {
 export const loginAction = async (values: z.infer<typeof LoginSchema>) => {
     try {
         await signIn("credentials", {
-            email: values.email,
+            email: normalizeRateLimitEmail(values.email) || values.email,
             password: values.password,
             redirect: false,
         })
         return { success: true }
     } catch (error) {
         if (error instanceof AuthError) {
+            const user = await findLoginLockByEmail(values.email)
+
+            if (user?.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+                const seconds = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000)
+                return {
+                    success: false,
+                    error: `AccountLocked:${seconds}`,
+                }
+            }
+
             return { 
                 success: false, 
                 error: error.type === "CredentialsSignin" ? (error.cause?.err as any)?.code || "CredentialsSignin" : error.type 
@@ -316,4 +362,3 @@ export const loginAction = async (values: z.infer<typeof LoginSchema>) => {
         throw error
     }
 }
-

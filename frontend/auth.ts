@@ -8,6 +8,13 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { sendWelcomeEmail, sendLoginNotificationEmail } from "@/lib/mail"
 import { headers } from "next/headers"
+import {
+  enforceRateLimit,
+  getClientIp,
+  normalizeRateLimitEmail,
+  RateLimitError,
+} from "@/lib/rate-limit"
+import { findUserByLoginEmail } from "@/lib/auth/users"
 
 import { UserRole, AuditStatus } from "@prisma/client"
 
@@ -21,6 +28,13 @@ class AccountLockedError extends CredentialsSignin {
   }
 }
 
+class AccountRateLimitedError extends CredentialsSignin {
+  constructor() {
+    super()
+    this.code = "RateLimited"
+  }
+}
+
 
 type AppJWT = JWT & {
   provider?: string
@@ -29,6 +43,7 @@ type AppJWT = JWT & {
   emailVerified?: Date | null
   isActive?: boolean
   image?: string | null
+  authVersion?: number
 }
 
 type AppSession = Session & {
@@ -39,6 +54,7 @@ type AppSession = Session & {
     emailVerified?: Date | null
     provider?: string
     isActive?: boolean
+    authVersion?: number
   }
 }
 
@@ -113,6 +129,10 @@ function isAccountLocked(lockedUntil: Date | null) {
   return !!lockedUntil && lockedUntil.getTime() > Date.now()
 }
 
+function isAccountLockExpired(lockedUntil: Date | null) {
+  return !!lockedUntil && lockedUntil.getTime() <= Date.now()
+}
+
 async function auditCredentialLoginFailure(data: {
   userId?: string
   email: string
@@ -175,6 +195,32 @@ async function recordFailedCredentialLogin(user: {
   return lockedUntil
 }
 
+async function clearExpiredCredentialLock<
+  T extends {
+  id: string
+  failedLoginCount: number
+  lockedUntil: Date | null
+  }
+>(user: T): Promise<T> {
+  if (!isAccountLockExpired(user.lockedUntil)) {
+    return user
+  }
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      failedLoginCount: 0,
+      lockedUntil: null,
+    },
+  })
+
+  return {
+    ...user,
+    failedLoginCount: 0,
+    lockedUntil: null,
+  }
+}
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -197,17 +243,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string }
-        })
+        const email = normalizeRateLimitEmail(credentials.email as string)
+        const ip = await getClientIp()
 
-        if (!user || !user.password) {
+        if (email) {
+          try {
+            await enforceRateLimit({
+              action: "credentials-login",
+              identifiers: [`ip:${ip}`, `email:${email}`],
+              limit: 10,
+              windowMs: 15 * 60 * 1000,
+            })
+          } catch (error) {
+            if (error instanceof RateLimitError) {
+              throw new AccountRateLimitedError()
+            }
+            throw error
+          }
+        }
+
+        const userRecord = await findUserByLoginEmail(credentials.email as string)
+
+        if (!userRecord || !userRecord.password) {
           await auditCredentialLoginFailure({
             email: credentials.email as string,
             reason: "User not found or no password set",
           })
           return null
         }
+
+        const passwordHash = userRecord.password
+        const user = await clearExpiredCredentialLock(userRecord)
 
         if (!user.isActive) {
           await auditCredentialLoginFailure({
@@ -231,7 +297,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const passwordsMatch = await bcrypt.compare(
           credentials.password as string,
-          user.password
+          passwordHash
         )
 
         if (passwordsMatch) {
@@ -272,22 +338,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         appToken.emailVerified = new Date()
       }
 
-      // 2. Continuous Sync: Always re-fetch from the database to ensure the Middleware (Proxy) 
-      // has the absolute latest Organization and Role data. 
-      // This prevents redirect loops caused by stale JWT tokens (Create/Delete cases).
+      // Keep middleware/session data current while avoiding a full user sync when
+      // auth-relevant fields have not changed since the token was issued.
       if (appToken.sub) {
-        const freshUser = await db.user.findUnique({
+        const userVersion = await db.user.findUnique({
           where: { id: appToken.sub },
-          select: { name: true, role: true, organizationId: true, emailVerified: true, image: true, isActive: true }
+          select: { authVersion: true, isActive: true }
         })
-        
-        if (freshUser) {
-          appToken.name = freshUser.name
-          appToken.role = freshUser.role
-          appToken.organizationId = freshUser.organizationId
-          appToken.emailVerified = freshUser.emailVerified || (appToken.provider === "google" ? new Date() : null)
-          appToken.image = freshUser.image
-          appToken.isActive = freshUser.isActive
+
+        if (userVersion) {
+          if (
+            account ||
+            appToken.authVersion !== userVersion.authVersion ||
+            appToken.isActive !== userVersion.isActive
+          ) {
+            const freshUser = await db.user.findUnique({
+              where: { id: appToken.sub },
+              select: {
+                name: true,
+                role: true,
+                organizationId: true,
+                emailVerified: true,
+                image: true,
+                isActive: true,
+                authVersion: true,
+              }
+            })
+
+            if (freshUser) {
+              appToken.name = freshUser.name
+              appToken.role = freshUser.role
+              appToken.organizationId = freshUser.organizationId
+              appToken.emailVerified = freshUser.emailVerified || (appToken.provider === "google" ? new Date() : null)
+              appToken.image = freshUser.image
+              appToken.isActive = freshUser.isActive
+              appToken.authVersion = freshUser.authVersion
+            }
+          }
         } else {
           appToken.isActive = false
         }
@@ -320,6 +407,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         appSession.user.image = appToken.image as string | null
         appSession.user.provider = appToken.provider as string
         appSession.user.isActive = appToken.isActive as boolean | undefined
+        appSession.user.authVersion = appToken.authVersion
       }
 
       return appSession
@@ -356,10 +444,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             select: {
               id: true,
               isActive: true,
-              accounts: {
-                where: { provider: "google" },
-                select: { provider: true },
-              },
             }
           })
 
@@ -370,30 +454,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return "/auth/error?error=AccessDenied"
           }
 
-          if (existingUser && existingUser.accounts.length === 0) {
-            await auditOAuthFailure(email, "Google auto-linking blocked for existing account", {
-              userId: existingUser.id,
-            })
-            return "/auth/error?error=OAuthAccountNotLinked"
-          }
-
           await db.user.updateMany({
             where: { email },
-            data: { emailVerified: new Date() }
+            data: {
+              emailVerified: new Date(),
+              ...(googleProfile.picture && { image: googleProfile.picture }),
+              authVersion: { increment: 1 },
+            }
           })
 
-          if (googleProfile.picture) {
-            await db.user.updateMany({
-              where: {
-                email,
-                OR: [
-                  { image: null },
-                  { image: "" }
-                ]
-              },
-              data: { image: googleProfile.picture }
-            })
-          }
         } catch (error) {
           console.error("Error in signIn callback:", error)
           return "/auth/error?error=Default"
@@ -445,7 +514,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             data: { 
               emailVerified: new Date(),
               // Note: user.image is the image from the provider at this point if they just linked it
-              ...(user.image && { image: user.image })
+              ...(user.image && { image: user.image }),
+              authVersion: { increment: 1 },
             }
           });
         } catch (error) {

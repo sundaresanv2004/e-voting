@@ -1,7 +1,5 @@
 "use client"
 
-import { toast } from "sonner"
-
 import React, { useState, useTransition, Suspense } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
@@ -9,9 +7,10 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { PasswordStrength } from "@/components/auth/password-strength"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
+import { getSafeRedirectPath, withLoggedInParam } from "@/lib/auth/redirects"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field"
+import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Spinner } from "@/components/ui/spinner"
@@ -30,6 +29,7 @@ function SignupForm() {
 
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
+    const safeNextPath = getSafeRedirectPath(nextParam)
     const router = useRouter()
 
     const {
@@ -92,7 +92,7 @@ function SignupForm() {
             </CardHeader>
 
             <CardContent className="px-0 space-y-4 md:px-6">
-                <OAuthButtons disabled={isPending} />
+                <OAuthButtons disabled={isPending} redirectTo={withLoggedInParam(safeNextPath)} />
 
                 <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>

@@ -8,7 +8,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
     Mail01Icon,
     Alert01Icon,
-    CheckmarkCircle01Icon,
     PencilEdit02Icon
 } from '@hugeicons/core-free-icons'
 import { Button } from "@/components/ui/button"
@@ -25,10 +24,11 @@ import {
 } from "@/components/ui/input-otp"
 import { verifyEmail, resendVerificationCode } from "@/lib/actions/auth-actions"
 import { signOut } from "next-auth/react"
+import { AUTH_TOKEN_RESEND_COOLDOWN_SECONDS } from "@/lib/auth/timing"
 
 import { Suspense } from "react"
 
-const RESEND_COOLDOWN = 30 // seconds
+const RESEND_COOLDOWN = AUTH_TOKEN_RESEND_COOLDOWN_SECONDS
 
 function VerifyEmailForm() {
     const { data: session, update } = useSession()

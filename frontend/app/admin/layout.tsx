@@ -15,17 +15,22 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  const user = session?.user
 
-  if (!session?.user?.organizationId) {
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  if (!user.organizationId) {
     redirect("/setup/organization")
   }
 
   let elections = []
   
-  if (session.user.role === "ORG_ADMIN") {
+  if (user.role === "ORG_ADMIN") {
     elections = await db.election.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: user.organizationId,
       },
       orderBy: {
         createdAt: "desc",
@@ -33,18 +38,18 @@ export default async function AdminLayout({
     })
   } else {
     const userRecord = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: user.id },
       select: { hasAllElectionsAccess: true },
     })
 
     if (userRecord?.hasAllElectionsAccess) {
       elections = await db.election.findMany({
-        where: { organizationId: session.user.organizationId },
+        where: { organizationId: user.organizationId },
         orderBy: { createdAt: "desc" },
       })
     } else {
       const access = await db.userElectionAccess.findMany({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
         include: { election: true },
         orderBy: { createdAt: "desc" },
       })
@@ -62,7 +67,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar elections={formattedElections} userRole={session.user.role} />
+      <AppSidebar elections={formattedElections} userRole={user.role} />
       <SidebarInset>
         <AdminHeader />
         <div className="flex flex-1 flex-col">

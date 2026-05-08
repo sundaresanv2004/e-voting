@@ -5,6 +5,13 @@ import { generateVerificationToken } from "@/lib/tokens"
 import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/mail"
 import { RegisterSchema } from "@/lib/schemas/auth"
 import { AuditStatus } from "@prisma/client"
+import {
+  enforceRateLimit,
+  formatRetryMessage,
+  getClientIp,
+  normalizeRateLimitEmail,
+  RateLimitError,
+} from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +22,16 @@ export async function POST(req: Request) {
       return new NextResponse("Invalid request data", { status: 400 })
     }
 
-    const { email, password, name } = validatedFields.data
+    const { password, name } = validatedFields.data
+    const email = normalizeRateLimitEmail(validatedFields.data.email)!
+    const ip = await getClientIp()
+
+    await enforceRateLimit({
+      action: "register",
+      identifiers: [`ip:${ip}`, `email:${email}`],
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    })
 
     const existingUser = await db.user.findUnique({
       where: {
@@ -54,6 +70,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name } })
   } catch (error: any) {
+    if (error instanceof RateLimitError) {
+      return new NextResponse(formatRetryMessage(error.retryAfterSeconds), { status: 429 })
+    }
     console.error(error)
     return new NextResponse("Internal Error", { status: 500 })
   }

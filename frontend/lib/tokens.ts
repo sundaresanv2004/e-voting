@@ -1,15 +1,21 @@
 import { createHash, randomBytes, randomInt } from "crypto"
 
 import { db } from "@/lib/db"
+import {
+  AUTH_TOKEN_RESEND_COOLDOWN_MS,
+  AUTH_TOKEN_TTL_MS,
+  MAX_AUTH_TOKEN_ATTEMPTS,
+} from "@/lib/auth/timing"
 
-const TOKEN_TTL_MS = 60 * 60 * 1000
-const RESEND_COOLDOWN_MS = 60 * 1000
-export const MAX_TOKEN_ATTEMPTS = 5
+export const MAX_TOKEN_ATTEMPTS = MAX_AUTH_TOKEN_ATTEMPTS
 
 export class TokenThrottleError extends Error {
-  constructor() {
+  retryAfterSeconds: number
+
+  constructor(retryAfterSeconds: number) {
     super("Please wait before requesting another code.")
     this.name = "TokenThrottleError"
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -18,15 +24,17 @@ export function hashToken(token: string) {
 }
 
 function getExpiryDate() {
-  return new Date(Date.now() + TOKEN_TTL_MS)
+  return new Date(Date.now() + AUTH_TOKEN_TTL_MS)
 }
 
 function assertCanSend(lastSentAt: Date | null | undefined) {
   if (!lastSentAt) return
 
-  const nextAllowedAt = lastSentAt.getTime() + RESEND_COOLDOWN_MS
+  const nextAllowedAt = lastSentAt.getTime() + AUTH_TOKEN_RESEND_COOLDOWN_MS
   if (nextAllowedAt > Date.now()) {
-    throw new TokenThrottleError()
+    throw new TokenThrottleError(
+      Math.max(1, Math.ceil((nextAllowedAt - Date.now()) / 1000))
+    )
   }
 }
 

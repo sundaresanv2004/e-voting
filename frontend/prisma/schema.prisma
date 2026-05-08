@@ -20,6 +20,7 @@ model User {
   lockedUntil             DateTime?
   lastLoginAt             DateTime?
   lastFailedLoginAt       DateTime?
+  authVersion             Int                    @default(0)
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   accounts                Account[]
@@ -150,6 +151,19 @@ model PasswordResetToken {
   @@unique([email, token])
   @@index([email])
   @@index([expires])
+}
+
+model AuthRateLimit {
+  id        String   @id @default(cuid())
+  action    String
+  key       String
+  count     Int      @default(1)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([action, key])
+  @@index([expiresAt])
 }
 
 model Authenticator {

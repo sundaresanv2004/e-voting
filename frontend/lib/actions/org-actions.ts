@@ -93,6 +93,7 @@ export async function createOrganization(values: OrganizationFormValues) {
         data: {
           role: UserRole.ORG_ADMIN,
           organizationId: organization.id,
+          authVersion: { increment: 1 },
         },
       })
 

@@ -7,6 +7,12 @@ import { ProfileSchema, SecuritySchema } from "@/lib/schemas/user"
 import bcrypt from "bcryptjs"
 import { AuditStatus, AuditEntityType } from "@prisma/client"
 import { headers } from "next/headers"
+import { 
+    enforceRateLimit, 
+    getClientIp, 
+    formatRetryMessage, 
+    RateLimitError 
+} from "@/lib/rate-limit"
 
 export async function updateUserProfileAction(name: string) {
   const session = await auth()
@@ -14,6 +20,15 @@ export async function updateUserProfileAction(name: string) {
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
   }
+
+  try {
+    const ip = await getClientIp()
+    await enforceRateLimit({
+      action: "profile-update",
+      identifiers: [`ip:${ip}`, `user:${session.user.id}`],
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    })
 
   const validatedFields = ProfileSchema.safeParse({ name })
 
@@ -23,11 +38,13 @@ export async function updateUserProfileAction(name: string) {
 
   await db.user.update({
     where: { id: session.user.id },
-    data: { name: validatedFields.data.name }
+    data: {
+      name: validatedFields.data.name,
+      authVersion: { increment: 1 },
+    }
   })
 
-  const headerList = await headers()
-  const ip = headerList.get("x-forwarded-for") || "unknown"
+
 
   await db.userAuditLog.create({
     data: {
@@ -42,6 +59,12 @@ export async function updateUserProfileAction(name: string) {
 
   revalidatePath("/user/settings")
   return { success: "Profile updated successfully" }
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: formatRetryMessage(error.retryAfterSeconds) }
+    }
+    throw error
+  }
 }
 
 export async function updateUserImageAction(image: string | null) {
@@ -51,13 +74,24 @@ export async function updateUserImageAction(image: string | null) {
     return { error: "Unauthorized" }
   }
 
+  try {
+    const ip = await getClientIp()
+    await enforceRateLimit({
+      action: "profile-image-update",
+      identifiers: [`ip:${ip}`, `user:${session.user.id}`],
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    })
+
   await db.user.update({
     where: { id: session.user.id },
-    data: { image }
+    data: {
+      image,
+      authVersion: { increment: 1 },
+    }
   })
 
-  const headerList = await headers()
-  const ip = headerList.get("x-forwarded-for") || "unknown"
+
 
   await db.userAuditLog.create({
     data: {
@@ -71,6 +105,12 @@ export async function updateUserImageAction(image: string | null) {
 
   revalidatePath("/user/settings")
   return { success: "Profile picture updated" }
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: formatRetryMessage(error.retryAfterSeconds) }
+    }
+    throw error
+  }
 }
 
 export async function updatePasswordAction(values: any) {
@@ -79,6 +119,15 @@ export async function updatePasswordAction(values: any) {
     if (!session?.user?.id) {
       return { error: "Unauthorized" }
     }
+
+    try {
+      const ip = await getClientIp()
+      await enforceRateLimit({
+        action: "password-update",
+        identifiers: [`ip:${ip}`, `user:${session.user.id}`],
+        limit: 5,
+        windowMs: 60 * 60 * 1000,
+      })
   
     const validatedFields = SecuritySchema.safeParse(values)
   
@@ -118,11 +167,16 @@ export async function updatePasswordAction(values: any) {
   
     await db.user.update({
         where: { id: session.user.id },
-        data: { password: hashedPassword }
+        data: {
+          password: hashedPassword,
+          failedLoginCount: 0,
+          lockedUntil: null,
+          lastFailedLoginAt: null,
+          authVersion: { increment: 1 },
+        }
     })
   
-    const headerList = await headers()
-    const ip = headerList.get("x-forwarded-for") || "unknown"
+
 
     await db.userAuditLog.create({
       data: {
@@ -136,6 +190,12 @@ export async function updatePasswordAction(values: any) {
 
     revalidatePath("/user/settings")
     return { success: "Password updated successfully" }
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: formatRetryMessage(error.retryAfterSeconds) }
+    }
+    throw error
+  }
 }
 
 export async function deleteAccountAction() {
@@ -159,8 +219,7 @@ export async function deleteAccountAction() {
       where: { id: session.user.id }
     })
 
-    const headerList = await headers()
-    const ip = headerList.get("x-forwarded-for") || "unknown"
+    const ip = await getClientIp()
 
     await db.userAuditLog.create({
       data: {
@@ -212,12 +271,13 @@ export async function leaveOrganizationAction() {
       where: { id: session.user.id },
       data: { 
         organizationId: null,
-        role: "USER"
+        role: "USER",
+        hasAllElectionsAccess: false,
+        authVersion: { increment: 1 },
       }
     })
 
-    const headerList = await headers()
-    const ip = headerList.get("x-forwarded-for") || "unknown"
+    const ip = await getClientIp()
 
     await db.adminAuditLog.create({
       data: {

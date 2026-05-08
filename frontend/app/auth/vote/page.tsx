@@ -1,10 +1,8 @@
 "use client"
 
-import { toast } from "sonner"
 import React, { useState, useTransition } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Ticket01Icon, Alert01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -27,7 +25,6 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 
 function VoteForm() {
     const [isPending, startTransition] = useTransition()

@@ -3,7 +3,6 @@
 import React, { useState, useTransition } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserGroupIcon, Alert01Icon, UniversityIcon, Location01Icon } from '@hugeicons/core-free-icons'
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -14,7 +13,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectLabel } from "@/components/ui/select"
-import { toast } from "sonner"
 import { createOrganization } from "@/lib/actions/org-actions"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,7 +22,6 @@ export default function OrganizationSetupPage() {
     const { update } = useSession()
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
-    const router = useRouter()
 
     const {
         register,

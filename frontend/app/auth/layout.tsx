@@ -21,12 +21,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-gradient-to-b from-background via-background to-background dark:from-gray-950 dark:via-gray-950 dark:to-gray-900 w-full">
-            <div className="absolute top-4 left-4 z-50">
-                {useBackButton ? <BackButton /> : <HomeButton />}
-            </div>
-            <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-                <DownloadPrompt />
-                <SetTheme />
+            <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center pointer-events-none">
+                <div className="pointer-events-auto">
+                    {useBackButton ? <BackButton /> : <HomeButton />}
+                </div>
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <DownloadPrompt />
+                    <SetTheme />
+                </div>
             </div>
 
             <div

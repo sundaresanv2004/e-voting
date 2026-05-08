@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useTransition } from "react"
+import React, { useTransition } from "react"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 interface OAuthButtonsProps {
     disabled?: boolean
+    redirectTo?: string
 }
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -33,13 +34,13 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     )
 }
 
-export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
+export function OAuthButtons({ disabled = false, redirectTo = "/admin/organization?logged_in=true" }: OAuthButtonsProps) {
     const [isPending, startTransition] = useTransition()
 
     const handleGoogleLogin = () => {
         startTransition(async () => {
             try {
-                await signIn("google", { redirectTo: "/admin/organization?logged_in=true" })
+                await signIn("google", { redirectTo })
             } catch (err) {
                 toast.error("Failed to sign in with Google.")
             }

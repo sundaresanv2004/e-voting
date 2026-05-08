@@ -161,7 +161,8 @@ export async function addMemberAction(
         data: {
           organizationId: orgId,
           role,
-          hasAllElectionsAccess: hasAllAccess
+          hasAllElectionsAccess: hasAllAccess,
+          authVersion: { increment: 1 },
         }
       })
 
@@ -287,7 +288,8 @@ export async function updateMemberAction(
         where: { id: userId },
         data: {
           role,
-          hasAllElectionsAccess: hasAllAccess
+          hasAllElectionsAccess: hasAllAccess,
+          authVersion: { increment: 1 },
         }
       })
 
@@ -410,7 +412,8 @@ export async function removeMemberAction(userId: string) {
         data: {
           organizationId: null,
           role: UserRole.USER,
-          hasAllElectionsAccess: false
+          hasAllElectionsAccess: false,
+          authVersion: { increment: 1 },
         }
       })
 

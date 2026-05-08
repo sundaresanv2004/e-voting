@@ -3,6 +3,12 @@
 import { db } from "@/lib/db"
 import { format } from "date-fns"
 import { VoterIdSchema } from "@/lib/schemas/vote"
+import { 
+    enforceRateLimit, 
+    getClientIp, 
+    formatRetryMessage, 
+    RateLimitError 
+} from "@/lib/rate-limit"
 
 export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: string) {
     try {
@@ -17,11 +23,20 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
                 ballots: true,
                 election: {
                     select: {
+                        id: true,
                         status: true,
                         settings: true
                     }
                 }
             }
+        })
+
+        const ip = await getClientIp()
+        await enforceRateLimit({
+            action: "voter-verify",
+            identifiers: [`ip:${ip}`, `election:${electionId}`],
+            limit: 10,
+            windowMs: 60 * 60 * 1000,
         })
 
         if (!voter) {
@@ -61,6 +76,9 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
             }
         }
     } catch (error) {
+        if (error instanceof RateLimitError) {
+            return { error: formatRetryMessage(error.retryAfterSeconds) }
+        }
         console.error("Voter verification error:", error)
         return { error: "Something went wrong. Please try again." }
     }
@@ -79,6 +97,14 @@ export async function validateElectionCodeAction(code: string) {
             include: {
                 settings: true
             }
+        })
+
+        const ip = await getClientIp()
+        await enforceRateLimit({
+            action: "election-code-verify",
+            identifiers: [`ip:${ip}`],
+            limit: 20,
+            windowMs: 15 * 60 * 1000,
         })
 
         if (!election) {
@@ -136,6 +162,9 @@ export async function validateElectionCodeAction(code: string) {
 
         return { success: true, electionId: election.id, name: election.name }
     } catch (error) {
+        if (error instanceof RateLimitError) {
+            return { error: formatRetryMessage(error.retryAfterSeconds) }
+        }
         console.error("Validation error:", error)
         return { error: "Something went wrong. Please try again." }
     }

@@ -5,9 +5,9 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { loginAction } from "@/lib/actions/auth-actions"
+import { getSafeRedirectPath, withLoggedInParam } from "@/lib/auth/redirects"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -28,6 +28,7 @@ function LoginForm() {
     const [showPassword, setShowPassword] = useState(false)
     const searchParams = useSearchParams()
     const nextParam = searchParams.get("next")
+    const safeNextPath = getSafeRedirectPath(nextParam)
     const authErrorParam = searchParams.get("error")
     const router = useRouter()
 
@@ -44,9 +45,11 @@ function LoginForm() {
     })
     const queryError =
         authErrorParam === "CredentialsSignin"
-            ? "Invalid email or password. If this account was created with Google, please use Google sign-in."
+            ? "Invalid email or password."
             : authErrorParam === "AccountLocked"
-                ? "Your account is temporarily locked due to multiple failed login attempts. Please try again in 15 minutes."
+                ? "Too many failed attempts. Please wait before trying again."
+                : authErrorParam === "RateLimited"
+                    ? "Too many login attempts. Please wait a few minutes before trying again."
                 : authErrorParam === "AccessDenied"
                     ? "Access denied for this account. Please contact support."
                     : authErrorParam
@@ -64,20 +67,20 @@ function LoginForm() {
 
                 if (!result.success) {
                     if (result.error === "CredentialsSignin") {
-                        setError("Invalid email or password. If this account was created with Google, please use Google sign-in.")
-                    } else if (result.error === "AccountLocked") {
-                        setError("Your account is temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.")
+                        setError("Invalid email or password.")
+                    } else if (result.error?.startsWith("AccountLocked")) {
+                        const seconds = Number(result.error.split(":")[1] || 0)
+                        const minutes = Math.max(1, Math.ceil(seconds / 60))
+                        setError(`Too many failed attempts. Please wait about ${minutes} minute${minutes === 1 ? "" : "s"} before trying again.`)
+                    } else if (result.error === "RateLimited") {
+                        setError("Too many login attempts. Please wait a few minutes before trying again.")
                     } else {
                         setError(result.error || "Login failed. Please check your credentials and try again.")
                     }
                     return
                 }
 
-                if (nextParam) {
-                    router.push(`${nextParam}${nextParam.includes('?') ? '&' : '?'}logged_in=true`)
-                } else {
-                    router.push('/admin/organization?logged_in=true')
-                }
+                router.push(withLoggedInParam(safeNextPath))
                 router.refresh()
             } catch (err) {
                 console.error("Login error:", err)
@@ -94,7 +97,7 @@ function LoginForm() {
             </CardHeader>
 
             <CardContent className="px-0 space-y-4 md:px-6">
-                <OAuthButtons disabled={isPending} />
+                <OAuthButtons disabled={isPending} redirectTo={withLoggedInParam(safeNextPath)} />
 
                 <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>

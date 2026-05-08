@@ -16,12 +16,15 @@ const fontMono = Geist_Mono({
 import { Toaster } from "sonner"
 import { SuccessToastListener } from "@/components/auth/success-toast-listener"
 import { Suspense } from "react"
+import { auth } from "@/auth"
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await auth()
+
   return (
     <html
       lang="en"
@@ -30,7 +33,7 @@ export default function RootLayout({
       <body
         className={cn("antialiased", fontMono.variable, "font-sans", spaceGrotesk.variable, geistHeading.variable)}
       >
-        <Providers>
+        <Providers session={session}>
           <ThemeProvider>
             {children}
             <Suspense fallback={null}>

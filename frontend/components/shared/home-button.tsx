@@ -1,12 +1,15 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Home01Icon } from '@hugeicons/core-free-icons'
 
 export function HomeButton() {
     const router = useRouter()
+    const pathname = usePathname()
+
+    if (pathname === "/") return null
 
     return (
         <Button

@@ -36,11 +36,17 @@ interface ImageUploadProps {
 export function ImageUpload({ value, onChange, onUploadingChange, disabled, folder, className }: ImageUploadProps) {
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const hasImageKitConfig = Boolean(urlEndpoint && publicKey)
 
   const handleUpload = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
       toast.error("File size must be less than 10MB");
       return;
+    }
+
+    if (!hasImageKitConfig) {
+      toast.error("Image upload is not configured.")
+      return
     }
 
     setIsUploading(true)
@@ -75,9 +81,7 @@ export function ImageUpload({ value, onChange, onUploadingChange, disabled, fold
   }
 
   return (
-    <ImageKitProvider
-      urlEndpoint={urlEndpoint!}
-    >
+    <ImageKitProvider urlEndpoint={urlEndpoint || ""}>
       <div className="space-y-3 w-full h-full">
         <div
           className={cn(

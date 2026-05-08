@@ -39,7 +39,7 @@ export function PersonalInfo() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { data: session, update: updateSession } = useSession()
+  const { data: session, status, update: updateSession } = useSession()
   const [isUpdatingName, setIsUpdatingName] = React.useState(false)
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = React.useState(false)
 
@@ -57,10 +57,10 @@ export function PersonalInfo() {
 
   // Sync state when session loads
   React.useEffect(() => {
-    if (session?.user?.name) {
+    if (status === "authenticated" && session?.user?.name) {
       reset({ name: session.user.name })
     }
-  }, [session?.user?.name, reset])
+  }, [session?.user?.name, status, reset])
 
   const user = {
     name: session?.user?.name || "User",
@@ -102,7 +102,11 @@ export function PersonalInfo() {
 
   const handleUpdateAvatar = async (imageUrl: string) => {
     try {
-      await updateUserImageAction(imageUrl)
+      const response = await updateUserImageAction(imageUrl)
+      if (response.error) {
+        toast.error(response.error)
+        return
+      }
       await updateSession()
       triggerToast("avatar_updated")
     } catch (error) {
@@ -113,13 +117,27 @@ export function PersonalInfo() {
 
   const handleRemoveAvatar = async () => {
     try {
-      await updateUserImageAction(null)
+      const response = await updateUserImageAction(null)
+      if (response.error) {
+        toast.error(response.error)
+        return
+      }
       await updateSession()
       triggerToast("avatar_removed")
     } catch (error) {
       console.error(error)
       toast.error("Failed to remove profile picture")
     }
+  }
+
+  if (status === "loading") {
+    return (
+      <Card className="border-border/50 overflow-hidden p-0 w-full">
+        <CardContent className="flex items-center justify-center py-12">
+          <Spinner />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -197,7 +215,7 @@ export function PersonalInfo() {
                 <InputGroupAddon align="inline-start">
                   <HugeiconsIcon icon={Mail01Icon} />
                 </InputGroupAddon>
-                <InputGroupInput id="email" defaultValue={user.email} disabled className="opacity-70" />
+                <InputGroupInput id="email" value={user.email} disabled className="opacity-70" />
               </InputGroup>
               <p className="text-[11px] text-muted-foreground">Email cannot be changed directly. Contact support if needed.</p>
             </div>

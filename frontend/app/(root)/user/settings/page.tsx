@@ -11,7 +11,7 @@ import { DeleteAccount } from "./_components/delete-account"
 import { UserIcon, Settings01Icon, Alert01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "@/lib/utils"
-import { HomeButton } from "@/components/shared/home-button"
+
 
 const TABS = [
   { id: "profile", label: "Profile", icon: UserIcon, color: "text-blue-600" },
@@ -23,7 +23,7 @@ export default function AccountSettingsPage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
   const currentTab = searchParams.get("tab") || "profile"
 
@@ -38,9 +38,7 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto py-8 px-4 md:px-8 relative">
-      <div className="flex items-center mb-6">
-        <HomeButton />
-      </div>
+
 
       <div className="mb-8">
         <UserHero
@@ -83,7 +81,7 @@ export default function AccountSettingsPage() {
             {currentTab === "danger" && (
               <div className="space-y-6">
                 <div className="space-y-6">
-                  {session?.user?.organizationId && (
+                  {status !== "loading" && session?.user?.organizationId && (
                     <LeaveOrganization />
                   )}
 

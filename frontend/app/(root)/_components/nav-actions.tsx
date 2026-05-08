@@ -12,7 +12,7 @@ export function RootNavActions() {
     if (pathname.includes("/user/settings")) {
         return (
             <Link href="/admin/organization">
-                <Button variant="default" size="sm">
+                <Button variant="default">
                     <HugeiconsIcon icon={Layout01Icon} className="w-4 h-4" />
                     Dashboard
                 </Button>
@@ -22,7 +22,7 @@ export function RootNavActions() {
 
     return (
         <Link href="/user/settings">
-            <Button variant="default" size="sm">
+            <Button variant="default">
                 <HugeiconsIcon icon={UserIcon} className="w-4 h-4" />
                 Profile
             </Button>
