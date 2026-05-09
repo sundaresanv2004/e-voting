@@ -20,11 +20,28 @@ export default async function OrganizationLayout({
   // but the database knows it was deleted.
   const userInDb = await db.user.findUnique({
     where: { id: userId },
-    select: { organizationId: true, role: true }
+    select: {
+      organizationId: true,
+      role: true,
+      isActive: true,
+      organization: {
+        select: {
+          isActive: true,
+        },
+      },
+    }
   });
+
+  if (!userInDb?.isActive) {
+    redirect("/auth/error?error=AccessDenied");
+  }
 
   if (!userInDb?.organizationId) {
     redirect("/setup/organization");
+  }
+
+  if (!userInDb.organization?.isActive) {
+    redirect("/auth/error?error=AccessDenied");
   }
 
   // Protect the entire /admin/organization namespace for non-admins

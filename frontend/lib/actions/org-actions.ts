@@ -87,7 +87,6 @@ export async function createOrganization(values: OrganizationFormValues) {
         where: {
           id: user.userId,
           isActive: true,
-          emailVerified: { not: null },
           organizationId: null,
         },
         data: {

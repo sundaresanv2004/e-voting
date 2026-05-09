@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils"
 
 export function LiveToggle() {
     const router = useRouter()
-    const [isLive, setIsLive] = React.useState(false)
+    const [isRefreshing, setIsRefreshing] = React.useState(false)
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null)
 
     React.useEffect(() => {
-        if (isLive) {
+        if (isRefreshing) {
             intervalRef.current = setInterval(() => {
                 router.refresh()
             }, 20000)
@@ -28,29 +28,29 @@ export function LiveToggle() {
                 clearInterval(intervalRef.current)
             }
         }
-    }, [isLive, router])
+    }, [isRefreshing, router])
 
     return (
         <div className="flex items-center gap-2.5">
             <Switch
                 id="live-toggle"
-                checked={isLive}
-                onCheckedChange={setIsLive}
+                checked={isRefreshing}
+                onCheckedChange={setIsRefreshing}
             />
             <Label
                 htmlFor="live-toggle"
                 className={cn(
                     "text-sm font-bold cursor-pointer select-none flex items-center gap-2 transition-colors",
-                    isLive ? "text-emerald-600" : "text-muted-foreground"
+                    isRefreshing ? "text-emerald-600" : "text-muted-foreground"
                 )}
             >
-                {isLive && (
+                {isRefreshing && (
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                     </span>
                 )}
-                Live
+                Auto-refresh
             </Label>
         </div>
     )

@@ -3,9 +3,8 @@ import { db } from "@/lib/db"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MapsIcon } from "@hugeicons/core-free-icons"
 
-import { getCalculatedElectionStatus } from "@/lib/utils/election"
-import { AuditEntityType, AuditStatus } from "@prisma/client"
 import { requireOrgAdmin } from "@/lib/authz"
+import { syncOrganizationElectionStatuses } from "@/lib/elections/status-sync"
 import ElectionHero from "./_components/electionHero"
 import { CreateElectionTrigger } from "./_components/create-election-trigger"
 import { ElectionsList } from "./_components/ElectionsList"
@@ -14,7 +13,13 @@ export default async function OrganizationElectionsPage() {
   const session = await auth()
   const access = await requireOrgAdmin(session?.user)
 
-  let elections = await db.election.findMany({
+  await syncOrganizationElectionStatuses(access.organizationId, {
+    userId: access.userId,
+    organizationId: access.organizationId,
+    reason: "Elections page load",
+  })
+
+  const elections = await db.election.findMany({
     where: { organizationId: access.organizationId },
     orderBy: { createdAt: "desc" },
     include: {
@@ -26,62 +31,6 @@ export default async function OrganizationElectionsPage() {
       },
     },
   })
-
-  // Lazy sync status with time
-  const staleElections = elections.filter((e) => {
-    const calculated = getCalculatedElectionStatus(e.startTime, e.endTime)
-    
-    // 1. If time indicates it's COMPLETED, it MUST be updated to COMPLETED regardless of current state.
-    if (calculated === "COMPLETED" && e.status !== "COMPLETED") return true
-    
-    // 2. If it's manually PAUSED and time indicates it should be ACTIVE, keep it PAUSED.
-    if (e.status === "PAUSED" && calculated === "ACTIVE") return false
-    
-    // 3. Otherwise, if the status doesn't match the time-based calculated status, it's stale.
-    return e.status !== calculated
-  })
-
-  if (staleElections.length > 0) {
-    await db.$transaction(async (tx) => {
-      for (const e of staleElections) {
-        const newStatus = getCalculatedElectionStatus(e.startTime, e.endTime)
-        await tx.election.update({
-          where: { id: e.id },
-          data: { status: newStatus },
-        })
-
-        await tx.adminAuditLog.create({
-          data: {
-            action: "ELECTION_STATUS_SYNC",
-            entityType: AuditEntityType.ELECTION,
-            entityId: e.id,
-            adminId: access.userId,
-            organizationId: access.organizationId,
-            status: AuditStatus.SUCCESS,
-            metadata: { 
-              oldStatus: e.status, 
-              newStatus, 
-              reason: "Automatic time-based synchronization" 
-            },
-          }
-        })
-      }
-    })
-
-    // Refetch to get updated data
-    elections = await db.election.findMany({
-      where: { organizationId: access.organizationId },
-      orderBy: { createdAt: "desc" },
-      include: {
-        createdBy: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-        updatedBy: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-    })
-  }
 
   return (
     <div className="flex flex-col w-full min-h-full">

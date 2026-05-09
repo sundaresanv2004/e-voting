@@ -9,7 +9,6 @@ import { TeamSnapshot } from "./_components/TeamSnapshot"
 import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
 import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
-import { AutoRefresh } from "@/components/auto-refresh"
 import { requireOrgAdmin } from "@/lib/authz"
 
 export default async function OrganizationDashboardPage() {
@@ -30,13 +29,26 @@ export default async function OrganizationDashboardPage() {
     pendingSystems,
     rejectedSystems,
     revokedSystems,
+    suspendedSystems,
+    expiredSystems,
     latestElections,
     latestAuditLogs,
+    lockedUserCount,
+    upcomingElections,
+    userRoleCount,
   ] = await Promise.all([
 
     db.organization.findUnique({
       where: { id: orgId },
-      select: { name: true }
+      select: {
+        name: true,
+        logo: true,           // L6: display org logo in header
+        settings: {
+          select: {
+            allowSystemConnection: true  // L2: gate "Authorize Device" button
+          }
+        }
+      }
     }),
     db.election.count({ where: { organizationId: orgId } }),
     db.election.count({
@@ -60,6 +72,12 @@ export default async function OrganizationDashboardPage() {
     }),
     db.authorizedSystem.count({
       where: { organizationId: orgId, status: SystemStatus.REVOKED }
+    }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.SUSPENDED }
+    }),
+    db.authorizedSystem.count({
+      where: { organizationId: orgId, status: SystemStatus.EXPIRED }
     }),
     // Elections with counts for the overview widget
     db.election.findMany({
@@ -85,12 +103,32 @@ export default async function OrganizationDashboardPage() {
               select: { candidates: true }
             }
           }
+        },
+        settings: {
+          select: {
+            allowNota: true,
+            allowMultipleVotes: true,
+          }
         }
       }
     }),
     // Latest Activity Pulse from Audit Logs
     db.adminAuditLog.findMany({
-      where: { organizationId: orgId },
+      where: {
+        organizationId: orgId,
+        entityType: {
+          in: [
+            AuditEntityType.ORGANIZATION,
+            AuditEntityType.USER,
+            AuditEntityType.SYSTEM,
+            AuditEntityType.SETTINGS,
+            AuditEntityType.AUTH,
+            AuditEntityType.SECURITY,
+            AuditEntityType.MEMBER,
+            AuditEntityType.ACCESS,
+          ],
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: {
@@ -98,6 +136,23 @@ export default async function OrganizationDashboardPage() {
           select: { name: true, email: true }
         }
       }
+    }),
+    db.user.count({
+      where: {
+        organizationId: orgId,
+        lockedUntil: { gt: new Date() }
+      }
+    }),
+    // M7: Count upcoming elections for display
+    db.election.count({
+      where: {
+        organizationId: orgId,
+        status: ElectionStatus.UPCOMING
+      }
+    }),
+    // L5: Count USER-role members (base role — may not have been assigned a proper role yet)
+    db.user.count({
+      where: { organizationId: orgId, role: UserRole.USER }
     }),
   ])
 
@@ -108,31 +163,89 @@ export default async function OrganizationDashboardPage() {
 
   // Construct Activity Feed from Audit Logs
   const activities: ActivityItem[] = latestAuditLogs.map(log => {
-    let type: "ELECTION" | "SYSTEM" | "MEMBER" = "ELECTION"
-    if (log.entityType === AuditEntityType.CANDIDATE || log.entityType === AuditEntityType.ELECTION_ROLE || log.entityType === AuditEntityType.ELECTION) {
+    let type: "ELECTION" | "SYSTEM" | "MEMBER" = "MEMBER"
+    if (log.entityType === AuditEntityType.CANDIDATE || log.entityType === AuditEntityType.ELECTION_ROLE || log.entityType === AuditEntityType.ELECTION || log.entityType === AuditEntityType.VOTER || log.entityType === AuditEntityType.BALLOT || log.entityType === AuditEntityType.RESULT) {
       type = "ELECTION"
     } else if (log.entityType === AuditEntityType.SYSTEM) {
       type = "SYSTEM"
-    } else if (log.entityType === AuditEntityType.USER || log.entityType === AuditEntityType.MEMBER || log.entityType === AuditEntityType.ACCESS) {
+    } else if (log.entityType === AuditEntityType.USER || log.entityType === AuditEntityType.MEMBER || log.entityType === AuditEntityType.ACCESS || log.entityType === AuditEntityType.AUTH || log.entityType === AuditEntityType.SECURITY) {
       type = "MEMBER"
     }
 
-    // Determine Title & Description based on action
+    // H3 FIX: Always preserve actor identity — never discard adminName from any event.
     const adminName = log.admin?.name || log.admin?.email || "Administrator"
     let title = log.description || log.action.replace(/_/g, " ")
-    let description = `Actioned by ${adminName}`
+    let description = `By ${adminName}`
 
-    // Custom formatting for common actions
-    if (log.action === "ELECTION_CREATED") {
-      title = (log.metadata as any)?.name || "New Election"
-      description = "Election initialization complete"
-    } else if (log.action === "MEMBER_ADDED") {
-      title = log.admin?.name || log.admin?.email || "New Member"
-      description = `Joined as ${(log.metadata as any)?.role || "Member"}`
-    } else if (log.action === "MEMBER_UPDATED") {
-      description = `Role updated to ${(log.metadata as any)?.after?.role || "Member"}`
-    } else if (log.action === "SYSTEM_APPROVED") {
-      description = "Hardware security clearance granted"
+    // Map well-known actions to readable titles and descriptions (actor always appended)
+    switch (log.action) {
+      case "ELECTION_CREATED":
+        title = (log.metadata as any)?.name || "New Election Created"
+        description = `Created by ${adminName}`
+        break
+      case "ELECTION_DELETED":
+        title = (log.metadata as any)?.name || "Election Deleted"
+        description = `Deleted by ${adminName}`
+        break
+      case "ELECTION_STATUS_CHANGED":
+        title = `Status → ${(log.metadata as any)?.newStatus || "Updated"}`
+        description = `Changed by ${adminName}`
+        break
+      case "ELECTION_UPDATED":
+      case "SETTINGS_UPDATED":
+        title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}" Updated` : "Settings Updated"
+        description = `Updated by ${adminName}`
+        break
+      case "MEMBER_ADDED":
+        title = (log.metadata as any)?.memberName || (log.metadata as any)?.email || "New Member Added"
+        description = `Added as ${(log.metadata as any)?.role || "Member"} by ${adminName}`
+        break
+      case "MEMBER_UPDATED":
+        title = (log.metadata as any)?.memberName || "Member Role Updated"
+        description = `Role → ${(log.metadata as any)?.after?.role || "Updated"} by ${adminName}`
+        break
+      case "MEMBER_LEFT":
+      case "MEMBER_REMOVED":
+        title = "Member Left Organization"
+        description = `Removed by ${adminName}`
+        break
+      case "SYSTEM_APPROVED":
+        title = (log.metadata as any)?.name || "Device Approved"
+        description = `Cleared by ${adminName}`
+        break
+      case "SYSTEM_REVOKED":
+      case "SYSTEM_REJECTED":
+        title = (log.metadata as any)?.name || "Device Access Changed"
+        description = `By ${adminName}`
+        break
+      case "VOTER_ADDED":
+        title = `${(log.metadata as any)?.count || 1} Voter(s) Added`
+        description = `Added by ${adminName}`
+        break
+      case "VOTER_DELETED":
+        title = "Voter Deleted"
+        description = `Removed by ${adminName}`
+        break
+      case "CANDIDATE_ADDED":
+        title = (log.metadata as any)?.name || "Candidate Added"
+        description = `Added by ${adminName}`
+        break
+      case "CANDIDATE_DELETED":
+        title = "Candidate Removed"
+        description = `By ${adminName}`
+        break
+      case "ORGANIZATION_CREATED":
+        title = (log.metadata as any)?.name || "Organization Created"
+        description = `Created by ${adminName}`
+        break
+      case "RESULTS_GENERATED":
+      case "RESULTS_PUBLISHED":
+        title = "Election Results Published"
+        description = `Published by ${adminName}`
+        break
+      default:
+        // Keep the generic formatted title but always include actor
+        description = `By ${adminName}`
     }
 
     return {
@@ -145,28 +258,47 @@ export default async function OrganizationDashboardPage() {
     }
   })
 
-  // Format elections for overview
-  const electionsForOverview: ElectionSummary[] = latestElections.map(e => ({
-    id: e.id,
-    name: e.name,
-    status: e.status,
-    startTime: e.startTime,
-    endTime: e.endTime,
-    _count: {
-      roles: e._count.roles,
-      candidates: e.roles.reduce((acc, role) => acc + role._count.candidates, 0),
-    },
-  }))
+  // M2: Sort elections by urgency — ACTIVE first, then UPCOMING, PAUSED, COMPLETED, CANCELLED
+  const statusPriority: Record<string, number> = {
+    ACTIVE: 0,
+    UPCOMING: 1,
+    PAUSED: 2,
+    COMPLETED: 3,
+    CANCELLED: 4,
+  }
 
+  // Format elections for overview (M2 sorted)
+  const electionsForOverview: ElectionSummary[] = latestElections
+    .map(e => ({
+      id: e.id,
+      name: e.name,
+      status: e.status,
+      startTime: e.startTime,
+      endTime: e.endTime,
+      _count: {
+        roles: e._count.roles,
+        candidates: e.roles.reduce((acc, role) => acc + role._count.candidates, 0),
+      },
+      allowNota: e.settings?.allowNota || false,
+      allowMultipleVotes: e.settings?.allowMultipleVotes || false,
+    }))
+    .sort((a, b) => {
+      const pa = statusPriority[a.status] ?? 5
+      const pb = statusPriority[b.status] ?? 5
+      if (pa !== pb) return pa - pb
+      return new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    })
 
-  const totalSystems = approvedSystems + pendingSystems + rejectedSystems + revokedSystems
+  const totalSystems = approvedSystems + pendingSystems + rejectedSystems + revokedSystems + suspendedSystems + expiredSystems
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
-      <AutoRefresh intervalMs={25000} />
       {/* Header */}
       <DashboardHeader
         orgName={organization.name}
+        orgLogo={organization.logo ?? null}
+        userRole={access.role}
+        allowSystemConnection={organization.settings?.allowSystemConnection ?? false}
       />
 
       {/* Main Content */}
@@ -175,9 +307,11 @@ export default async function OrganizationDashboardPage() {
         <MetricCards
           totalElections={totalElections}
           activeElections={activeElections}
+          upcomingElections={upcomingElections}
           totalMembers={totalMembers}
           approvedSystems={approvedSystems}
           pendingSystems={pendingSystems}
+          lockedUserCount={lockedUserCount}
         />
 
         {/* Two-Column Layout */}
@@ -195,12 +329,16 @@ export default async function OrganizationDashboardPage() {
               pending={pendingSystems}
               rejected={rejectedSystems}
               revoked={revokedSystems}
+              suspended={suspendedSystems}
+              expired={expiredSystems}
             />
             <TeamSnapshot
               adminCount={adminCount}
               staffCount={staffCount}
               viewerCount={viewerCount}
+              userRoleCount={userRoleCount}
               totalMembers={totalMembers}
+              lockedUserCount={lockedUserCount}
             />
             <QuickNavigate
               electionCount={totalElections}

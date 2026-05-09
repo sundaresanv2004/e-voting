@@ -8,6 +8,14 @@ import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { CandidateSchema, type CandidateFormValues } from "@/lib/schemas/candidate"
 import { requireElectionAccess } from "@/lib/authz"
 
+async function electionHasBallots(electionId: string) {
+  const ballotCount = await db.ballot.count({
+    where: { electionId },
+  })
+
+  return ballotCount > 0
+}
+
 export async function createCandidate(electionId: string, values: CandidateFormValues) {
   const session = await auth()
   try {
@@ -38,6 +46,13 @@ export async function createCandidate(electionId: string, values: CandidateFormV
       }
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
+
+    if (await electionHasBallots(electionId)) {
+      return {
+        success: false,
+        error: "Candidates cannot be added after ballots have been recorded for this election.",
+      }
+    }
 
     const candidate = await db.$transaction(async (tx) => {
       const candidate = await tx.candidate.create({
@@ -112,6 +127,13 @@ export async function updateCandidate(candidateId: string, electionId: string, v
     })
     if (!role) return { success: false, error: "Invalid election role specified" }
 
+    if (await electionHasBallots(electionId)) {
+      return {
+        success: false,
+        error: "Candidates cannot be changed after ballots have been recorded for this election.",
+      }
+    }
+
     const updatedCandidate = await db.$transaction(async (tx) => {
       const oldCandidate = await tx.candidate.findUnique({
         where: { id: candidateId },
@@ -176,6 +198,13 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
     })
 
     if (!candidate) return { success: false, error: "Candidate not found" }
+
+    if (await electionHasBallots(electionId)) {
+      return {
+        success: false,
+        error: "Candidates cannot be deleted after ballots have been recorded for this election.",
+      }
+    }
 
     await db.$transaction(async (tx) => {
       const candidateData = await tx.candidate.findUnique({

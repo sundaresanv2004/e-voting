@@ -6,13 +6,8 @@ import { SystemStatus, AuditEntityType, AuditStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { addDays } from "date-fns"
 import { sendSystemApprovedEmail, sendSystemExpiredEmail } from "@/lib/mail"
-import { createHash, randomBytes } from "crypto"
 import { requireOrgAdmin } from "@/lib/authz"
-
-function generateTerminalSessionHash() {
-  const rawToken = randomBytes(32).toString("hex")
-  return createHash("sha256").update(rawToken).digest("hex")
-}
+import { generateSystemSecretHash } from "@/lib/security/system-tokens"
 
 export async function updateSystemStatusAction(
   systemId: string,
@@ -39,12 +34,11 @@ export async function updateSystemStatusAction(
 
       let secretGenerated = false
       if (status === SystemStatus.APPROVED) {
+        const { tokenHash } = await generateSystemSecretHash()
+
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
-
-        // Mark approval with a fresh hashed session seed. The desktop terminal
-        // exchanges its private claim token for the real session token later.
-        updateData.secretTokenHash = generateTerminalSessionHash()
+        updateData.secretTokenHash = tokenHash
         secretGenerated = true
         updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) {
@@ -200,9 +194,11 @@ export async function editSystemAction(
 
       // Handle token changes when status changes
       if (status === SystemStatus.APPROVED && oldSystemSnapshot.status !== SystemStatus.APPROVED) {
+        const { tokenHash } = await generateSystemSecretHash()
+
         updateData.approvedByUserId = userId
         updateData.approvedAt = new Date()
-        updateData.secretTokenHash = generateTerminalSessionHash()
+        updateData.secretTokenHash = tokenHash
         updateData.tokenExpiresAt = addDays(new Date(), 15)
       } else if (
         (status === SystemStatus.REVOKED || status === SystemStatus.REJECTED || status === SystemStatus.SUSPENDED) &&

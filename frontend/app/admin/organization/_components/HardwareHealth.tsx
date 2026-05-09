@@ -12,17 +12,21 @@ interface HardwareHealthProps {
   pending: number
   rejected: number
   revoked: number
+  suspended: number
+  expired: number
 }
 
-export function HardwareHealth({ approved, pending, rejected, revoked }: HardwareHealthProps) {
+export function HardwareHealth({ approved, pending, rejected, revoked, suspended, expired }: HardwareHealthProps) {
   const router = useRouter()
-  const total = approved + pending + rejected + revoked
+  const total = approved + pending + rejected + revoked + suspended + expired
 
   const segments = [
-    { label: "Approved", count: approved, barClass: "bg-emerald-500", dotClass: "bg-emerald-500" },
-    { label: "Pending", count: pending, barClass: "bg-amber-500", dotClass: "bg-amber-500" },
-    { label: "Rejected", count: rejected, barClass: "bg-red-500", dotClass: "bg-red-500" },
-    { label: "Revoked", count: revoked, barClass: "bg-zinc-400 dark:bg-zinc-500", dotClass: "bg-zinc-400 dark:bg-zinc-500" },
+    { label: "Approved", count: approved, barClass: "bg-emerald-500", dotClass: "bg-emerald-500", warn: false },
+    { label: "Pending", count: pending, barClass: "bg-amber-500", dotClass: "bg-amber-500", warn: pending > 0 },
+    { label: "Rejected", count: rejected, barClass: "bg-red-500", dotClass: "bg-red-500", warn: rejected > 0 },
+    { label: "Revoked", count: revoked, barClass: "bg-zinc-400 dark:bg-zinc-500", dotClass: "bg-zinc-400 dark:bg-zinc-500", warn: false },
+    { label: "Suspended", count: suspended, barClass: "bg-purple-500", dotClass: "bg-purple-500", warn: suspended > 0 },
+    { label: "Expired", count: expired, barClass: "bg-orange-500", dotClass: "bg-orange-500", warn: expired > 0 },
   ]
 
   return (
@@ -71,15 +75,15 @@ export function HardwareHealth({ approved, pending, rejected, revoked }: Hardwar
               })}
             </div>
 
-            {/* Legend */}
+            {/* Legend — only show segments with count > 0 or Approved always */}
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-              {segments.map((seg) => (
+              {segments.filter(seg => seg.count > 0 || seg.label === "Approved").map((seg) => (
                 <div key={seg.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${seg.dotClass}`} />
-                    <span className="text-xs text-muted-foreground">{seg.label}</span>
+                    <span className={`text-xs ${seg.warn ? "text-destructive font-bold" : "text-muted-foreground"}`}>{seg.label}</span>
                   </div>
-                  <span className="text-xs font-medium tabular-nums">{seg.count}</span>
+                  <span className={`text-xs font-medium tabular-nums ${seg.warn ? "text-destructive" : ""}`}>{seg.count}</span>
                 </div>
               ))}
             </div>

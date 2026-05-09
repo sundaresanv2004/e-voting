@@ -11,16 +11,27 @@ interface TeamSnapshotProps {
   adminCount: number
   staffCount: number
   viewerCount: number
+  userRoleCount: number     // L5: base-role members (unassigned) — should not inflate total silently
   totalMembers: number
+  lockedUserCount: number
 }
 
-export function TeamSnapshot({ adminCount, staffCount, viewerCount, totalMembers }: TeamSnapshotProps) {
+export function TeamSnapshot({ 
+  adminCount, 
+  staffCount, 
+  viewerCount, 
+  userRoleCount, 
+  totalMembers, 
+  lockedUserCount,
+}: TeamSnapshotProps) {
   const router = useRouter()
 
   const roles = [
     { label: "Admins", count: adminCount, barClass: "bg-indigo-500", dotClass: "bg-indigo-500" },
     { label: "Staff", count: staffCount, barClass: "bg-sky-500", dotClass: "bg-sky-500" },
     { label: "Viewers", count: viewerCount, barClass: "bg-slate-400 dark:bg-slate-500", dotClass: "bg-slate-400 dark:bg-slate-500" },
+    // L5: Show unassigned (USER role) members so admins know who hasn't been properly onboarded
+    ...(userRoleCount > 0 ? [{ label: "Unassigned", count: userRoleCount, barClass: "bg-amber-400", dotClass: "bg-amber-400" }] : []),
   ]
 
   return (
@@ -75,6 +86,24 @@ export function TeamSnapshot({ adminCount, staffCount, viewerCount, totalMembers
                 </div>
               )
             })}
+            
+            {lockedUserCount > 0 && (
+              <div className="pt-2">
+                <button
+                  onClick={() => router.push("/admin/organization/members")}
+                  className="w-full flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/20 hover:bg-destructive/10 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                    <span className="text-[10px] font-black uppercase text-destructive tracking-tight">Security Alert</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-black text-destructive">{lockedUserCount} {lockedUserCount === 1 ? "Account" : "Accounts"} Locked</span>
+                    <span className="text-[9px] text-destructive/60 group-hover:text-destructive transition-colors">→ Review</span>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

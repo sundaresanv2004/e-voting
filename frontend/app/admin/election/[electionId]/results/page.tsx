@@ -5,6 +5,7 @@ import ResultsHero from "./_components/ResultsHero"
 import { ResultsDashboard } from "./_components/ResultsDashboard"
 import { LiveToggle } from "./_components/LiveToggle"
 import { ResultsExport } from "./_components/ResultsExport"
+import { ResultsStateBanner } from "./_components/ResultsStateBanner"
 import { requireElectionAccess } from "@/lib/authz"
 import { UserRole } from "@prisma/client"
 
@@ -33,6 +34,12 @@ export default async function ResultsPage({
       status: true,
       startTime: true,
       endTime: true,
+      result: {
+        select: {
+          isFinalized: true,
+          finalizedAt: true,
+        }
+      },
       _count: {
         select: {
           ballots: true,
@@ -155,6 +162,14 @@ export default async function ResultsPage({
       />
 
       <div className="flex-1 py-8 px-4 md:px-8 w-full">
+        <div className="mb-6">
+          <ResultsStateBanner
+            status={election.status}
+            isFinalized={election.result?.isFinalized ?? false}
+            finalizedAt={election.result?.finalizedAt ?? null}
+            ballotsCast={totalBallots}
+          />
+        </div>
         <ResultsDashboard
           electionName={election.name}
           electionStatus={election.status}

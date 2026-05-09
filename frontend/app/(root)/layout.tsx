@@ -2,8 +2,6 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import SetTheme from "@/components/shared/setTheme";
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Layout01Icon, Logout01Icon, UserIcon } from '@hugeicons/core-free-icons';
 
 import { auth } from "@/auth";
 import { RootNavActions } from "./_components/nav-actions";

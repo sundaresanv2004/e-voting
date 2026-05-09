@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { format } from "date-fns"
 import { VoterIdSchema } from "@/lib/schemas/vote"
+import { syncElectionStatus } from "@/lib/elections/status-sync"
 import { 
     enforceRateLimit, 
     getClientIp, 
@@ -12,12 +13,10 @@ import {
 
 export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: string) {
     try {
-        const voter = await db.voter.findUnique({
+        const voter = await db.voter.findFirst({
             where: {
-                electionId_uniqueId: {
-                    electionId,
-                    uniqueId: uniqueId.trim()
-                }
+                electionId,
+                uniqueId: uniqueId.trim()
             },
             include: {
                 ballots: true,
@@ -43,7 +42,7 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
             return { error: "We couldn't find this Voter ID. Please double-check and try again." }
         }
 
-        // --- Live Status Check ---
+        // --- Current Status Check ---
         if (voter.election.status !== "ACTIVE") {
             if (voter.election.status === "PAUSED") {
                 return { 
@@ -111,31 +110,13 @@ export async function validateElectionCodeAction(code: string) {
             return { error: "Election not found. Please check your code and try again." }
         }
 
-        // --- Lazy Status Sync ---
-        const now = new Date()
-        let calculatedStatus = election.status
-        
-        if (election.startTime && now < election.startTime) {
-            calculatedStatus = "UPCOMING"
-        } else if (election.endTime && now > election.endTime) {
-            calculatedStatus = "COMPLETED"
-        } else if (election.startTime && election.endTime && now >= election.startTime && now <= election.endTime) {
-            // Only auto-activate if it was UPCOMING or it's currently PAUSED but technically should be ACTIVE
-            // Wait, if it's PAUSED, we usually leave it PAUSED.
-            if (election.status === "UPCOMING") {
-                calculatedStatus = "ACTIVE"
-            }
+        const syncedElection = await syncElectionStatus(election.id, {
+            organizationId: election.organizationId,
+            reason: "Online vote code validation",
+        })
+        if (syncedElection) {
+            election.status = syncedElection.status
         }
-
-        // If stale, update DB
-        if (calculatedStatus !== election.status) {
-            await db.election.update({
-                where: { id: election.id },
-                data: { status: calculatedStatus }
-            })
-            election.status = calculatedStatus
-        }
-        // -------------------------
 
         // 1. Check if online voting is allowed
         if (!election.settings?.allowOnlineVoting) {

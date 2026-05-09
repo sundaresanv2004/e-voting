@@ -26,6 +26,8 @@ export interface ElectionSummary {
     candidates: number
     roles: number
   }
+  allowNota: boolean
+  allowMultipleVotes: boolean
 }
 
 interface ElectionsOverviewProps {
@@ -37,6 +39,8 @@ const statusStyles: Record<string, string> = {
   UPCOMING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   COMPLETED: "bg-gray-500/10 text-gray-600 border-gray-500/20",
   PAUSED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  // M5: CANCELLED was missing — elections would incorrectly show as UPCOMING (blue)
+  CANCELLED: "bg-red-500/10 text-red-500 border-red-500/20",
 }
 
 
@@ -82,18 +86,20 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
           <div className="divide-y divide-border/40">
             {elections.map((election) => {
               const style = statusStyles[election.status] || statusStyles.UPCOMING
+              const isCancelled = election.status === "CANCELLED"
               return (
                 <button
                   key={election.id}
                   onClick={() => router.push(`/admin/election/${election.id}`)}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-muted/40 transition-all cursor-pointer text-left group relative"
+                  className={`w-full flex items-center gap-4 p-4 hover:bg-muted/40 transition-all cursor-pointer text-left group relative ${isCancelled ? "opacity-50 hover:opacity-70" : ""}`}
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary group-hover:bg-primary/10 group-hover:text-primary transition-colors ring-1 ring-border/50 shadow-sm transition-transform duration-300 group-hover:scale-105">
                     <HugeiconsIcon icon={MapsIcon} className="h-4 w-4" strokeWidth={2} />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2.5">
-                      <p className="text-sm font-black leading-none truncate tracking-tight text-foreground group-hover:text-primary transition-colors">{election.name}</p>
+                      {/* L3: Strike through name for cancelled elections */}
+                      <p className={`text-sm font-black leading-none truncate tracking-tight text-foreground group-hover:text-primary transition-colors ${isCancelled ? "line-through" : ""}`}>{election.name}</p>
                       <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0 border-none rounded-full ${style}`}>
                         {election.status}
                       </Badge>
@@ -107,6 +113,16 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
                         <HugeiconsIcon icon={ShieldKeyIcon} className="h-2.5 w-2.5" />
                         {election._count.roles} Pos.
                       </span>
+                      {election.allowNota && (
+                        <span className="flex items-center gap-1 bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded-full ring-1 ring-amber-500/20">
+                          NOTA
+                        </span>
+                      )}
+                      {election.allowMultipleVotes && (
+                        <span className="flex items-center gap-1 bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-full ring-1 ring-indigo-500/20">
+                          Multi-Vote
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="shrink-0 h-7 w-7 rounded-full border border-border/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all shadow-sm">

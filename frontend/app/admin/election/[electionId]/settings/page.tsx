@@ -7,10 +7,9 @@ import { Suspense } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { LockKeyIcon } from "@hugeicons/core-free-icons"
-import { getCalculatedElectionStatus } from "@/lib/utils/election"
-import { db } from "@/lib/db"
-import { AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
+import { UserRole } from "@prisma/client"
 import { requireElectionAccess } from "@/lib/authz"
+import { syncElectionStatus } from "@/lib/elections/status-sync"
 
 export default async function ElectionSettingsPage({
   params
@@ -34,37 +33,11 @@ export default async function ElectionSettingsPage({
 
   const isViewer = access.role === UserRole.VIEWER
 
-  // Lazy sync status with time
-  const calculated = getCalculatedElectionStatus(election.startTime, election.endTime)
-  let isStale = false
-  if (calculated === "COMPLETED" && election.status !== "COMPLETED") isStale = true
-  else if (election.status === "PAUSED" && calculated === "ACTIVE") isStale = false
-  else isStale = election.status !== calculated
-
-  if (isStale && !isViewer && election) { // Make sure viewers don't trigger database writes if possible, or trigger anyway. It's safe since it's server-side.
-    const currentElectionId = election.id
-    const currentElectionStatus = election.status
-    
-    await db.$transaction(async (tx) => {
-      await tx.election.update({
-        where: { id: currentElectionId },
-        data: { status: calculated },
-      })
-      await tx.adminAuditLog.create({
-        data: {
-          action: "ELECTION_STATUS_SYNC",
-          entityType: AuditEntityType.ELECTION,
-          entityId: currentElectionId,
-          adminId: access.userId,
-          organizationId: access.organizationId,
-          status: AuditStatus.SUCCESS,
-          metadata: { 
-            oldStatus: currentElectionStatus, 
-            newStatus: calculated, 
-            reason: "Automatic time-based synchronization (Settings Page Load)" 
-          },
-        }
-      })
+  if (!isViewer) {
+    await syncElectionStatus(electionId, {
+      userId: access.userId,
+      organizationId: access.organizationId,
+      reason: "Election settings page load",
     })
     election = await getElectionData(electionId)
   }

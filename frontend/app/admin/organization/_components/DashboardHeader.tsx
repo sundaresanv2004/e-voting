@@ -1,6 +1,7 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
+import Image from "next/image"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   PlusSignIcon,
@@ -14,17 +15,31 @@ import { useRouter } from "next/navigation"
 
 interface DashboardHeaderProps {
   orgName: string
+  orgLogo: string | null      // L6: organisation logo from DB
+  userRole: string
+  allowSystemConnection: boolean  // L2: gate "Authorize Device"
 }
 
-export function DashboardHeader({ orgName }: DashboardHeaderProps) {
+export function DashboardHeader({ orgName, orgLogo, userRole, allowSystemConnection }: DashboardHeaderProps) {
   const router = useRouter()
+  const isOrgAdmin = userRole === "ORG_ADMIN"
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // M3: No hardcoded locale — use the visitor's own browser locale & timezone
+  // Fixed Hydration Error: Only compute and render the date on the client
+  const currentDate = mounted
+    ? new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : ""
 
   return (
     <div className="relative overflow-hidden bg-background/50 border-b lg:backdrop-blur-xl">
@@ -37,10 +52,21 @@ export function DashboardHeader({ orgName }: DashboardHeaderProps) {
 
       <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full max-w-[1400px] mx-auto">
         <div className="flex items-center gap-5">
+          {/* L6: Show org logo if available, fall back to building icon */}
           <div className="relative group">
             <div className="absolute -inset-1 rounded-[18px] bg-gradient-to-tr from-primary/40 to-blue-500/40 opacity-20 blur-sm group-hover:opacity-40 transition-opacity" />
-            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-card text-primary shadow-sm ring-1 ring-border/50 transition-transform group-hover:rotate-3 duration-300">
-              <HugeiconsIcon icon={Building06Icon} className="h-7 w-7 relative z-10" color="currentColor" />
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-card text-primary shadow-sm ring-1 ring-border/50 overflow-hidden transition-transform group-hover:rotate-3 duration-300">
+              {orgLogo ? (
+                <Image
+                  src={orgLogo}
+                  alt={`${orgName} logo`}
+                  fill
+                  className="object-cover"
+                  sizes="56px"
+                />
+              ) : (
+                <HugeiconsIcon icon={Building06Icon} className="h-7 w-7 relative z-10" color="currentColor" />
+              )}
             </div>
             <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center">
               <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
@@ -57,34 +83,41 @@ export function DashboardHeader({ orgName }: DashboardHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => router.push("/admin/organization/elections?new=true")}
-            className="gap-2 shadow-lg shadow-primary/10 active:scale-[0.98] transition-all"
-          >
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              className="h-4 w-4"
-              strokeWidth={2.5}
-            />
-            <span>Create Election</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 bg-background/50 backdrop-blur-sm active:scale-[0.98] transition-all"
-            onClick={() => router.push("/admin/organization/members")}
-          >
-            <HugeiconsIcon icon={UserAdd01Icon} className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Member</span>
-            <span className="sm:hidden text-xs">Member</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/admin/organization/systems")}
-            className="hidden lg:inline-flex gap-2 bg-background/50 backdrop-blur-sm active:scale-[0.98] transition-all"
-          >
-            <HugeiconsIcon icon={LaptopIcon} className="h-4 w-4" />
-            <span>Authorize Device</span>
-          </Button>
+          {isOrgAdmin && (
+            <>
+              <Button
+                onClick={() => router.push("/admin/organization/elections?new=true")}
+                className="gap-2 shadow-lg shadow-primary/10 active:scale-[0.98] transition-all"
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  className="h-4 w-4"
+                  strokeWidth={2.5}
+                />
+                <span>Create Election</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 bg-background/50 backdrop-blur-sm active:scale-[0.98] transition-all"
+                onClick={() => router.push("/admin/organization/members")}
+              >
+                <HugeiconsIcon icon={UserAdd01Icon} className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Member</span>
+                <span className="sm:hidden text-xs">Member</span>
+              </Button>
+              {/* L2: Only show "Authorize Device" if the org has system connections enabled */}
+              {allowSystemConnection && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/admin/organization/systems")}
+                  className="hidden lg:inline-flex gap-2 bg-background/50 backdrop-blur-sm active:scale-[0.98] transition-all"
+                >
+                  <HugeiconsIcon icon={LaptopIcon} className="h-4 w-4" />
+                  <span>Authorize Device</span>
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

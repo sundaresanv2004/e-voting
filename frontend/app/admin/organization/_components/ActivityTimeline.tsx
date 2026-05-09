@@ -11,6 +11,9 @@ import {
 } from "@hugeicons/core-free-icons"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
 export interface ActivityItem {
   id: string
@@ -54,18 +57,29 @@ const statusBadgeStyles: Record<string, string> = {
 
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
+  const router = useRouter()
   return (
     <Card className="border-border/50 overflow-hidden py-0 gap-0">
       <CardHeader className="flex flex-row items-center justify-between border-b pt-6">
         <div className="space-y-1">
           <CardTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
             <HugeiconsIcon icon={Archive01Icon} className="h-5 w-5 text-indigo-500" />
-            Operational Pulse
+            Organization Activity
           </CardTitle>
           <CardDescription className="text-xs font-medium">
-            Real-time feed of organizational events
+            Recent member, system, and security events
           </CardDescription>
         </div>
+        {/* M4: Link to full audit log page */}
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-7 text-[10px] uppercase font-black tracking-wider px-2 gap-1"
+          onClick={() => router.push("/admin/organization/audit")}
+        >
+          View All
+          <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         {activities.length === 0 ? (

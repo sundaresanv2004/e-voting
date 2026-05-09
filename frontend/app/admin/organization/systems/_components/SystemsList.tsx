@@ -38,7 +38,7 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
     setSystems(initialSystems)
   }, [initialSystems])
 
-  // Real-time Polling: Refresh every 10 seconds
+  // Refresh periodically so newly registered terminals appear without a manual reload.
   React.useEffect(() => {
     const interval = setInterval(() => {
       router.refresh()

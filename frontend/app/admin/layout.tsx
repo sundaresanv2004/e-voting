@@ -15,41 +15,57 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  const user = session?.user
 
-  if (!user) {
+  if (!session?.user?.id) {
     redirect("/auth/login")
   }
 
-  if (!user.organizationId) {
+  // H1 FIX: Always do a fresh DB lookup — never trust the JWT for role/org status.
+  // This prevents stale-session exploits where a revoked admin retains access until token expiry.
+  const freshUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      role: true,
+      organizationId: true,
+      isActive: true,
+      hasAllElectionsAccess: true,
+      organization: {
+        select: {
+          isActive: true,
+        },
+      },
+    },
+  })
+
+  if (!freshUser || !freshUser.isActive) {
+    redirect("/auth/error?error=AccessDenied")
+  }
+
+  if (!freshUser.organizationId) {
     redirect("/setup/organization")
   }
 
+  if (!freshUser.organization?.isActive) {
+    redirect("/auth/error?error=AccessDenied")
+  }
+
   let elections = []
-  
-  if (user.role === "ORG_ADMIN") {
+
+  if (freshUser.role === "ORG_ADMIN") {
     elections = await db.election.findMany({
-      where: {
-        organizationId: user.organizationId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { organizationId: freshUser.organizationId },
+      orderBy: { createdAt: "desc" },
     })
   } else {
-    const userRecord = await db.user.findUnique({
-      where: { id: user.id },
-      select: { hasAllElectionsAccess: true },
-    })
-
-    if (userRecord?.hasAllElectionsAccess) {
+    if (freshUser.hasAllElectionsAccess) {
       elections = await db.election.findMany({
-        where: { organizationId: user.organizationId },
+        where: { organizationId: freshUser.organizationId },
         orderBy: { createdAt: "desc" },
       })
     } else {
       const access = await db.userElectionAccess.findMany({
-        where: { userId: user.id },
+        where: { userId: freshUser.id },
         include: { election: true },
         orderBy: { createdAt: "desc" },
       })
@@ -57,7 +73,7 @@ export default async function AdminLayout({
     }
   }
 
-  // Format elections for the switcher (adding default logos/plans for now)
+  // Format elections for the switcher
   const formattedElections = elections.map((election) => ({
     id: election.id,
     name: election.name,
@@ -67,7 +83,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar elections={formattedElections} userRole={user.role} />
+      <AppSidebar elections={formattedElections} userRole={freshUser.role} />
       <SidebarInset>
         <AdminHeader />
         <div className="flex flex-1 flex-col">

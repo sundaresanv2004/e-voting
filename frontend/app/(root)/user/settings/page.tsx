@@ -37,7 +37,7 @@ export default function AccountSettingsPage() {
   const activeTabDetails = TABS.find((t) => t.id === currentTab) || TABS[0]
 
   return (
-    <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto py-8 px-4 md:px-8 relative">
+    <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto pt-20 pb-8 px-4 md:px-8 relative">
 
 
       <div className="mb-8">

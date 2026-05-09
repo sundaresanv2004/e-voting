@@ -325,6 +325,7 @@ model Candidate {
   votes     Vote[]
   results   CandidateResult[]
 
+  @@unique([electionRoleId, name])
   @@index([electionRoleId])
   @@index([createdByUserId])
 }
@@ -374,7 +375,7 @@ model AuthorizedSystem {
   macAddress       String?
   status           SystemStatus @default(PENDING)
   claimTokenHash   String?      // Store a hash of the terminal claim token used for polling and activation
-  secretTokenHash  String?      @unique // Store a hash (e.g., Argon2) of the secret, never the plain text
+  secretTokenHash  String?      @unique // Store a slow one-way hash of the secret, never the plain text
   tokenExpiresAt   DateTime?
   approvedByUserId String?
   approvedAt       DateTime?
@@ -457,9 +458,8 @@ model Voter {
   createdBy User @relation("VoterCreatedBy", fields: [createdByUserId], references: [id])
   updatedBy User @relation("VoterUpdatedBy", fields: [updatedByUserId], references: [id])
 
-  @@unique([electionId, uniqueId])
+  @@unique([uniqueId])
   @@index([electionId])
-  @@index([uniqueId])
   @@index([createdByUserId])
   @@index([updatedByUserId])
 }

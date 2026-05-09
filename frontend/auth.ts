@@ -333,9 +333,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         appToken.provider = account.provider
       }
 
-      // 1. Initial sign-in: Enrich token with Google verification status
-      if (account?.provider === "google") {
-        appToken.emailVerified = new Date()
+      // 1. Initial sign-in: Enrich token with Google verification status and sync to DB
+      if (account?.provider === "google" && appToken.sub) {
+        const now = new Date()
+        appToken.emailVerified = now
+        
+        // Sync to DB immediately to ensure server actions pass the emailVerified check
+        await db.user.update({
+          where: { id: appToken.sub },
+          data: { emailVerified: now }
+        }).catch(err => console.error("Failed to sync Google verification to DB:", err))
       }
 
       // Keep middleware/session data current while avoiding a full user sync when

@@ -6,6 +6,7 @@ type SessionLikeUser = {
   id?: string
   organizationId?: string | null
   role?: UserRole
+  provider?: string
 }
 
 type ActiveUserContext = {
@@ -16,6 +17,7 @@ type ActiveUserContext = {
   organizationId: string | null
   hasAllElectionsAccess: boolean
   emailVerified: Date | null
+  provider?: string
 }
 
 type OrganizationAdminContext = ActiveUserContext & {
@@ -49,11 +51,20 @@ export async function requireActiveUser(
       hasAllElectionsAccess: true,
       emailVerified: true,
       isActive: true,
+      organization: {
+        select: {
+          isActive: true,
+        },
+      },
     },
   })
 
   if (!user?.isActive) {
     throw new Error("Unauthorized")
+  }
+
+  if (user.organizationId && !user.organization?.isActive) {
+    throw new Error("Organization is inactive")
   }
 
   return {
@@ -64,6 +75,7 @@ export async function requireActiveUser(
     organizationId: user.organizationId,
     hasAllElectionsAccess: user.hasAllElectionsAccess,
     emailVerified: user.emailVerified,
+    provider: sessionUser?.provider,
   }
 }
 
@@ -72,7 +84,9 @@ export async function requireVerifiedSetupUser(
 ): Promise<ActiveUserContext> {
   const user = await requireActiveUser(sessionUser)
 
-  if (!user.emailVerified) {
+  const isOAuthVerified = user.provider === "google"
+  
+  if (!user.emailVerified && !isOAuthVerified) {
     throw new Error("Email verification required")
   }
 
@@ -138,10 +152,15 @@ export async function requireElectionAccess(
       organizationId: true,
       hasAllElectionsAccess: true,
       isActive: true,
+      organization: {
+        select: {
+          isActive: true,
+        },
+      },
     },
   })
 
-  if (!user?.isActive || !user.organizationId || user.organizationId !== organizationId) {
+  if (!user?.isActive || !user.organization?.isActive || !user.organizationId || user.organizationId !== organizationId) {
     throw new Error("Unauthorized")
   }
 

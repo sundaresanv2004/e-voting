@@ -3,10 +3,18 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { UserRole } from "@prisma/client"
+import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 
 import { RoleSchema, type RoleFormValues } from "@/lib/schemas/role"
 import { requireElectionAccess } from "@/lib/authz"
+
+async function electionHasBallots(electionId: string) {
+  const ballotCount = await db.ballot.count({
+    where: { electionId },
+  })
+
+  return ballotCount > 0
+}
 
 export async function createRole(electionId: string, data: RoleFormValues) {
   const session = await auth()
@@ -31,6 +39,10 @@ export async function createRole(electionId: string, data: RoleFormValues) {
       where: { id: electionId, organizationId: access.organizationId }
     })
     if (!election) throw new Error("Election not found")
+
+    if (await electionHasBallots(electionId)) {
+      throw new Error("Roles cannot be added after ballots have been recorded for this election.")
+    }
 
     // Check if order is already taken in this election
     const existingOrder = await db.electionRole.findFirst({
@@ -59,17 +71,33 @@ export async function createRole(electionId: string, data: RoleFormValues) {
       }
     }
 
-    const role = await db.electionRole.create({
-      data: {
-        electionId,
-        name,
-        order,
-        createdByUserId: access.userId,
-        updatedByUserId: access.userId,
-        allowedSystems: {
-          connect: finalSystemIds.map(id => ({ id }))
+    const role = await db.$transaction(async (tx) => {
+      const role = await tx.electionRole.create({
+        data: {
+          electionId,
+          name,
+          order,
+          createdByUserId: access.userId,
+          updatedByUserId: access.userId,
+          allowedSystems: {
+            connect: finalSystemIds.map(id => ({ id }))
+          }
         }
-      }
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "ROLE_CREATED",
+          entityType: AuditEntityType.ELECTION_ROLE,
+          entityId: role.id,
+          adminId: access.userId,
+          organizationId: access.organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { electionId, name, order, systemIds: finalSystemIds },
+        },
+      })
+
+      return role
     })
 
     revalidatePath(`/admin/election/${electionId}/roles`)
@@ -108,6 +136,10 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
     })
     if (!role) throw new Error("Role not found")
 
+    if (await electionHasBallots(electionId)) {
+      throw new Error("Roles cannot be changed after ballots have been recorded for this election.")
+    }
+
     // Check if order is taken by another role
     const existingOrder = await db.electionRole.findFirst({
       where: { 
@@ -136,16 +168,36 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
       }
     }
 
-    const updatedRole = await db.electionRole.update({
-      where: { id: roleId },
-      data: {
-        name,
-        order,
-        updatedByUserId: access.userId,
-        allowedSystems: {
-          set: finalSystemIds.map(id => ({ id }))
+    const updatedRole = await db.$transaction(async (tx) => {
+      const updatedRole = await tx.electionRole.update({
+        where: { id: roleId },
+        data: {
+          name,
+          order,
+          updatedByUserId: access.userId,
+          allowedSystems: {
+            set: finalSystemIds.map(id => ({ id }))
+          }
         }
-      }
+      })
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: "ROLE_UPDATED",
+          entityType: AuditEntityType.ELECTION_ROLE,
+          entityId: roleId,
+          adminId: access.userId,
+          organizationId: access.organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: {
+            electionId,
+            before: { name: role.name, order: role.order },
+            after: { name, order, systemIds: finalSystemIds },
+          },
+        },
+      })
+
+      return updatedRole
     })
 
     revalidatePath(`/admin/election/${electionId}/roles`)
@@ -170,12 +222,38 @@ export async function deleteRole(roleId: string, electionId: string) {
         id: roleId,
         electionId,
         election: { organizationId: access.organizationId }
-      }
+      },
+      include: {
+        _count: {
+          select: {
+            candidates: true,
+            votes: true,
+          },
+        },
+      },
     })
     if (!role) throw new Error("Role not found")
 
-    await db.electionRole.delete({
-      where: { id: roleId }
+    if (role._count.votes > 0 || await electionHasBallots(electionId)) {
+      throw new Error("This role cannot be deleted after voting has started because it would change recorded results.")
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.adminAuditLog.create({
+        data: {
+          action: "ROLE_DELETED",
+          entityType: AuditEntityType.ELECTION_ROLE,
+          entityId: roleId,
+          adminId: access.userId,
+          organizationId: access.organizationId,
+          status: AuditStatus.SUCCESS,
+          metadata: { electionId, name: role.name, order: role.order, candidateCount: role._count.candidates },
+        },
+      })
+
+      await tx.electionRole.delete({
+        where: { id: roleId }
+      })
     })
 
     revalidatePath(`/admin/election/${electionId}/roles`)

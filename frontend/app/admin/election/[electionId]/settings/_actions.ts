@@ -6,20 +6,14 @@ import { revalidatePath } from "next/cache"
 import { UserRole, AuditEntityType, AuditStatus } from "@prisma/client"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { requireElectionAccess } from "@/lib/authz"
+import {
+  ElectionSettingsUpdateSchema,
+  type ElectionSettingsUpdateValues,
+} from "@/lib/schemas/election-settings"
 
 export async function updateElectionSettingsAction(
   electionId: string,
-  data: {
-    allowOnlineVoting?: boolean
-    allowOfflineVoting?: boolean
-    authorizeVoters?: boolean
-    showCandidateProfiles?: boolean
-    showCandidateSymbols?: boolean
-    shuffleCandidates?: boolean
-    allowMultipleVotes?: boolean
-    allowNota?: boolean
-    maxVotesPerUser?: number
-  }
+  data: ElectionSettingsUpdateValues
 ) {
   const session = await auth()
 
@@ -41,10 +35,33 @@ export async function updateElectionSettingsAction(
         throw new Error("Election settings not found")
       }
 
+      const parsed = ElectionSettingsUpdateSchema.safeParse(data)
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message || "Invalid election settings")
+      }
+
+      const nextSettings = {
+        ...oldSettings,
+        ...parsed.data,
+      }
+
+      if (nextSettings.allowOnlineVoting && nextSettings.allowOfflineVoting) {
+        throw new Error("Online voting and hardware-app voting cannot both be enabled")
+      }
+
+      if (nextSettings.allowOnlineVoting && !nextSettings.authorizeVoters) {
+        throw new Error("Voter authorization is required when online voting is enabled")
+      }
+
+      if (!nextSettings.allowMultipleVotes && parsed.data.maxVotesPerUser && parsed.data.maxVotesPerUser > 1) {
+        throw new Error("Enable multiple votes before increasing the maximum votes per user")
+      }
+
       const updatedSettings = await tx.electionSettings.update({
         where: { id: oldSettings.id },
         data: {
-          ...data,
+          ...parsed.data,
+          ...(!nextSettings.allowMultipleVotes ? { maxVotesPerUser: 1 } : {}),
           updatedByUserId: access.userId,
         },
       })
@@ -59,7 +76,7 @@ export async function updateElectionSettingsAction(
           status: AuditStatus.SUCCESS,
           metadata: { 
             before: oldSettings,
-            after: data
+            after: parsed.data
           },
         }
       })
