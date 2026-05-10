@@ -27,6 +27,11 @@ CREATE TABLE "User" (
     "role" "UserRole" NOT NULL DEFAULT 'USER',
     "organizationId" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "failedLoginCount" INTEGER NOT NULL DEFAULT 0,
+    "lockedUntil" TIMESTAMP(3),
+    "lastLoginAt" TIMESTAMP(3),
+    "lastFailedLoginAt" TIMESTAMP(3),
+    "authVersion" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "hasAllElectionsAccess" BOOLEAN NOT NULL DEFAULT false,
@@ -98,6 +103,10 @@ CREATE TABLE "VerificationToken" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL,
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "lastSentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastAttemptAt" TIMESTAMP(3),
+    "consumedAt" TIMESTAMP(3),
 
     CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("identifier","token")
 );
@@ -108,8 +117,25 @@ CREATE TABLE "PasswordResetToken" (
     "email" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL,
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "lastSentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastAttemptAt" TIMESTAMP(3),
+    "consumedAt" TIMESTAMP(3),
 
     CONSTRAINT "PasswordResetToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuthRateLimit" (
+    "id" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 1,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuthRateLimit_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -153,6 +179,9 @@ CREATE TABLE "ElectionSettings" (
     "showCandidateProfiles" BOOLEAN NOT NULL DEFAULT true,
     "showCandidateSymbols" BOOLEAN NOT NULL DEFAULT true,
     "shuffleCandidates" BOOLEAN NOT NULL DEFAULT true,
+    "allowMultipleVotes" BOOLEAN NOT NULL DEFAULT false,
+    "allowNota" BOOLEAN NOT NULL DEFAULT false,
+    "maxVotesPerUser" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "createdByUserId" TEXT NOT NULL,
@@ -221,6 +250,7 @@ CREATE TABLE "AuthorizedSystem" (
     "ipAddress" TEXT,
     "macAddress" TEXT,
     "status" "SystemStatus" NOT NULL DEFAULT 'PENDING',
+    "claimTokenHash" TEXT,
     "secretTokenHash" TEXT,
     "tokenExpiresAt" TIMESTAMP(3),
     "approvedByUserId" TEXT,
@@ -379,10 +409,28 @@ CREATE UNIQUE INDEX "OrganizationSettings_organizationId_key" ON "OrganizationSe
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 
 -- CreateIndex
+CREATE INDEX "VerificationToken_identifier_idx" ON "VerificationToken"("identifier");
+
+-- CreateIndex
+CREATE INDEX "VerificationToken_expires_idx" ON "VerificationToken"("expires");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PasswordResetToken_token_key" ON "PasswordResetToken"("token");
 
 -- CreateIndex
+CREATE INDEX "PasswordResetToken_email_idx" ON "PasswordResetToken"("email");
+
+-- CreateIndex
+CREATE INDEX "PasswordResetToken_expires_idx" ON "PasswordResetToken"("expires");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PasswordResetToken_email_token_key" ON "PasswordResetToken"("email", "token");
+
+-- CreateIndex
+CREATE INDEX "AuthRateLimit_expiresAt_idx" ON "AuthRateLimit"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuthRateLimit_action_key_key" ON "AuthRateLimit"("action", "key");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Authenticator_credentialID_key" ON "Authenticator"("credentialID");
@@ -415,7 +463,7 @@ CREATE INDEX "Candidate_electionRoleId_idx" ON "Candidate"("electionRoleId");
 CREATE INDEX "Candidate_createdByUserId_idx" ON "Candidate"("createdByUserId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Ballot_voterId_key" ON "Ballot"("voterId");
+CREATE UNIQUE INDEX "Candidate_electionRoleId_name_key" ON "Candidate"("electionRoleId", "name");
 
 -- CreateIndex
 CREATE INDEX "Ballot_electionId_idx" ON "Ballot"("electionId");
@@ -481,16 +529,13 @@ CREATE UNIQUE INDEX "SystemElectionAccess_systemId_electionId_key" ON "SystemEle
 CREATE INDEX "Voter_electionId_idx" ON "Voter"("electionId");
 
 -- CreateIndex
-CREATE INDEX "Voter_uniqueId_idx" ON "Voter"("uniqueId");
-
--- CreateIndex
 CREATE INDEX "Voter_createdByUserId_idx" ON "Voter"("createdByUserId");
 
 -- CreateIndex
 CREATE INDEX "Voter_updatedByUserId_idx" ON "Voter"("updatedByUserId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Voter_electionId_uniqueId_key" ON "Voter"("electionId", "uniqueId");
+CREATE UNIQUE INDEX "Voter_uniqueId_key" ON "Voter"("uniqueId");
 
 -- CreateIndex
 CREATE INDEX "UserAuditLog_userId_idx" ON "UserAuditLog"("userId");

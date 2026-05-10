@@ -80,8 +80,7 @@ function LoginForm() {
                     return
                 }
 
-                router.push(withLoggedInParam(safeNextPath))
-                router.refresh()
+                window.location.assign(withLoggedInParam(safeNextPath))
             } catch (err) {
                 console.error("Login error:", err)
                 setError('An unexpected error occurred. Please try again.')

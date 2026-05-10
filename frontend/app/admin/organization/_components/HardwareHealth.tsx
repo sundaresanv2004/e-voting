@@ -30,14 +30,14 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
   ]
 
   return (
-    <Card className="border-border/50 overflow-hidden py-0">
+    <Card className="border-border/50 overflow-hidden py-0 gap-0">
       <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
         <div className="space-y-0.5">
           <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
             <HugeiconsIcon icon={LaptopIcon} className="h-5 w-5 text-emerald-500" />
             Hardware Fleet
           </CardTitle>
-          <CardDescription className="text-[10px] font-bold">
+          <CardDescription className="text-[11px] font-bold">
             {total} Synchronized {total === 1 ? "Device" : "Devices"}
           </CardDescription>
         </div>

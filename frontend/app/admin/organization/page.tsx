@@ -8,6 +8,7 @@ import { HardwareHealth } from "./_components/HardwareHealth"
 import { TeamSnapshot } from "./_components/TeamSnapshot"
 import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
+import { OrgCodeCard } from "./_components/OrgCodeCard"
 import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
 import { requireOrgAdmin } from "@/lib/authz"
 
@@ -43,6 +44,7 @@ export default async function OrganizationDashboardPage() {
       select: {
         name: true,
         logo: true,           // L6: display org logo in header
+        code: true,
         settings: {
           select: {
             allowSystemConnection: true  // L2: gate "Authorize Device" button
@@ -162,101 +164,82 @@ export default async function OrganizationDashboardPage() {
   }
 
   // Construct Activity Feed from Audit Logs
-  const activities: ActivityItem[] = latestAuditLogs.map(log => {
-    let type: "ELECTION" | "SYSTEM" | "MEMBER" = "MEMBER"
-    if (log.entityType === AuditEntityType.CANDIDATE || log.entityType === AuditEntityType.ELECTION_ROLE || log.entityType === AuditEntityType.ELECTION || log.entityType === AuditEntityType.VOTER || log.entityType === AuditEntityType.BALLOT || log.entityType === AuditEntityType.RESULT) {
-      type = "ELECTION"
-    } else if (log.entityType === AuditEntityType.SYSTEM) {
-      type = "SYSTEM"
-    } else if (log.entityType === AuditEntityType.USER || log.entityType === AuditEntityType.MEMBER || log.entityType === AuditEntityType.ACCESS || log.entityType === AuditEntityType.AUTH || log.entityType === AuditEntityType.SECURITY) {
-      type = "MEMBER"
-    }
+  const activities: ActivityItem[] = latestAuditLogs
+    .filter(log => {
+      const electionActions = ["RESULTS_GENERATED", "RESULTS_PUBLISHED", "CANDIDATE_ADDED", "CANDIDATE_DELETED", "VOTER_ADDED", "VOTER_DELETED"]
+      return !electionActions.includes(log.action)
+    })
+    .map(log => {
+      let type: "ELECTION" | "SYSTEM" | "MEMBER" = "MEMBER"
+      if (log.entityType === AuditEntityType.CANDIDATE || log.entityType === AuditEntityType.ELECTION_ROLE || log.entityType === AuditEntityType.ELECTION || log.entityType === AuditEntityType.VOTER || log.entityType === AuditEntityType.BALLOT || log.entityType === AuditEntityType.RESULT) {
+        type = "ELECTION"
+      } else if (log.entityType === AuditEntityType.SYSTEM) {
+        type = "SYSTEM"
+      } else if (log.entityType === AuditEntityType.USER || log.entityType === AuditEntityType.MEMBER || log.entityType === AuditEntityType.ACCESS || log.entityType === AuditEntityType.AUTH || log.entityType === AuditEntityType.SECURITY) {
+        type = "MEMBER"
+      }
 
-    // H3 FIX: Always preserve actor identity — never discard adminName from any event.
-    const adminName = log.admin?.name || log.admin?.email || "Administrator"
-    let title = log.description || log.action.replace(/_/g, " ")
-    let description = `By ${adminName}`
+      // H3 FIX: Always preserve actor identity — never discard adminName from any event.
+      const adminName = log.admin?.name || log.admin?.email || "Administrator"
+      let title = log.description || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " ")
+      let description = `By ${adminName}`
 
-    // Map well-known actions to readable titles and descriptions (actor always appended)
-    switch (log.action) {
-      case "ELECTION_CREATED":
-        title = (log.metadata as any)?.name || "New Election Created"
-        description = `Created by ${adminName}`
-        break
-      case "ELECTION_DELETED":
-        title = (log.metadata as any)?.name || "Election Deleted"
-        description = `Deleted by ${adminName}`
-        break
-      case "ELECTION_STATUS_CHANGED":
-        title = `Status → ${(log.metadata as any)?.newStatus || "Updated"}`
-        description = `Changed by ${adminName}`
-        break
-      case "ELECTION_UPDATED":
-      case "SETTINGS_UPDATED":
-        title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}" Updated` : "Settings Updated"
-        description = `Updated by ${adminName}`
-        break
-      case "MEMBER_ADDED":
-        title = (log.metadata as any)?.memberName || (log.metadata as any)?.email || "New Member Added"
-        description = `Added as ${(log.metadata as any)?.role || "Member"} by ${adminName}`
-        break
-      case "MEMBER_UPDATED":
-        title = (log.metadata as any)?.memberName || "Member Role Updated"
-        description = `Role → ${(log.metadata as any)?.after?.role || "Updated"} by ${adminName}`
-        break
-      case "MEMBER_LEFT":
-      case "MEMBER_REMOVED":
-        title = "Member Left Organization"
-        description = `Removed by ${adminName}`
-        break
-      case "SYSTEM_APPROVED":
-        title = (log.metadata as any)?.name || "Device Approved"
-        description = `Cleared by ${adminName}`
-        break
-      case "SYSTEM_REVOKED":
-      case "SYSTEM_REJECTED":
-        title = (log.metadata as any)?.name || "Device Access Changed"
-        description = `By ${adminName}`
-        break
-      case "VOTER_ADDED":
-        title = `${(log.metadata as any)?.count || 1} Voter(s) Added`
-        description = `Added by ${adminName}`
-        break
-      case "VOTER_DELETED":
-        title = "Voter Deleted"
-        description = `Removed by ${adminName}`
-        break
-      case "CANDIDATE_ADDED":
-        title = (log.metadata as any)?.name || "Candidate Added"
-        description = `Added by ${adminName}`
-        break
-      case "CANDIDATE_DELETED":
-        title = "Candidate Removed"
-        description = `By ${adminName}`
-        break
-      case "ORGANIZATION_CREATED":
-        title = (log.metadata as any)?.name || "Organization Created"
-        description = `Created by ${adminName}`
-        break
-      case "RESULTS_GENERATED":
-      case "RESULTS_PUBLISHED":
-        title = "Election Results Published"
-        description = `Published by ${adminName}`
-        break
-      default:
-        // Keep the generic formatted title but always include actor
-        description = `By ${adminName}`
-    }
+      // Map well-known actions to readable titles and descriptions (actor always appended)
+      switch (log.action) {
+        case "SETTINGS_UPDATED":
+          title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}" updated` : "Settings updated"
+          description = `Updated by ${adminName}`
+          break
+        case "MEMBER_ADDED":
+          title = (log.metadata as any)?.memberName || (log.metadata as any)?.email || "New member added"
+          description = `Added as ${(log.metadata as any)?.role || "member"} by ${adminName}`
+          break
+        case "MEMBER_UPDATED":
+          title = (log.metadata as any)?.memberName || "Member role updated"
+          description = `Role → ${(log.metadata as any)?.after?.role || "updated"} by ${adminName}`
+          break
+        case "MEMBER_LEFT":
+        case "MEMBER_REMOVED":
+          title = "Member left organization"
+          description = `Removed by ${adminName}`
+          break
+        case "SYSTEM_APPROVED":
+          title = (log.metadata as any)?.name || "Device approved"
+          description = `Cleared by ${adminName}`
+          break
+        case "SYSTEM_REVOKED":
+        case "SYSTEM_REJECTED":
+          title = (log.metadata as any)?.name || "Device access changed"
+          description = `By ${adminName}`
+          break
+        case "ELECTION_CREATED":
+        case "ELECTION_UPDATED":
+        case "ELECTION_STATUS_CHANGED":
+          title = (log.metadata as any)?.name || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " ")
+          description = `${log.action === "ELECTION_CREATED" ? "Created" : "Updated"} by ${adminName}`
+          break
+        case "ORGANIZATION_CREATED":
+          title = (log.metadata as any)?.name || "Organization created"
+          description = `Created by ${adminName}`
+          break
+        case "ORGANIZATION_UPDATED":
+          title = "Organization updated"
+          description = `Modified by ${adminName}`
+          break
+        default:
+          // Keep the generic formatted title but always include actor
+          description = `By ${adminName}`
+      }
 
-    return {
-      id: log.id,
-      type,
-      title,
-      description,
-      timestamp: log.createdAt,
-      status: (log.metadata as any)?.status || (log.metadata as any)?.newStatus || (log.metadata as any)?.role || undefined
-    }
-  })
+      return {
+        id: log.id,
+        type,
+        title,
+        description,
+        timestamp: log.createdAt,
+        status: (log.metadata as any)?.status || (log.metadata as any)?.newStatus || (log.metadata as any)?.role || undefined
+      }
+    })
 
   // M2: Sort elections by urgency — ACTIVE first, then UPCOMING, PAUSED, COMPLETED, CANCELLED
   const statusPriority: Record<string, number> = {
@@ -311,7 +294,6 @@ export default async function OrganizationDashboardPage() {
           totalMembers={totalMembers}
           approvedSystems={approvedSystems}
           pendingSystems={pendingSystems}
-          lockedUserCount={lockedUserCount}
         />
 
         {/* Two-Column Layout */}
@@ -319,6 +301,11 @@ export default async function OrganizationDashboardPage() {
           {/* Left Column — 2/3 */}
           <div className="lg:col-span-2 space-y-4">
             <ElectionsOverview elections={electionsForOverview} />
+            <QuickNavigate
+              electionCount={totalElections}
+              memberCount={totalMembers}
+              systemCount={totalSystems}
+            />
             <ActivityTimeline activities={activities} />
           </div>
 
@@ -340,11 +327,7 @@ export default async function OrganizationDashboardPage() {
               totalMembers={totalMembers}
               lockedUserCount={lockedUserCount}
             />
-            <QuickNavigate
-              electionCount={totalElections}
-              memberCount={totalMembers}
-              systemCount={totalSystems}
-            />
+            <OrgCodeCard code={organization.code} />
           </div>
         </div>
       </div>

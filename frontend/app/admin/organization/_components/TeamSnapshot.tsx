@@ -16,12 +16,12 @@ interface TeamSnapshotProps {
   lockedUserCount: number
 }
 
-export function TeamSnapshot({ 
-  adminCount, 
-  staffCount, 
-  viewerCount, 
-  userRoleCount, 
-  totalMembers, 
+export function TeamSnapshot({
+  adminCount,
+  staffCount,
+  viewerCount,
+  userRoleCount,
+  totalMembers,
   lockedUserCount,
 }: TeamSnapshotProps) {
   const router = useRouter()
@@ -35,15 +35,15 @@ export function TeamSnapshot({
   ]
 
   return (
-    <Card className="border-border/50 overflow-hidden py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
+    <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pt-6 px-4">
         <div className="space-y-0.5">
           <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
             <HugeiconsIcon icon={UserGroupIcon} className="h-5 w-5 text-sky-500" />
             Core Team
           </CardTitle>
-          <CardDescription className="text-[10px] font-bold">
-            {totalMembers} Active Pulse {totalMembers === 1 ? "Member" : "Members"}
+          <CardDescription className="text-[11px] font-bold">
+            {totalMembers} Active pulse {totalMembers === 1 ? "member" : "members"}
           </CardDescription>
         </div>
         <Button
@@ -56,7 +56,7 @@ export function TeamSnapshot({
           <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
-      <CardContent className="pb-6">
+      <CardContent className="pt-4 pb-6">
         {totalMembers === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -86,7 +86,7 @@ export function TeamSnapshot({
                 </div>
               )
             })}
-            
+
             {lockedUserCount > 0 && (
               <div className="pt-2">
                 <button
@@ -94,7 +94,7 @@ export function TeamSnapshot({
                   className="w-full flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/20 hover:bg-destructive/10 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-destructive" />
                     <span className="text-[10px] font-black uppercase text-destructive tracking-tight">Security Alert</span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -110,3 +110,4 @@ export function TeamSnapshot({
     </Card>
   )
 }
+
