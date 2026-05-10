@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, ComputerIcon } from "@hugeicons/core-free-icons"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface HardwareHealthProps {
   approved: number
@@ -93,3 +94,32 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
     </Card>
   )
 }
+
+export function HardwareHealthSkeleton() {
+  return (
+    <Card className="border-border/50 overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        <Skeleton className="h-7 w-16" />
+      </CardHeader>
+      <CardContent className="space-y-4 pb-6">
+        <Skeleton className="h-2 w-full rounded-full" />
+        <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-2 w-2 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-3 w-4" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+

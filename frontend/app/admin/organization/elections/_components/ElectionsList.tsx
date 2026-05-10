@@ -8,6 +8,7 @@ import { ElectionDialog } from "./election-dialog"
 import { DeleteElectionDialog } from "./delete-election-dialog"
 import { deleteElection, toggleElectionStatus } from "../_actions"
 import { toast } from "sonner"
+import { ElectionDataTableSkeleton } from "./data-table"
 
 interface ElectionsListProps {
   elections: Election[]
@@ -101,3 +102,8 @@ export function ElectionsList({ elections }: ElectionsListProps) {
     </>
   )
 }
+
+export function ElectionsListSkeleton() {
+  return <ElectionDataTableSkeleton />
+}
+

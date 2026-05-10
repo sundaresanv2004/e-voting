@@ -3,6 +3,7 @@
 import type React from "react"
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar01Icon, Settings01Icon } from '@hugeicons/core-free-icons';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SettingsHeroProps {
     title?: string;
@@ -47,4 +48,24 @@ const SettingsHero: React.FC<SettingsHeroProps> = ({ title = "Organization Setti
     )
 }
 
+export const SettingsHeroSkeleton: React.FC = () => {
+    return (
+        <div className="relative overflow-hidden border-b backdrop-blur-sm">
+            <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
+                <div className="flex items-center gap-5">
+                    <Skeleton className="h-14 w-14 rounded-2xl" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-64" />
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-4 rounded-full" />
+                            <Skeleton className="h-4 w-48" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default SettingsHero
+

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { logOrgCodeAccess } from "../_actions"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface OrgCodeCardProps {
   code: string
@@ -102,3 +103,37 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
     </Card>
   )
 }
+
+export function OrgCodeCardSkeleton() {
+  return (
+    <Card className="border-border/50 shadow-sm py-2 gap-0">
+      <CardHeader className="px-4 py-3">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pb-4">
+        <div className="flex flex-col gap-2 p-4 rounded-xl border">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-24" />
+            <div className="flex gap-1">
+              <Skeleton className="h-6 w-6 rounded-md" />
+              <Skeleton className="h-6 w-6 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-3/4" />
+        </div>
+        <div className="p-4 rounded-xl border space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <div className="space-y-1">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+

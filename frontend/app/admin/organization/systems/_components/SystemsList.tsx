@@ -12,7 +12,7 @@ import { EditSystemDialog } from "./EditSystemDialog"
 import { DeleteSystemDialog } from "./DeleteSystemDialog"
 import { updateSystemStatusAction } from "../_actions"
 import { columns, type System } from "./columns"
-import { SystemDataTable } from "./data-table"
+import { SystemDataTable, SystemDataTableSkeleton } from "./data-table"
 
 interface SystemsListProps {
   initialSystems: System[]
@@ -133,3 +133,8 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
     </>
   )
 }
+
+export function SystemsListSkeleton() {
+  return <SystemDataTableSkeleton />
+}
+

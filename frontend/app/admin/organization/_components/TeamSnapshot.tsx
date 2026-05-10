@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, UserGroupIcon } from "@hugeicons/core-free-icons"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface TeamSnapshotProps {
   adminCount: number
@@ -110,4 +111,33 @@ export function TeamSnapshot({
     </Card>
   )
 }
+
+export function TeamSnapshotSkeleton() {
+  return (
+    <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pt-6 px-4">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        <Skeleton className="h-7 w-16" />
+      </CardHeader>
+      <CardContent className="pt-4 pb-6 space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-2 w-2 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-3 w-4" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 

@@ -39,6 +39,7 @@ import { OrganizationCodeDialog } from "../../systems/_components/OrganizationCo
 import { DeleteOrganizationDialog } from "./delete-organization-dialog"
 import { TransferOwnershipDialog } from "./TransferOwnershipDialog"
 import { Spinner } from "@/components/ui/spinner"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 interface SettingsContainerProps {
@@ -575,3 +576,36 @@ function TransferSection() {
     </div>
   )
 }
+
+export function SettingsContainerSkeleton() {
+  return (
+    <div className="w-full space-y-6">
+      <div className="flex items-center gap-2 border-b pb-2">
+        <Skeleton className="h-9 w-24 rounded-md" />
+        <Skeleton className="h-9 w-24 rounded-md" />
+        <Skeleton className="h-9 w-32 rounded-md" />
+      </div>
+      <div className="space-y-5 mt-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border bg-card overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-64" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-full max-w-2xl" />
+            </div>
+            <div className="px-6 py-3 bg-muted/40 border-t flex justify-between items-center">
+              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+

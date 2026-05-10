@@ -14,6 +14,7 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export interface ElectionSummary {
   id: string
@@ -129,6 +130,40 @@ export function ElectionsOverview({ elections }: ElectionsOverviewProps) {
             })}
           </div>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+export function ElectionsOverviewSkeleton() {
+  return (
+    <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+        <Skeleton className="h-7 w-20" />
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-y divide-border/50">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="w-full flex items-center justify-between p-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-11 w-11 rounded-xl" />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-3 w-48" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

@@ -12,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { EditMemberDialog } from "./EditMemberDialog"
 import { DeleteMemberDialog } from "./delete-member-dialog"
+import { MemberDataTableSkeleton } from "./data-table"
 
 interface MembersListProps {
   initialMembers: Member[]
@@ -99,3 +100,8 @@ export function MembersList({ initialMembers, orgCreatorId, currentUserId }: Mem
     </div>
   )
 }
+
+export function MembersListSkeleton() {
+  return <MemberDataTableSkeleton />
+}
+
