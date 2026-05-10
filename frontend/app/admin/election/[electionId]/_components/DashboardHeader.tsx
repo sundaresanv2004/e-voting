@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Building06Icon, Calendar01Icon, Settings02Icon } from "@hugeicons/core-free-icons"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function DashboardHeader({ election, organization, statusStyles }: any) {
     return (
@@ -45,3 +46,26 @@ export function DashboardHeader({ election, organization, statusStyles }: any) {
         </div>
     )
 }
+
+export function DashboardHeaderSkeleton() {
+    return (
+        <div className="relative bg-background/50 border-b">
+            <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full max-w-[1400px] mx-auto">
+                <div className="flex items-center gap-5">
+                    <Skeleton className="h-14 w-14 rounded-[16px]" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-64" />
+                        <div className="flex items-center gap-3">
+                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-24 rounded-md" />
+                </div>
+            </div>
+        </div>
+    )
+}
+

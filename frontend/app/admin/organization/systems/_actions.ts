@@ -142,6 +142,27 @@ export async function syncSystemExpirations(organizationId: string, shouldRevali
       },
     })
 
+    await db.adminAuditLog.createMany({
+      data: expiredSystems.map((system) => ({
+        action: "SYSTEM_EXPIRED",
+        entityType: AuditEntityType.SYSTEM,
+        entityId: system.id,
+        adminId: access.userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        description: "System authorization expired",
+        metadata: {
+          name: system.name,
+          hostName: system.hostName,
+          ipAddress: system.ipAddress,
+          expiredAt: new Date(),
+          previousStatus: SystemStatus.APPROVED,
+          newStatus: SystemStatus.EXPIRED,
+          reason: "Token authorization window elapsed",
+        },
+      })),
+    })
+
     // Notify for each expired system
     for (const system of expiredSystems) {
       if (system.organization.owner?.email) {

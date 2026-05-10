@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
@@ -227,3 +228,48 @@ export function VoterDataTable<TData, TValue>({
     </div>
   )
 }
+
+export function VoterDataTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* Table Controls Skeleton */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-10 w-full max-w-sm rounded-lg" />
+        <Skeleton className="h-10 w-[150px] rounded-lg" />
+      </div>
+
+      {/* Data Table Skeleton */}
+      <div className="rounded-2xl border bg-card/50 overflow-hidden shadow-sm">
+        <div className="bg-muted/50 border-b h-11 flex items-center px-6">
+          <Skeleton className="h-4 w-full" />
+        </div>
+        <div className="divide-y divide-border/50">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="py-4 px-6 flex items-center gap-4">
+              <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer Skeleton */}
+      <div className="flex items-center justify-between px-2">
+        <Skeleton className="h-4 w-40" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-24" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

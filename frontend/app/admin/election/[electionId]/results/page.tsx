@@ -8,6 +8,9 @@ import { ResultsExport } from "./_components/ResultsExport"
 import { ResultsStateBanner } from "./_components/ResultsStateBanner"
 import { requireElectionAccess } from "@/lib/authz"
 import { UserRole } from "@prisma/client"
+import { DashboardPoller } from "../../../organization/_components/DashboardPoller"
+
+export const revalidate = 30
 
 export default async function ResultsPage({
   params
@@ -150,6 +153,7 @@ export default async function ResultsPage({
 
   return (
     <div className="flex flex-col w-full min-h-screen">
+      <DashboardPoller />
       <ResultsHero
         title="Election Results"
         subtitle={election.name}

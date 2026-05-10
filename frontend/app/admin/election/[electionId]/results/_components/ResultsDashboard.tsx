@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -497,6 +498,74 @@ export function ResultsDashboard({
     </div>
   )
 }
+
+export function ResultsDashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Stats Overview Skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-2xl border p-5 bg-muted/5 animate-pulse h-32">
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-8 w-8 rounded-lg" />
+            </div>
+            <Skeleton className="h-8 w-24" />
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs Skeleton */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28 rounded-md" />
+            <Skeleton className="h-10 w-28 rounded-md" />
+            <Skeleton className="h-10 w-28 rounded-md" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-[220px] rounded-lg" />
+            <Skeleton className="h-10 w-[180px] rounded-lg" />
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border bg-card overflow-hidden h-[400px]">
+              <div className="p-5 border-b bg-muted/20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-9 w-9 rounded-xl" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 space-y-6">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-2 w-full" />
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <Skeleton className="h-4 w-12 ml-auto" />
+                      <Skeleton className="h-2 w-16 ml-auto" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 /* ── Stat Card ── */
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {

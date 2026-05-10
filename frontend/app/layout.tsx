@@ -3,6 +3,11 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/ui/theme-provider"
 import { Providers } from "@/components/providers/session-provider"
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner"
+import { SuccessToastListener } from "@/components/auth/success-toast-listener"
+import { Suspense } from "react"
+import { auth } from "@/auth"
+
 
 const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
@@ -13,10 +18,6 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-import { Toaster } from "sonner"
-import { SuccessToastListener } from "@/components/auth/success-toast-listener"
-import { Suspense } from "react"
-import { auth } from "@/auth"
 
 export default async function RootLayout({
   children,

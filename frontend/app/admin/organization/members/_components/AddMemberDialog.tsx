@@ -196,7 +196,7 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                     </InputGroupAddon>
                     <InputGroupInput
                       id="search"
-                      placeholder="Enter exact email or name..."
+                      placeholder="Enter full email or exact name..."
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       className="text-base h-full pr-12"
@@ -245,8 +245,8 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                         </EmptyMedia>
                         <EmptyTitle className="text-sm font-bold text-amber-900 dark:text-amber-100">User Not Found</EmptyTitle>
                         <EmptyDescription className="text-[11px] leading-relaxed">
-                          We couldn't find a registered user with "<strong>{query}</strong>". <br />
-                          They must register an account first, or ensure you've typed their <strong>exact email address</strong> for a private search match.
+                          We couldn&apos;t find a registered user with &quot;<strong>{query}</strong>&quot;. <br />
+                          They must register an account first, or ensure you&apos;ve typed their <strong>full email address</strong> or exact display name.
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>)}
@@ -309,7 +309,7 @@ export function AddMemberDialog({ children }: AddMemberDialogProps) {
                               {user.status === 'in_another_org' && (
                                 <div className="mt-3 flex gap-2 text-[10px] text-amber-700 font-medium">
                                   <HugeiconsIcon icon={Alert01Icon} className="h-3 w-3 shrink-0" />
-                                  <p>Already in <strong>{user.currentOrgName}</strong>. They must leave to join yours.</p>
+                                  <p>This user already belongs to another organization. They must leave it before joining yours.</p>
                                 </div>
                               )}
 

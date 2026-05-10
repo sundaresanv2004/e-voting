@@ -26,7 +26,7 @@ ARG NEXT_PUBLIC_APP_NAME
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
 ARG NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-ARG DATABASE_URL
+ARG DATABASE_URL=postgresql://build:build@localhost:5432/build?schema=public
 
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
@@ -66,7 +66,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
 
-# Install the prisma CLI globally in the runner image
+# Install the Prisma CLI globally in the runner image for migrate deploy
 RUN npm install -g prisma@7.6.0
 
 # Give execution permission to the start script

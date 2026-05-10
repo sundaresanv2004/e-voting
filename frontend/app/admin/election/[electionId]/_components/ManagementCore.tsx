@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { DashboardCircleIcon, ArrowRight01Icon, UserCircleIcon, UserGroupIcon, ShieldKeyIcon, Analytics01Icon } from "@hugeicons/core-free-icons"
 
@@ -81,3 +82,35 @@ export function ManagementCore({ electionId }: { electionId: string }) {
         </Card>
     )
 }
+
+export function ManagementCoreSkeleton() {
+    return (
+        <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
+                <div className="space-y-1.5">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-3 w-32" />
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div
+                            key={i}
+                            className="p-6 border-b sm:border-r sm:[&:nth-child(2n)]:border-r-0 flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <Skeleton className="h-11 w-11 rounded-xl" />
+                                <div className="space-y-1.5">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-3 w-40" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+

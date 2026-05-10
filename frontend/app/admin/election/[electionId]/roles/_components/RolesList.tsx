@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { RoleDataTable } from "./data-table"
+import { RoleDataTable, RoleDataTableSkeleton } from "./data-table"
 import { columns, RoleColumn } from "./columns"
 import { RoleDetailsSheet } from "./RoleDetailsSheet"
 import { RoleDialog } from "./RoleDialog"
@@ -132,3 +132,8 @@ export function RolesList({ roles, electionId, availableSystems, userRole }: Rol
     </>
   )
 }
+
+export function RolesListSkeleton() {
+  return <RoleDataTableSkeleton />
+}
+

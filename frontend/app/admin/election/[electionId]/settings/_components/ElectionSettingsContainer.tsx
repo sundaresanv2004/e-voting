@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   InformationCircleIcon,
@@ -149,6 +150,35 @@ export function ElectionSettingsContainer({ election }: ElectionSettingsContaine
     </Tabs>
   )
 }
+
+export function ElectionSettingsContainerSkeleton() {
+  return (
+    <div className="w-full space-y-6">
+      <div className="flex items-center gap-2 border-b pb-2">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-9 w-24 rounded-md" />
+        ))}
+      </div>
+      <div className="space-y-6 mt-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border bg-card overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-full max-w-2xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 
 // ─── General Tab ────────────────────────────────────────────────────────────────

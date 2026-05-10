@@ -6,8 +6,6 @@ import { columns, type Member } from "./columns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MemberDetailsSheet } from "./member-details-sheet"
 import {
-  Alert01Icon,
-  Delete02Icon,
   InformationCircleIcon
 } from "@hugeicons/core-free-icons"
 import { EditMemberDialog } from "./EditMemberDialog"
@@ -16,11 +14,11 @@ import { MemberDataTableSkeleton } from "./data-table"
 
 interface MembersListProps {
   initialMembers: Member[]
-  orgCreatorId?: string
+  ownerId?: string
   currentUserId?: string
 }
 
-export function MembersList({ initialMembers, orgCreatorId, currentUserId }: MembersListProps) {
+export function MembersList({ initialMembers, ownerId, currentUserId }: MembersListProps) {
   const [members, setMembers] = React.useState(initialMembers)
   const [memberToRemove, setMemberToRemove] = React.useState<Member | null>(null)
   const [isRemoveOpen, setIsRemoveOpen] = React.useState(false)
@@ -63,7 +61,7 @@ export function MembersList({ initialMembers, orgCreatorId, currentUserId }: Mem
         </div>
       ) : (
         <MemberDataTable
-          columns={columns(handleView, handleEdit, handleRemoveInitiate, orgCreatorId, currentUserId)}
+          columns={columns(handleView, handleEdit, handleRemoveInitiate, ownerId, currentUserId)}
           data={members}
           emptyMessage="No members found matching your search."
           searchPlaceholder="Search members by name or email..."
@@ -88,7 +86,7 @@ export function MembersList({ initialMembers, orgCreatorId, currentUserId }: Mem
         onOpenChange={setIsViewSheetOpen}
         onEdit={handleEdit}
         onRemove={handleRemoveInitiate}
-        isOwner={selectedMemberForView?.id === orgCreatorId}
+        isOwner={selectedMemberForView?.id === ownerId}
         isCurrentUser={selectedMemberForView?.id === currentUserId}
       />
 
@@ -104,4 +102,3 @@ export function MembersList({ initialMembers, orgCreatorId, currentUserId }: Mem
 export function MembersListSkeleton() {
   return <MemberDataTableSkeleton />
 }
-

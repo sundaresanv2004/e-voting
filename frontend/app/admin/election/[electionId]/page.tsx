@@ -12,6 +12,9 @@ import { VotersSnapshot } from "./_components/VotersSnapshot"
 import { RolesSnapshot } from "./_components/RolesSnapshot"
 import { AccessControlCard } from "./_components/AccessControlCard"
 import { ConfigurationCard } from "./_components/ConfigurationCard"
+import { DashboardPoller } from "../../organization/_components/DashboardPoller"
+
+export const revalidate = 30
 
 export default async function ElectionDashboardPage({
     params
@@ -181,6 +184,7 @@ export default async function ElectionDashboardPage({
 
     return (
         <div className="flex flex-col w-full min-h-screen pb-16">
+            <DashboardPoller />
             <DashboardHeader
                 election={election}
                 organization={organization}

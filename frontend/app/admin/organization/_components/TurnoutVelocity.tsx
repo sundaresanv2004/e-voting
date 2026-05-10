@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Activity01Icon } from "@hugeicons/core-free-icons"
 
@@ -97,3 +98,24 @@ export function TurnoutVelocity({ data }: TurnoutVelocityProps) {
     </Card>
   )
 }
+
+export function TurnoutVelocitySkeleton() {
+  return (
+    <Card className="border-border/50 overflow-hidden bg-card/50 backdrop-blur-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+        <div className="flex flex-col items-end space-y-1">
+          <Skeleton className="h-7 w-12" />
+          <Skeleton className="h-2 w-16" />
+        </div>
+      </CardHeader>
+      <CardContent className="px-6 pt-4 pb-4">
+        <Skeleton className="h-[140px] w-full rounded-lg" />
+      </CardContent>
+    </Card>
+  )
+}
+

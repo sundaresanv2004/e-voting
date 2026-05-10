@@ -15,7 +15,7 @@ export default async function OrganizationMembersPage() {
     redirect("/auth/login")
   }
 
-  const { members, orgCreatorId } = await getMembers()
+  const { members, ownerId } = await getMembers()
   const currentUserId = session?.user?.id
 
   return (
@@ -28,7 +28,7 @@ export default async function OrganizationMembersPage() {
         <div className="grid grid-cols-1 gap-8">
           <MembersList
             initialMembers={members as any}
-            orgCreatorId={orgCreatorId}
+            ownerId={ownerId}
             currentUserId={currentUserId}
           />
         </div>

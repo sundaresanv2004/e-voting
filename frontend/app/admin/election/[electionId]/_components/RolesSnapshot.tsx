@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ShieldKeyIcon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
@@ -73,3 +74,32 @@ export function RolesSnapshot({ electionId, roles, totalRoles, totalCandidates }
         </Card>
     )
 }
+
+export function RolesSnapshotSkeleton() {
+    return (
+        <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
+                <div className="space-y-1.5">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-7 w-16" />
+            </CardHeader>
+            <CardContent className="pt-4 pb-6 space-y-4">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-2 w-2 rounded-full" />
+                                <Skeleton className="h-3 w-24" />
+                            </div>
+                            <Skeleton className="h-3 w-4" />
+                        </div>
+                        <Skeleton className="h-1.5 w-full rounded-full" />
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
+

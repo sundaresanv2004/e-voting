@@ -3,7 +3,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { deleteVoter, resetVoterVote } from "../_actions"
-import { VoterDataTable } from "./data-table"
+import { VoterDataTable, VoterDataTableSkeleton } from "./data-table"
 import { columns, VoterColumn } from "./columns"
 import { VoterDetailsSheet } from "./VoterDetailsSheet"
 import { VoterDialog } from "./VoterDialog"
@@ -187,3 +187,8 @@ export function VoterList({ voters, electionId, userRole }: VoterListProps) {
     </>
   )
 }
+
+export function VoterListSkeleton() {
+  return <VoterDataTableSkeleton />
+}
+

@@ -21,7 +21,7 @@ export async function getMembers() {
 
   const org = await db.organization.findUnique({
     where: { id: orgId },
-    select: { createdByUserId: true }
+    select: { ownerId: true, createdByUserId: true }
   })
 
   const members = await db.user.findMany({
@@ -73,7 +73,7 @@ export async function getMembers() {
 
   return {
     members,
-    orgCreatorId: org?.createdByUserId
+    ownerId: org?.ownerId ?? org?.createdByUserId
   }
 }
 
@@ -82,22 +82,28 @@ export async function searchPotentialMember(query: string) {
   const access = await requireOrgAdmin(session?.user)
   const orgId = access.organizationId
 
-  if (!query || query.length < 3) {
+  const normalizedQuery = query.trim()
+
+  if (!normalizedQuery || normalizedQuery.length < 3) {
     return { success: false, error: "Search term must be at least 3 characters" }
+  }
+
+  const isEmailSearch = normalizedQuery.includes("@")
+
+  if (isEmailSearch && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedQuery)) {
+    return { success: false, error: "Enter the full email address to search" }
   }
 
   const users = await db.user.findMany({
     where: {
-      OR: [
-        { email: { equals: query, mode: "insensitive" } },
-        { email: { startsWith: query, mode: "insensitive" } },
-        { name: { startsWith: query, mode: "insensitive" } }
-      ]
+      ...(isEmailSearch
+        ? { email: { equals: normalizedQuery, mode: "insensitive" } }
+        : { name: { equals: normalizedQuery, mode: "insensitive" } })
     },
     include: {
       organization: {
         select: {
-          name: true
+          id: true
         }
       }
     },
@@ -117,8 +123,7 @@ export async function searchPotentialMember(query: string) {
       ? "already_in_org" 
       : user.organizationId 
         ? "in_another_org" 
-        : "available",
-    currentOrgName: user.organization?.name
+        : "available"
   }))
 
   return { success: true, results }
@@ -136,6 +141,15 @@ export async function addMemberAction(
   const orgId = access.organizationId
 
   try {
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { ownerId: true },
+    })
+
+    if (organization?.ownerId === userId && access.userId !== organization.ownerId) {
+      throw new Error("Only the organization owner can modify owner permissions.")
+    }
+
     const shouldUseGranularAccess = !hasAllAccess && (role === UserRole.STAFF || role === UserRole.VIEWER)
     const validElections = shouldUseGranularAccess
       ? await validateOrganizationElectionIds(orgId, electionIds)

@@ -1,4 +1,5 @@
 import { format } from "date-fns"
+import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Archive01Icon } from "@hugeicons/core-free-icons"
 import { auth } from "@/auth"
@@ -8,10 +9,27 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import AuditHero from "./_components/AuditHero"
 import { actionConfig, typeConfig, statusBadgeStyles } from "../_components/activity-config"
-import { AuditEntityType } from "@prisma/client"
+import { AuditEntityType, AuditStatus, Prisma } from "@prisma/client"
 import { DashboardPoller } from "../_components/DashboardPoller"
 
 export const revalidate = 30
+
+type AuditSearchParams = Promise<{ [key: string]: string | string[] | undefined }>
+
+const entityTypes = Object.values(AuditEntityType)
+const auditStatuses = Object.values(AuditStatus)
+
+function getParam(params: Awaited<AuditSearchParams>, key: string) {
+  const value = params[key]
+  return Array.isArray(value) ? value[0] : value
+}
+
+function getDateBoundary(value: string | undefined, endOfDay = false) {
+  if (!value) return undefined
+
+  const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
 
 function formatMetadata(metadata: unknown) {
   if (!metadata || typeof metadata !== "object") return null
@@ -31,14 +49,48 @@ function formatMetadata(metadata: unknown) {
   }).join(" · ")
 }
 
-export default async function OrganizationAuditPage() {
+export default async function OrganizationAuditPage({ searchParams }: { searchParams: AuditSearchParams }) {
   const session = await auth()
   const access = await requireOrgAdmin(session?.user)
+  const params = await searchParams
+
+  const query = getParam(params, "q")?.trim() || ""
+  const action = getParam(params, "action")?.trim() || ""
+  const entityTypeParam = getParam(params, "entityType")?.trim() || ""
+  const statusParam = getParam(params, "status")?.trim() || ""
+  const from = getDateBoundary(getParam(params, "from"))
+  const to = getDateBoundary(getParam(params, "to"), true)
+
+  const entityType = entityTypes.includes(entityTypeParam as AuditEntityType)
+    ? entityTypeParam as AuditEntityType
+    : undefined
+  const status = auditStatuses.includes(statusParam as AuditStatus)
+    ? statusParam as AuditStatus
+    : undefined
+
+  const where: Prisma.AdminAuditLogWhereInput = {
+    organizationId: access.organizationId,
+    ...(entityType ? { entityType } : {}),
+    ...(status ? { status } : {}),
+    ...(action ? { action: { contains: action, mode: "insensitive" } } : {}),
+    ...((from || to) ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+    ...(query
+      ? {
+          OR: [
+            { action: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+            { entityId: { contains: query, mode: "insensitive" } },
+            { admin: { name: { contains: query, mode: "insensitive" } } },
+            { admin: { email: { contains: query, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  }
 
   const auditLogs = await db.adminAuditLog.findMany({
-    where: { organizationId: access.organizationId },
+    where,
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 200,
     include: {
       admin: {
         select: {
@@ -49,6 +101,22 @@ export default async function OrganizationAuditPage() {
     },
   })
 
+  const [totalMatching, statusSummary, typeSummary] = await Promise.all([
+    db.adminAuditLog.count({ where }),
+    db.adminAuditLog.groupBy({
+      by: ["status"],
+      where,
+      _count: { _all: true },
+    }),
+    db.adminAuditLog.groupBy({
+      by: ["entityType"],
+      where,
+      _count: { _all: true },
+    }),
+  ])
+
+  const hasFilters = Boolean(query || action || entityType || status || from || to)
+
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
       <DashboardPoller />
@@ -57,7 +125,130 @@ export default async function OrganizationAuditPage() {
         description="Comprehensive history of administrative actions"
       />
 
-      <div className="flex-1 px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
+      <div className="flex-1 px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full space-y-5">
+        <Card className="border-border/50 py-0">
+          <CardContent className="p-4 md:p-5 space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="space-y-1 lg:col-span-2">
+                <label htmlFor="audit-q" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search</label>
+                <input
+                  id="audit-q"
+                  name="q"
+                  form="audit-filter-form"
+                  defaultValue={query}
+                  placeholder="Actor, action, record ID..."
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="audit-action" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Action</label>
+                <input
+                  id="audit-action"
+                  name="action"
+                  form="audit-filter-form"
+                  defaultValue={action}
+                  placeholder="SYSTEM_EXPIRED"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="audit-entity" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Entity</label>
+                <select
+                  id="audit-entity"
+                  name="entityType"
+                  form="audit-filter-form"
+                  defaultValue={entityType || ""}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">All entities</option>
+                  {entityTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="audit-status" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</label>
+                <select
+                  id="audit-status"
+                  name="status"
+                  form="audit-filter-form"
+                  defaultValue={status || ""}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">All statuses</option>
+                  {auditStatuses.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="audit-from" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">From</label>
+                <input
+                  id="audit-from"
+                  name="from"
+                  form="audit-filter-form"
+                  type="date"
+                  defaultValue={getParam(params, "from") || ""}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="audit-to" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">To</label>
+                <input
+                  id="audit-to"
+                  name="to"
+                  form="audit-filter-form"
+                  type="date"
+                  defaultValue={getParam(params, "to") || ""}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <form id="audit-filter-form" className="flex flex-wrap items-center gap-2" action="/admin/organization/audit">
+              <button type="submit" className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                Apply Filters
+              </button>
+              {hasFilters && (
+                <Link href="/admin/organization/audit" className="h-9 rounded-md border px-4 text-sm font-semibold inline-flex items-center">
+                  Reset
+                </Link>
+              )}
+              <p className="text-xs text-muted-foreground ml-auto">
+                Showing {auditLogs.length} of {totalMatching} matching records
+              </p>
+            </form>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">By Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {statusSummary.map((item) => (
+                    <Badge key={item.status} variant="outline" className={statusBadgeStyles[item.status] || statusBadgeStyles.SUCCESS}>
+                      {item.status}: {item._count._all}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">By Entity</p>
+                <div className="flex flex-wrap gap-2">
+                  {typeSummary.map((item) => (
+                    <Badge key={item.entityType} variant="secondary">
+                      {item.entityType}: {item._count._all}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-border/50 overflow-hidden py-0">
           <CardContent className="p-0">
             {auditLogs.length === 0 ? (
@@ -117,13 +308,25 @@ export default async function OrganizationAuditPage() {
                           <p className="font-medium tabular-nums">{format(log.createdAt, "PPP · pp")}</p>
                         </div>
 
-                        {metadataText && (
-                          <div className="mt-2 p-3 rounded-lg bg-muted/40 border border-border/40 max-w-2xl">
-                            <p className="text-[11px] font-mono text-muted-foreground/90 leading-relaxed break-all">
-                              {metadataText}
-                            </p>
-                          </div>
-                        )}
+                        <div className="mt-2 space-y-2">
+                          {metadataText && (
+                            <div className="p-3 rounded-lg bg-muted/40 border border-border/40 max-w-2xl">
+                              <p className="text-[11px] font-mono text-muted-foreground/90 leading-relaxed break-all">
+                                {metadataText}
+                              </p>
+                            </div>
+                          )}
+                          {log.metadata && (
+                            <details className="group max-w-3xl rounded-lg border border-border/40 bg-background/70">
+                              <summary className="cursor-pointer px-3 py-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground group-open:border-b">
+                                Full Metadata
+                              </summary>
+                              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all p-3 text-[11px] leading-relaxed text-muted-foreground">
+                                {JSON.stringify(log.metadata, null, 2)}
+                              </pre>
+                            </details>
+                          )}
+                        </div>
                       </div>
 
                       {/* ID / Detail Section */}
@@ -146,4 +349,3 @@ export default async function OrganizationAuditPage() {
     </div>
   )
 }
-

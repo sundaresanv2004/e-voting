@@ -112,7 +112,7 @@ export const columns = (
   onView: (member: Member) => void,
   onEdit: (member: Member) => void,
   onRemove: (member: Member) => void,
-  orgCreatorId?: string,
+  ownerId?: string,
   currentUserId?: string
 ): ColumnDef<Member>[] => [
     {
@@ -230,7 +230,7 @@ export const columns = (
       id: "actions",
       cell: ({ row }) => {
         const member = row.original
-        const isCreator = member.id === orgCreatorId
+        const isOwner = member.id === ownerId
 
         const isCurrentUserRow = member.id === currentUserId
 
@@ -262,7 +262,7 @@ export const columns = (
           )
         }
 
-        if (isCreator) {
+        if (isOwner) {
           return (
             <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>

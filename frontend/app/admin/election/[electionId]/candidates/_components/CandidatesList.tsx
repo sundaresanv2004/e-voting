@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CandidateDataTable } from "./data-table"
+import { CandidateDataTable, CandidateDataTableSkeleton } from "./data-table"
 import { columns, CandidateColumn } from "./candidate-columns"
 import { CandidateDetailsSheet } from "./CandidateDetailsSheet"
 import { CandidateDialog } from "./CandidateDialog"
@@ -127,3 +127,8 @@ export function CandidatesList({ candidates, electionId, availableRoles, userRol
     </>
   )
 }
+
+export function CandidatesListSkeleton() {
+  return <CandidateDataTableSkeleton />
+}
+

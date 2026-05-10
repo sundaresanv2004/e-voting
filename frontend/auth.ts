@@ -483,6 +483,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const headerList = await headers()
       const ip = headerList.get("x-forwarded-for") || "unknown"
       const userAgent = headerList.get("user-agent") || "unknown"
+      const now = new Date()
+
+      if (user.id || user.email) {
+        await db.user.updateMany({
+          where: {
+            OR: [
+              ...(user.id ? [{ id: user.id }] : []),
+              ...(user.email ? [{ email: user.email }] : []),
+            ],
+          },
+          data: {
+            lastLoginAt: now,
+            ...(account?.provider === "google"
+              ? {
+                  emailVerified: now,
+                  ...(user.image ? { image: user.image } : {}),
+                }
+              : {}),
+          },
+        })
+      }
 
       await db.userAuditLog.create({
         data: {

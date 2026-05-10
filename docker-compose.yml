@@ -21,13 +21,15 @@ services:
       - IMAGEKIT_PRIVATE_KEY=${IMAGEKIT_PRIVATE_KEY}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_ALLOWED_DOMAINS=${GOOGLE_ALLOWED_DOMAINS}
       - AUTH_URL=${AUTH_URL}
+      - NEXTAUTH_URL=${AUTH_URL}
       - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
       - NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}
       - NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3001/ || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
