@@ -5,10 +5,19 @@ import { formatDistanceToNow } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   MapsIcon,
-  LaptopIcon,
-  UserAdd01Icon,
   Archive01Icon,
   ArrowRight01Icon,
+  Settings02Icon,
+  ViewIcon,
+  ComputerIcon,
+  LockKeyIcon,
+  Alert01Icon,
+  Building06Icon,
+  UserGroupIcon,
+  UserRemove01Icon,
+  Analytics01Icon,
+  ShieldKeyIcon,
+  UserCircleIcon,
 } from "@hugeicons/core-free-icons"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +27,7 @@ import { useRouter } from "next/navigation"
 export interface ActivityItem {
   id: string
   type: "ELECTION" | "SYSTEM" | "MEMBER"
+  action?: string
   title: string
   description: string
   timestamp: Date
@@ -31,10 +41,51 @@ interface ActivityTimelineProps {
   auditHref?: string
 }
 
-const activityConfig = {
+// Fallback by broad type
+const typeConfig = {
   ELECTION: { icon: MapsIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
-  SYSTEM: { icon: LaptopIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-  MEMBER: { icon: UserAdd01Icon, color: "text-cyan-600", bg: "bg-cyan-500/10" },
+  SYSTEM: { icon: ComputerIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  MEMBER: { icon: UserGroupIcon, color: "text-cyan-600", bg: "bg-cyan-500/10" },
+}
+
+// Action-specific icons take priority
+const actionConfig: Record<string, { icon: any; color: string; bg: string }> = {
+  // Election lifecycle
+  ELECTION_CREATED: { icon: MapsIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  ELECTION_UPDATED: { icon: Settings02Icon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  ELECTION_STATUS_CHANGED: { icon: MapsIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  ELECTION_SETTINGS_UPDATED: { icon: Settings02Icon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  SETTINGS_UPDATED: { icon: Settings02Icon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  // Election code
+  ELECTION_CODE_REVEALED: { icon: ViewIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  ELECTION_CODE_COPIED: { icon: ViewIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  // Organization code
+  ORG_CODE_REVEALED: { icon: ViewIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  ORG_CODE_COPIED: { icon: ViewIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  // Candidates & roles
+  CANDIDATE_ADDED: { icon: UserGroupIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  CANDIDATE_DELETED: { icon: UserGroupIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  ROLE_CREATED: { icon: ShieldKeyIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  ROLE_DELETED: { icon: ShieldKeyIcon, color: "text-amber-600", bg: "bg-amber-500/10" },
+  // Voters
+  VOTER_ADDED: { icon: UserCircleIcon, color: "text-blue-600", bg: "bg-blue-500/10" },
+  VOTER_DELETED: { icon: UserCircleIcon, color: "text-blue-600", bg: "bg-blue-500/10" },
+  // Results
+  RESULTS_GENERATED: { icon: Analytics01Icon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  RESULTS_PUBLISHED: { icon: Analytics01Icon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  // Members
+  MEMBER_ADDED: { icon: UserGroupIcon, color: "text-cyan-600", bg: "bg-cyan-500/10" },
+  MEMBER_UPDATED: { icon: UserGroupIcon, color: "text-cyan-600", bg: "bg-cyan-500/10" },
+  MEMBER_LEFT: { icon: UserRemove01Icon, color: "text-rose-600", bg: "bg-rose-500/10" },
+  MEMBER_REMOVED: { icon: UserRemove01Icon, color: "text-rose-600", bg: "bg-rose-500/10" },
+  // Systems
+  SYSTEM_APPROVED: { icon: ComputerIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  SYSTEM_REVOKED: { icon: LockKeyIcon, color: "text-zinc-600", bg: "bg-zinc-500/10" },
+  SYSTEM_REJECTED: { icon: Alert01Icon, color: "text-red-600", bg: "bg-red-500/10" },
+  SYSTEM_CONNECTED: { icon: ComputerIcon, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  // Organization
+  ORGANIZATION_CREATED: { icon: Building06Icon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  ORGANIZATION_UPDATED: { icon: Building06Icon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
 }
 
 const statusBadgeStyles: Record<string, string> = {
@@ -103,10 +154,12 @@ export function ActivityTimeline({
             </p>
           </div>
         ) : (
-          /* ~6 items visible (each ~72px tall) then scroll */
-          <div className="divide-y divide-border/50 max-h-[432px] overflow-y-auto">
+          /* ~8 items visible (each ~72px tall) then scroll */
+          <div className="divide-y divide-border/50 max-h-[576px] overflow-y-auto">
             {activities.map((activity) => {
-              const config = activityConfig[activity.type] || { icon: MapsIcon, color: "text-muted-foreground", bg: "bg-muted" }
+              const config = (activity.action && actionConfig[activity.action])
+                || typeConfig[activity.type]
+                || typeConfig.MEMBER
               const Icon = config.icon
               const badgeStyle = activity.status ? (statusBadgeStyles[activity.status] || "") : ""
               return (

@@ -6,8 +6,8 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   MapsIcon,
   UserGroupIcon,
-  LaptopIcon,
-  Settings05Icon,
+  ComputerIcon,
+  Settings02Icon,
   DashboardCircleIcon,
   ArrowRight01Icon
 } from "@hugeicons/core-free-icons"
@@ -38,14 +38,14 @@ const navItems = [
     key: "systems",
     label: "Systems",
     href: "/admin/organization/systems",
-    icon: LaptopIcon,
+    icon: ComputerIcon,
     hoverText: "group-hover:text-emerald-600",
   },
   {
     key: "settings",
     label: "Settings",
     href: "/admin/organization/settings",
-    icon: Settings05Icon,
+    icon: Settings02Icon,
     hoverText: "group-hover:text-indigo-600",
   },
 ]

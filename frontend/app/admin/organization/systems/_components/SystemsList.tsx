@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { LaptopIcon } from "@hugeicons/core-free-icons"
+import { ComputerIcon } from "@hugeicons/core-free-icons"
 import { SystemStatus } from "@prisma/client"
 import { toast } from "sonner"
 
@@ -82,7 +82,7 @@ export function SystemsList({ initialSystems }: SystemsListProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] rounded-[2rem] border border-dashed border-muted-foreground/20 p-8 text-center bg-muted/5">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4 shadow-sm border border-muted-foreground/10">
-          <HugeiconsIcon icon={LaptopIcon} strokeWidth={1.5} className="w-8 h-8 text-muted-foreground" />
+          <HugeiconsIcon icon={ComputerIcon} strokeWidth={1.5} className="w-8 h-8 text-muted-foreground" />
         </div>
         <h2 className="text-xl font-bold mb-2 tracking-tight">No systems found</h2>
         <p className="text-sm text-muted-foreground max-w-sm">

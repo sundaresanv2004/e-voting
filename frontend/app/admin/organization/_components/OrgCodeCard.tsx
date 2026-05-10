@@ -6,6 +6,7 @@ import { ViewIcon, ViewOffSlashIcon, Copy01Icon, CheckmarkCircle02Icon, Archive0
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
+import { logOrgCodeAccess } from "../_actions"
 
 interface OrgCodeCardProps {
   code: string
@@ -20,6 +21,25 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
     setCopied(true)
     toast.success("Organization code copied to clipboard")
     setTimeout(() => setCopied(false), 2000)
+    
+    try {
+      await logOrgCodeAccess("copied")
+    } catch {
+      // Ignore logging errors to keep the UI snappy
+    }
+  }
+
+  const handleReveal = async () => {
+    const nextVisible = !isVisible
+    setIsVisible(nextVisible)
+    
+    if (nextVisible) {
+      try {
+        await logOrgCodeAccess("revealed")
+      } catch {
+        // Ignore logging errors
+      }
+    }
   }
 
   return (
@@ -43,7 +63,7 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsVisible(!isVisible)}
+                onClick={handleReveal}
               >
                 <HugeiconsIcon icon={isVisible ? ViewOffSlashIcon : ViewIcon} className="h-3.5 w-3.5" />
               </Button>

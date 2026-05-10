@@ -119,6 +119,7 @@ export default async function ElectionDashboardPage({
         return {
             id: log.id,
             type: "ELECTION",
+            action: log.action,
             title: log.description || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " "),
             description: `By ${adminName}`,
             timestamp: log.createdAt,

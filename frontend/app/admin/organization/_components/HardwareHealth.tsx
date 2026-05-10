@@ -3,7 +3,7 @@
 import React from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon, LaptopIcon } from "@hugeicons/core-free-icons"
+import { ArrowRight01Icon, ComputerIcon } from "@hugeicons/core-free-icons"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -34,7 +34,7 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
       <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
         <div className="space-y-0.5">
           <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
-            <HugeiconsIcon icon={LaptopIcon} className="h-5 w-5 text-emerald-500" />
+            <HugeiconsIcon icon={ComputerIcon} className="h-5 w-5 text-emerald-500" />
             Hardware Fleet
           </CardTitle>
           <CardDescription className="text-[11px] font-bold">
@@ -55,7 +55,7 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
-              <HugeiconsIcon icon={LaptopIcon} className="h-5 w-5 text-muted-foreground" />
+              <HugeiconsIcon icon={ComputerIcon} className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="text-xs text-muted-foreground">No devices connected yet</p>
           </div>

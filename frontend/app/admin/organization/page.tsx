@@ -226,6 +226,14 @@ export default async function OrganizationDashboardPage() {
           title = "Organization updated"
           description = `Modified by ${adminName}`
           break
+        case "ORG_CODE_REVEALED":
+          title = "Organization code revealed"
+          description = `By ${adminName}`
+          break
+        case "ORG_CODE_COPIED":
+          title = "Organization code copied"
+          description = `By ${adminName}`
+          break
         default:
           // Keep the generic formatted title but always include actor
           description = `By ${adminName}`
@@ -234,6 +242,7 @@ export default async function OrganizationDashboardPage() {
       return {
         id: log.id,
         type,
+        action: log.action,
         title,
         description,
         timestamp: log.createdAt,

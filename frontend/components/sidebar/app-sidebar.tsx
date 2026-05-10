@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
 import Cookies from "js-cookie"
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
@@ -14,21 +13,18 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  SidebarMenuItem,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LayoutBottomIcon,
-  Archive01Icon,
-  LaptopIcon,
-  Settings05Icon,
-  PieChartIcon,
+  Building06Icon,
+  ComputerIcon,
+  Settings02Icon,
+  Analytics01Icon,
   UserGroupIcon,
   ShieldKeyIcon,
   UserCircleIcon,
+  MapsIcon,
 } from "@hugeicons/core-free-icons"
 
 const ELECTION_COOKIE_KEY = "last_election_id"
@@ -63,14 +59,14 @@ export function AppSidebar({
 
   const activeElectionId =
     isValidId(urlElectionId) ? urlElectionId :
-    isValidId(cookieElectionId) ? cookieElectionId :
-    _elections[0]?.id
+      isValidId(cookieElectionId) ? cookieElectionId :
+        _elections[0]?.id
 
   // 2. Format elections for switcher
   const elections = _elections.map((election) => ({
     id: election.id,
     name: election.name,
-    logo: <HugeiconsIcon icon={Archive01Icon} strokeWidth={2} />,
+    logo: <HugeiconsIcon icon={Building06Icon} strokeWidth={2} />,
     plan: election.status,
   }))
 
@@ -107,14 +103,14 @@ export function AppSidebar({
       title: "Results",
       url: `/admin/election/${activeElectionId}/results`,
       icon: (
-        <HugeiconsIcon icon={PieChartIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={Analytics01Icon} strokeWidth={2} />
       ),
     },
     {
       title: "Settings",
       url: `/admin/election/${activeElectionId}/settings`,
       icon: (
-        <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
+        <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
       ),
     },
   ]
@@ -131,7 +127,7 @@ export function AppSidebar({
       name: "Elections",
       url: "/admin/organization/elections",
       icon: (
-        <HugeiconsIcon icon={Archive01Icon} strokeWidth={2} />
+        <HugeiconsIcon icon={MapsIcon} strokeWidth={2} />
       ),
     },
     {
@@ -145,14 +141,14 @@ export function AppSidebar({
       name: "Systems",
       url: "/admin/organization/systems",
       icon: (
-        <HugeiconsIcon icon={LaptopIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={ComputerIcon} strokeWidth={2} />
       ),
     },
     {
       name: "Settings",
       url: "/admin/organization/settings",
       icon: (
-        <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
+        <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
       ),
     },
   ]
