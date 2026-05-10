@@ -19,6 +19,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UnfoldMoreIcon, PlusSignIcon, Archive01Icon } from "@hugeicons/core-free-icons"
 
@@ -69,92 +75,108 @@ export function ElectionSwitcher({
   }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              tooltip={activeElection ? activeElection.name : "Select Election"}
-            >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                {activeElection ? (
-                  activeElection.logo
-                ) : (
-                  <HugeiconsIcon
-                    icon={Archive01Icon}
-                    strokeWidth={2}
-                    className="size-4"
-                  />
-                )}
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">
-                  {activeElection ? activeElection.name : "No Election"}
-                </span>
-                <span className="truncate text-xs text-muted-foreground font-normal">
-                  {activeElection ? activeElection.plan : "None available"}
-                </span>
-              </div>
-              <HugeiconsIcon
-                icon={UnfoldMoreIcon}
-                strokeWidth={2}
-                className="ml-auto opacity-50 group-data-[collapsible=icon]:hidden"
-              />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
-            align="start"
-            side={isMobile ? "bottom" : "right"}
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="text-xs text-muted-foreground tracking-wider px-2 py-1.5">
-              Available Elections
-            </DropdownMenuLabel>
-            {elections.length === 0 && (
-              <div className="px-2 py-4 text-center text-sm text-muted-foreground italic">
-                No elections found
-              </div>
-            )}
-            {elections.map((election, index) => (
-              <DropdownMenuItem
-                key={election.id}
-                onClick={() => onSelect(election.id)}
-                className="gap-2 p-2 focus:bg-sidebar-accent transition-colors"
+    <TooltipProvider delayDuration={0}>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                tooltip={activeElection ? activeElection.name : "Select Election"}
               >
-                <div className="flex size-6 items-center justify-center rounded border bg-background group-hover:border-primary/50">
-                  {election.logo}
-                </div>
-                <span className="flex-1 truncate font-medium">
-                  {election.name}
-                </span>
-              </DropdownMenuItem>
-            ))}
-            {userRole === "ORG_ADMIN" && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
-                  onClick={() =>
-                    router.push("/admin/organization/elections?new=true")
-                  }
-                >
-                  <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  {activeElection ? (
+                    activeElection.logo
+                  ) : (
                     <HugeiconsIcon
-                      icon={PlusSignIcon}
-                      strokeWidth={2.5}
-                      className="size-3.5"
+                      icon={Archive01Icon}
+                      strokeWidth={2}
+                      className="size-4"
                     />
+                  )}
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="truncate font-medium cursor-default">
+                        {activeElection ? activeElection.name : "No Election"}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-[10px] font-bold uppercase tracking-widest z-50">
+                      {activeElection ? activeElection.name : "No Election"}
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="truncate text-xs text-muted-foreground font-normal">
+                    {activeElection ? activeElection.plan : "None available"}
+                  </span>
+                </div>
+                <HugeiconsIcon
+                  icon={UnfoldMoreIcon}
+                  strokeWidth={2}
+                  className="ml-auto opacity-50 group-data-[collapsible=icon]:hidden"
+                />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+              align="start"
+              side={isMobile ? "bottom" : "right"}
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground tracking-wider px-2 py-1.5">
+                Available Elections
+              </DropdownMenuLabel>
+              {elections.length === 0 && (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground italic">
+                  No elections found
+                </div>
+              )}
+              {elections.map((election, index) => (
+                <DropdownMenuItem
+                  key={election.id}
+                  onClick={() => onSelect(election.id)}
+                  className="gap-2 p-2 focus:bg-sidebar-accent transition-colors"
+                >
+                  <div className="flex size-6 items-center justify-center rounded border bg-background group-hover:border-primary/50">
+                    {election.logo}
                   </div>
-                  <div className="flex-1">Create Election</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex-1 truncate font-medium">
+                        {election.name}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[10px] font-bold uppercase tracking-widest z-50">
+                      {election.name}
+                    </TooltipContent>
+                  </Tooltip>
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+              ))}
+              {userRole === "ORG_ADMIN" && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
+                    onClick={() =>
+                      router.push("/admin/organization/elections?new=true")
+                    }
+                  >
+                    <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">
+                      <HugeiconsIcon
+                        icon={PlusSignIcon}
+                        strokeWidth={2.5}
+                        className="size-3.5"
+                      />
+                    </div>
+                    <div className="flex-1">Create Election</div>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </TooltipProvider>
   )
 }

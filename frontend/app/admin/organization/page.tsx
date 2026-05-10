@@ -9,8 +9,11 @@ import { TeamSnapshot } from "./_components/TeamSnapshot"
 import { QuickNavigate } from "./_components/QuickNavigate"
 import { ActivityTimeline, type ActivityItem } from "./_components/ActivityTimeline"
 import { OrgCodeCard } from "./_components/OrgCodeCard"
+import { DashboardPoller } from "./_components/DashboardPoller"
 import { ElectionStatus, SystemStatus, UserRole, AuditEntityType } from "@prisma/client"
 import { requireOrgAdmin } from "@/lib/authz"
+
+export const revalidate = 30 // Revalidate server data every 30 seconds
 
 export default async function OrganizationDashboardPage() {
   const session = await auth()
@@ -250,6 +253,24 @@ export default async function OrganizationDashboardPage() {
           title = "Organization code copied"
           description = `By ${adminName}`
           break
+        case "ORG_LOGO_UPLOADED":
+          title = "Organization logo uploaded"
+          description = `By ${adminName}`
+          break
+        case "ORG_LOGO_REMOVED":
+          title = "Organization logo removed"
+          description = `By ${adminName}`
+          break
+        case "OWNERSHIP_TRANSFERRED": {
+          const newOwnerName = (log.metadata as any)?.newOwnerName || (log.metadata as any)?.newOwnerEmail || "a member"
+          title = `Ownership transferred to ${newOwnerName}`
+          description = `By ${adminName}`
+          break
+        }
+        case "ORG_SETTINGS_UPDATED":
+          title = "System settings updated"
+          description = `Modified by ${adminName}`
+          break
         case "CANDIDATE_ADDED":
         case "CANDIDATE_UPDATED":
             title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
@@ -321,6 +342,8 @@ export default async function OrganizationDashboardPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
+      {/* Auto-refresh every 30 seconds */}
+      <DashboardPoller />
       {/* Header */}
       <DashboardHeader
         orgName={organization.name}

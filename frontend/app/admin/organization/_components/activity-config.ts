@@ -38,6 +38,11 @@ export const actionConfig: Record<string, { icon: any; color: string; bg: string
   // Organization code
   ORG_CODE_REVEALED: { icon: ViewIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
   ORG_CODE_COPIED: { icon: ViewIcon, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  // Organization logo
+  ORG_LOGO_UPLOADED: { icon: Building06Icon, color: "text-violet-600", bg: "bg-violet-500/10" },
+  ORG_LOGO_REMOVED: { icon: Building06Icon, color: "text-rose-600", bg: "bg-rose-500/10" },
+  // Ownership
+  OWNERSHIP_TRANSFERRED: { icon: UserGroupIcon, color: "text-blue-600", bg: "bg-blue-500/10" },
   // Candidates & roles
   CANDIDATE_ADDED: { icon: UserGroupIcon, color: "text-violet-600", bg: "bg-violet-500/10" },
   CANDIDATE_UPDATED: { icon: UserGroupIcon, color: "text-violet-600", bg: "bg-violet-500/10" },

@@ -11,27 +11,42 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SetTheme() {
     const { setTheme } = useTheme()
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative" suppressHydrationWarning>
-                    {/* Sun Icon: Visible in light mode, rotates out in dark */}
-                    <HugeiconsIcon icon={Sun03Icon}
-                        className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-                    />
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative h-9 w-9" suppressHydrationWarning>
+                                {/* Sun Icon: Visible in light mode, rotates out in dark */}
+                                <HugeiconsIcon icon={Sun03Icon}
+                                    className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+                                />
 
-                    {/* Moon Icon: Invisible in light mode, rotates in for dark */}
-                    <HugeiconsIcon icon={Moon02Icon}
-                        className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-                    />
+                                {/* Moon Icon: Invisible in light mode, rotates in for dark */}
+                                <HugeiconsIcon icon={Moon02Icon}
+                                    className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+                                />
 
-                    <span className="sr-only">Toggle theme</span>
-                </Button>
-            </DropdownMenuTrigger>
+                                <span className="sr-only">Toggle theme</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[10px] font-bold uppercase tracking-widest">
+                        Toggle Theme
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <DropdownMenuContent align="end" className="">
                 <DropdownMenuItem onClick={() => setTheme("light")}>
                     <HugeiconsIcon icon={Sun03Icon} strokeWidth={2} />

@@ -1,17 +1,17 @@
-import Link from "next/link"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft02Icon, Archive01Icon } from "@hugeicons/core-free-icons"
-
+import { Archive01Icon } from "@hugeicons/core-free-icons"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { requireOrgAdmin } from "@/lib/authz"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import AuditHero from "./_components/AuditHero"
 import { actionConfig, typeConfig, statusBadgeStyles } from "../_components/activity-config"
 import { AuditEntityType } from "@prisma/client"
+import { DashboardPoller } from "../_components/DashboardPoller"
+
+export const revalidate = 30
 
 function formatMetadata(metadata: unknown) {
   if (!metadata || typeof metadata !== "object") return null
@@ -51,20 +51,21 @@ export default async function OrganizationAuditPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
+      <DashboardPoller />
       <AuditHero
         title="Organization Audit"
         description="Comprehensive history of administrative actions"
       />
 
       <div className="flex-1 px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
-        <Card className="border-border/50 shadow-sm overflow-hidden py-0">
+        <Card className="border-border/50 overflow-hidden py-0">
           <CardContent className="p-0">
             {auditLogs.length === 0 ? (
               <div className="p-20 text-center space-y-4">
                 <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4 opacity-50">
                   <HugeiconsIcon icon={Archive01Icon} className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-black tracking-tight">Records are Clear</h3>
+                <h3 className="text-lg font-semibold tracking-tight">Records are Clear</h3>
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                   No administrative activity has been logged for this organization yet.
                 </p>
@@ -93,7 +94,7 @@ export default async function OrganizationAuditPage() {
                   return (
                     <div key={log.id} className="p-6 flex flex-col gap-4 md:flex-row md:items-start transition-all hover:bg-muted/30 group">
                       {/* Icon Section */}
-                      <div className={`h-12 w-12 shrink-0 rounded-2xl flex items-center justify-center shadow-sm ring-1 ring-border/50 transition-transform group-hover:scale-105 ${config.bg}`}>
+                      <div className={`h-12 w-12 shrink-0 rounded-2xl flex items-center justify-center shadow-sm ring-1 ring-border/50 ${config.bg}`}>
                         <HugeiconsIcon icon={Icon} className={`h-6 w-6 ${config.color}`} />
                       </div>
 

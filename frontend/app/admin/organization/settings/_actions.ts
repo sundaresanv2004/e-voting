@@ -233,6 +233,94 @@ export async function getOrganizationMembersAction() {
   return { success: true, data: members }
 }
 
+export async function logOrgCodeRevealed() {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "ORG_CODE_REVEALED",
+        entityType: AuditEntityType.SECURITY,
+        entityId: access.organizationId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { source: "settings_page" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ORG_CODE_REVEALED]", error)
+    return { success: false }
+  }
+}
+
+export async function logOrgCodeCopied() {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "ORG_CODE_COPIED",
+        entityType: AuditEntityType.SECURITY,
+        entityId: access.organizationId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { source: "settings_page" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ORG_CODE_COPIED]", error)
+    return { success: false }
+  }
+}
+
+export async function logOrgLogoUploaded() {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "ORG_LOGO_UPLOADED",
+        entityType: AuditEntityType.ORGANIZATION,
+        entityId: access.organizationId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { source: "settings_page" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ORG_LOGO_UPLOADED]", error)
+    return { success: false }
+  }
+}
+
+export async function logOrgLogoRemoved() {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "ORG_LOGO_REMOVED",
+        entityType: AuditEntityType.ORGANIZATION,
+        entityId: access.organizationId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { source: "settings_page" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ORG_LOGO_REMOVED]", error)
+    return { success: false }
+  }
+}
+
 export async function transferOwnershipAction(newOwnerId: string) {
   const session = await auth()
   const access = await requireOrganizationOwner(session?.user)

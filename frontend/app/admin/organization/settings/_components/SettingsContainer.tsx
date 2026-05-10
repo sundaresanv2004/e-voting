@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateOrganizationAction, updateOrganizationSettingsAction } from "../_actions"
+import { updateOrganizationAction, updateOrganizationSettingsAction, logOrgCodeRevealed, logOrgCodeCopied, logOrgLogoUploaded, logOrgLogoRemoved } from "../_actions"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -232,8 +232,12 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
     setIsPending(true)
     try {
       const result = await updateOrganizationAction(initialData.name, initialData.type, newUrl)
-      if (result.success) toast.success("Logo updated")
-      else toast.error(result.error || "Failed to save logo")
+      if (result.success) {
+        toast.success("Logo uploaded successfully")
+        logOrgLogoUploaded().catch(() => {})
+      } else {
+        toast.error(result.error || "Failed to save logo")
+      }
     } catch {
       toast.error("Auto-save failed")
     } finally {
@@ -246,8 +250,12 @@ function LogoSection({ initialData }: { initialData: ProfileData }) {
     setIsPending(true)
     try {
       const result = await updateOrganizationAction(initialData.name, initialData.type, "")
-      if (result.success) toast.success("Logo removed")
-      else toast.error(result.error || "Failed to remove logo")
+      if (result.success) {
+        toast.success("Logo removed successfully")
+        logOrgLogoRemoved().catch(() => {})
+      } else {
+        toast.error(result.error || "Failed to remove logo")
+      }
     } catch {
       toast.error("Operation failed")
     } finally {
@@ -311,6 +319,12 @@ function CodeSection({ code }: { code: string }) {
     setCopied(true)
     toast.success("Organization code copied to clipboard")
     setTimeout(() => setCopied(false), 2000)
+    logOrgCodeCopied().catch(() => {})
+  }
+
+  const handleReveal = () => {
+    setIsDialogOpen(true)
+    logOrgCodeRevealed().catch(() => {})
   }
 
   return (
@@ -337,7 +351,7 @@ function CodeSection({ code }: { code: string }) {
                 {copied ? "Copied" : "Copy Code"}
               </Button>
               <Button
-                onClick={() => setIsDialogOpen(true)}
+                onClick={handleReveal}
                 variant="outline"
                 size="sm"
               >

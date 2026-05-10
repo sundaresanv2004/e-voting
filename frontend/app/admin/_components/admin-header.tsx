@@ -12,11 +12,17 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  BreadcrumbLink,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
 import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function AdminHeader() {
   const pathname = usePathname()
@@ -28,9 +34,22 @@ export function AdminHeader() {
   const isUserContext = pathSegments.includes('user')
 
   let contextLabel = "Admin"
-  if (isElectionContext) contextLabel = "Election"
-  if (isOrganizationContext) contextLabel = "Organization"
-  if (isUserContext) contextLabel = "User"
+  let contextHref = "/admin"
+  if (isElectionContext) {
+    contextLabel = "Election"
+    // If we have an ID like /admin/election/[id]/...
+    if (pathSegments.length > 2) {
+      contextHref = `/admin/election/${pathSegments[2]}`
+    }
+  }
+  if (isOrganizationContext) {
+    contextLabel = "Organization"
+    contextHref = "/admin/organization"
+  }
+  if (isUserContext) {
+    contextLabel = "User"
+    contextHref = "/admin/user/settings"
+  }
 
   let pageLabel = "Dashboard"
   // Heuristic for dashboard vs subpage:
@@ -47,37 +66,55 @@ export function AdminHeader() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mr-2 data-[orientation=vertical]:h-4"
-        />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <span className="font-medium text-muted-foreground">{contextLabel}</span>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage className="font-semibold text-foreground">{pageLabel}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-        >
-          <Link href="/">
-            <HugeiconsIcon icon={Home01Icon} className="h-4 w-4" strokeWidth={2} />
-          </Link>
-        </Button>
-        <SetTheme />
-      </div>
-    </header>
+    <TooltipProvider delayDuration={0}>
+      <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b">
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarTrigger className="-ml-1" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-[10px] font-bold uppercase tracking-widest">
+              Toggle Sidebar
+            </TooltipContent>
+          </Tooltip>
+          <div className="h-4 w-px bg-border/60 mx-1.5" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink asChild>
+                  <Link href={contextHref} className="font-medium">
+                    {contextLabel}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-semibold text-foreground">{pageLabel}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+              >
+                <Link href="/">
+                  <HugeiconsIcon icon={Home01Icon} className="h-4 w-4" strokeWidth={2} />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-[10px] font-bold uppercase tracking-widest">
+              Go Home
+            </TooltipContent>
+          </Tooltip>
+          <div className="h-4 w-px bg-border/60 mx-1" />
+          <SetTheme />
+        </div>
+      </header>
+    </TooltipProvider>
   )
 }

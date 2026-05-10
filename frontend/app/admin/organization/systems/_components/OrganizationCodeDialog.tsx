@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { logOrgCodeCopied } from "../../settings/_actions";
 
 interface OrganizationCodeDialogProps {
   code: string;
@@ -37,6 +38,7 @@ export function OrganizationCodeDialog({
     setCopied(true);
     toast.success("Organization code copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
+    logOrgCodeCopied().catch(() => {});
   };
 
   return (
