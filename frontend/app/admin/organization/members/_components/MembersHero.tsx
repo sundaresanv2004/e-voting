@@ -16,7 +16,7 @@ const MembersHero: React.FC<MembersHeroProps> = ({ title = "Organization Members
     })
 
     return (
-        <div className="relative overflow-hidden border-b bg-card/50 backdrop-blur-sm">
+        <div className="relative overflow-hidden border-b backdrop-blur-sm">
             <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
                 <div className="flex items-center gap-5">
                     <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-600 shadow-sm ring-1 ring-cyan-500/20 group transition-all duration-300 hover:-rotate-3">
@@ -39,8 +39,8 @@ const MembersHero: React.FC<MembersHeroProps> = ({ title = "Organization Members
             </div>
 
             {/* Premium Decorations */}
-            <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-cyan-500/5 rounded-full blur-3xl opacity-60" />
-            <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-64 w-64 bg-blue-500/5 rounded-full blur-3xl opacity-60" />
+            {/* <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-cyan-500/5 rounded-full blur-3xl opacity-60" /> */}
+            {/* <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-64 w-64 bg-blue-500/5 rounded-full blur-3xl opacity-60" /> */}
         </div>
     )
 }

@@ -14,9 +14,11 @@ import {
   ArrowUpDownIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
+  LogoutSquare01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserRole } from "@prisma/client"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +39,9 @@ export type Member = {
   image: string | null
   role: UserRole
   hasAllElectionsAccess: boolean
+  isActive: boolean
+  lastLoginAt: Date | null
+  lockedUntil: Date | null
   createdAt: Date
   updatedAt: Date
   electionAccess: {
@@ -59,6 +64,25 @@ export type Member = {
       image: string | null
     }
   }[]
+}
+
+// Generate a stable color from a string (for avatar fallback)
+export function getAvatarColor(str: string) {
+  const colors = [
+    "bg-violet-500/20 text-violet-600",
+    "bg-blue-500/20 text-blue-600",
+    "bg-emerald-500/20 text-emerald-600",
+    "bg-amber-500/20 text-amber-600",
+    "bg-rose-500/20 text-rose-600",
+    "bg-cyan-500/20 text-cyan-600",
+    "bg-indigo-500/20 text-indigo-600",
+    "bg-pink-500/20 text-pink-600",
+  ]
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
 }
 
 export function getRoleBadgeStyle(role: UserRole) {
@@ -112,7 +136,7 @@ export const columns = (
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 border border-border/50">
               <AvatarImage src={member.image || ""} alt={member.name || "User"} className="object-cover" />
-              <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-bold">
+              <AvatarFallback className={`text-[10px] font-bold ${getAvatarColor(member.email)}`}>
                 {member.name?.charAt(0) || member.email?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
@@ -208,6 +232,36 @@ export const columns = (
         const member = row.original
         const isCreator = member.id === orgCreatorId
 
+        const isCurrentUserRow = member.id === currentUserId
+
+        if (isCurrentUserRow) {
+          return (
+            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted group rounded-xl">
+                    <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" color="currentColor" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 shadow-2xl border-muted/20 rounded-2xl p-2">
+                  <div className="px-2 py-1 mb-2">
+                    <Badge variant="outline" className="bg-blue-50/50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 font-bold uppercase tracking-widest text-[9px] py-0 px-2 h-5 shadow-none">
+                      You
+                    </Badge>
+                  </div>
+                  <DropdownMenuSeparator className="opacity-40" />
+                  <DropdownMenuItem onSelect={() => onView(member)} className="gap-2 cursor-pointer py-2.5 rounded-xl font-semibold text-sm">
+                    <HugeiconsIcon icon={ViewIcon} className="h-4 w-4" color="currentColor" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="opacity-40" />
+                  <LeaveOrgMenuItem />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        }
+
         if (isCreator) {
           return (
             <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
@@ -280,3 +334,16 @@ export const columns = (
       },
     },
   ]
+
+function LeaveOrgMenuItem() {
+  const router = useRouter()
+  return (
+    <DropdownMenuItem
+      variant="destructive"
+      onSelect={() => router.push("/user/settings?tab=danger")}
+    >
+      <HugeiconsIcon icon={LogoutSquare01Icon} className="h-4 w-4" color="currentColor" />
+      Leave Organization
+    </DropdownMenuItem>
+  )
+}

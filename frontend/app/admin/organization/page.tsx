@@ -128,6 +128,7 @@ export default async function OrganizationDashboardPage() {
             AuditEntityType.SECURITY,
             AuditEntityType.MEMBER,
             AuditEntityType.ACCESS,
+            AuditEntityType.ELECTION,
           ],
         },
       },
@@ -199,9 +200,20 @@ export default async function OrganizationDashboardPage() {
           description = `Role → ${(log.metadata as any)?.after?.role || "updated"} by ${adminName}`
           break
         case "MEMBER_LEFT":
-        case "MEMBER_REMOVED":
-          title = "Member left organization"
-          description = `Removed by ${adminName}`
+          title = (log.metadata as any)?.name || (log.metadata as any)?.email || "A member"
+          description = `Left the organization`
+          break
+        case "MEMBER_REMOVED": {
+          const removedName = (log.metadata as any)?.name || (log.metadata as any)?.email || "A member"
+          title = removedName
+          description = `Removed from organization by ${adminName}`
+          break
+        }
+        case "MEMBER_EMAIL_COPIED":
+          title = (log.metadata as any)?.email
+            ? `Member email copied: ${(log.metadata as any).email}`
+            : "Member email copied"
+          description = `By ${adminName}`
           break
         case "SYSTEM_APPROVED":
           title = (log.metadata as any)?.name || "Device approved"
@@ -214,9 +226,13 @@ export default async function OrganizationDashboardPage() {
           break
         case "ELECTION_CREATED":
         case "ELECTION_UPDATED":
+        case "ELECTION_DELETED":
         case "ELECTION_STATUS_CHANGED":
           title = (log.metadata as any)?.name || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " ")
-          description = `${log.action === "ELECTION_CREATED" ? "Created" : "Updated"} by ${adminName}`
+          let actionWord = "Updated"
+          if (log.action === "ELECTION_CREATED") actionWord = "Created"
+          if (log.action === "ELECTION_DELETED") actionWord = "Deleted"
+          description = `${actionWord} by ${adminName}`
           break
         case "ORGANIZATION_CREATED":
           title = (log.metadata as any)?.name || "Organization created"
@@ -234,6 +250,26 @@ export default async function OrganizationDashboardPage() {
           title = "Organization code copied"
           description = `By ${adminName}`
           break
+        case "CANDIDATE_ADDED":
+        case "CANDIDATE_UPDATED":
+            title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
+            description = `${log.action === "CANDIDATE_ADDED" ? "Candidate added" : "Candidate updated"} by ${adminName}`
+            break
+        case "CANDIDATE_REMOVED":
+        case "CANDIDATE_DELETED":
+            title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
+            description = `Candidate removed by ${adminName}`
+            break
+        case "ROLE_CREATED":
+        case "ROLE_DELETED":
+            title = (log.metadata as any)?.title || title
+            description = `${log.action === "ROLE_CREATED" ? "Role created" : "Role deleted"} by ${adminName}`
+            break
+        case "VOTER_ADDED":
+        case "VOTER_DELETED":
+            title = (log.metadata as any)?.identifier || (log.metadata as any)?.email || title
+            description = `${log.action === "VOTER_ADDED" ? "Voter added" : "Voter removed"} by ${adminName}`
+            break
         default:
           // Keep the generic formatted title but always include actor
           description = `By ${adminName}`
@@ -315,7 +351,7 @@ export default async function OrganizationDashboardPage() {
               memberCount={totalMembers}
               systemCount={totalSystems}
             />
-            <ActivityTimeline activities={activities} />
+            <ActivityTimeline activities={activities} auditHref="/admin/organization/audit" />
           </div>
 
           {/* Right Column — 1/3 */}

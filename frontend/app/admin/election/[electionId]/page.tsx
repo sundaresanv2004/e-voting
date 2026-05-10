@@ -116,12 +116,49 @@ export default async function ElectionDashboardPage({
     // Map audit logs to ActivityItems
     const activities: ActivityItem[] = latestAuditLogs.map(log => {
         const adminName = log.admin?.name || log.admin?.email || "Administrator"
+        let title = log.description || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " ")
+        let description = `By ${adminName}`
+
+        switch (log.action) {
+            case "ELECTION_CREATED":
+            case "ELECTION_UPDATED":
+            case "ELECTION_STATUS_CHANGED":
+                title = (log.metadata as any)?.name || title
+                description = `${log.action === "ELECTION_CREATED" ? "Created" : "Updated"} by ${adminName}`
+                break
+            case "CANDIDATE_ADDED":
+            case "CANDIDATE_UPDATED":
+                title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
+                description = `${log.action === "CANDIDATE_ADDED" ? "Candidate added" : "Candidate updated"} by ${adminName}`
+                break
+            case "CANDIDATE_REMOVED":
+            case "CANDIDATE_DELETED":
+                title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
+                description = `Candidate removed by ${adminName}`
+                break
+            case "ROLE_CREATED":
+            case "ROLE_DELETED":
+                title = (log.metadata as any)?.title || title
+                description = `${log.action === "ROLE_CREATED" ? "Role created" : "Role deleted"} by ${adminName}`
+                break
+            case "VOTER_ADDED":
+            case "VOTER_DELETED":
+                title = (log.metadata as any)?.identifier || (log.metadata as any)?.email || title
+                description = `${log.action === "VOTER_ADDED" ? "Voter added" : "Voter removed"} by ${adminName}`
+                break
+            case "ELECTION_CODE_REVEALED":
+            case "ELECTION_CODE_COPIED":
+                title = "Election code accessed"
+                description = `By ${adminName}`
+                break
+        }
+
         return {
             id: log.id,
             type: "ELECTION",
             action: log.action,
-            title: log.description || (log.action.charAt(0).toUpperCase() + log.action.slice(1).toLowerCase()).replace(/_/g, " "),
-            description: `By ${adminName}`,
+            title,
+            description,
             timestamp: log.createdAt,
             status: "SUCCESS"
         }
@@ -174,7 +211,7 @@ export default async function ElectionDashboardPage({
                             activities={activities}
                             title="Election Activity"
                             description="Recent changes and events for this election"
-                            auditHref={`/admin/election/${electionId}/audit`}
+                            auditHref={access.role === UserRole.ORG_ADMIN ? "/admin/organization/audit" : undefined}
                         />
                     </div>
 

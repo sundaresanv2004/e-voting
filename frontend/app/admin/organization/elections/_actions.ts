@@ -332,3 +332,26 @@ export async function toggleElectionStatus(id: string) {
     return { success: false, error: error.message || "Failed to update election status" }
   }
 }
+
+export async function logOrganizationElectionCodeCopy(electionId: string) {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "ELECTION_CODE_COPIED",
+        entityType: AuditEntityType.SECURITY,
+        entityId: electionId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { source: "organization_dashboard" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ELECTION_CODE_COPY]", error)
+    return { success: false }
+  }
+}

@@ -33,6 +33,9 @@ export async function getMembers() {
       image: true,
       role: true,
       hasAllElectionsAccess: true,
+      isActive: true,
+      lastLoginAt: true,
+      lockedUntil: true,
       createdAt: true,
       updatedAt: true,
       electionAccess: {
@@ -477,4 +480,27 @@ export async function getElectionsForAssignment() {
     },
     orderBy: { createdAt: "desc" }
   })
+}
+
+export async function logMemberEmailCopy(targetUserId: string, memberEmail: string) {
+  const session = await auth()
+  const access = await requireOrgAdmin(session?.user)
+
+  try {
+    await db.adminAuditLog.create({
+      data: {
+        action: "MEMBER_EMAIL_COPIED",
+        entityType: AuditEntityType.MEMBER,
+        entityId: targetUserId,
+        adminId: access.userId,
+        organizationId: access.organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { email: memberEmail, source: "member_details_sheet" },
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_MEMBER_EMAIL_COPY]", error)
+    return { success: false }
+  }
 }

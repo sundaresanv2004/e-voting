@@ -7,16 +7,22 @@ import {
   Delete02Icon,
   Calendar01Icon,
   Shield01Icon,
-  Mail01Icon,
   UserIcon,
   CheckmarkCircle02Icon,
   Copy01Icon,
   Tick02Icon,
   Archive01Icon,
   Clock01Icon,
+  Mail01Icon,
+  AlertCircleIcon,
+  CheckmarkBadge01Icon,
+  LockKeyIcon,
+  LogoutSquare01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { UserRole } from "@prisma/client"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -32,7 +38,8 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { type Member } from "./columns"
+import { type Member, getAvatarColor } from "./columns"
+import { logMemberEmailCopy } from "../_actions"
 
 interface MemberDetailsSheetProps {
   member: Member | null
@@ -70,13 +77,43 @@ function getRoleColor(role: UserRole) {
   }
 }
 
-function CopyButton({ text }: { text: string }) {
+// Plain-language role descriptions
+function getRoleDescription(role: UserRole, hasAllElectionsAccess: boolean): { title: string; description: string } {
+  switch (role) {
+    case UserRole.ORG_ADMIN:
+      return {
+        title: "Full Administrator",
+        description: "Can manage everything — elections, members, devices, and settings across the whole organization.",
+      }
+    case UserRole.STAFF:
+      return {
+        title: hasAllElectionsAccess ? "Staff — All Elections" : "Staff — Limited Elections",
+        description: hasAllElectionsAccess
+          ? "Can manage and operate all elections in the organization."
+          : "Can only manage and operate the specific elections they have been assigned to.",
+      }
+    case UserRole.VIEWER:
+      return {
+        title: hasAllElectionsAccess ? "Viewer — All Elections" : "Viewer — Limited Elections",
+        description: hasAllElectionsAccess
+          ? "Can view results and data across all elections, but cannot make any changes."
+          : "Can only view the specific elections they have been assigned to.",
+      }
+    default:
+      return { title: "No Role", description: "This user has no active role in the organization." }
+  }
+}
+
+function CopyButton({ text, memberId, memberEmail }: { text: string; memberId: string; memberEmail: string }) {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
     setCopied(true)
+    toast.success("Email address copied to clipboard")
     setTimeout(() => setCopied(false), 2000)
+    // Log without blocking
+    logMemberEmailCopy(memberId, memberEmail).catch(() => {})
   }
 
   return (
@@ -102,6 +139,37 @@ export function MemberDetailsSheet({
   if (!member) return null
 
   const joinedAgo = formatDistanceToNow(new Date(member.createdAt), { addSuffix: true })
+  const isLocked = member.lockedUntil && new Date(member.lockedUntil) > new Date()
+  const roleDesc = getRoleDescription(member.role, member.hasAllElectionsAccess)
+
+  // Determine account status
+  let accountStatus: "active" | "locked" | "inactive"
+  if (isLocked) accountStatus = "locked"
+  else if (!member.isActive) accountStatus = "inactive"
+  else accountStatus = "active"
+
+  const statusConfig = {
+    active: {
+      label: "Active",
+      color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      dot: "bg-emerald-500",
+      icon: CheckmarkBadge01Icon,
+    },
+    locked: {
+      label: "Locked",
+      color: "bg-red-500/10 text-red-600 border-red-500/20",
+      dot: "bg-red-500",
+      icon: LockKeyIcon,
+    },
+    inactive: {
+      label: "Inactive",
+      color: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
+      dot: "bg-zinc-400",
+      icon: AlertCircleIcon,
+    },
+  }[accountStatus]
+
+  const avatarColor = getAvatarColor(member.email)
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -136,7 +204,7 @@ export function MemberDetailsSheet({
               <div className="relative z-10 flex items-center gap-4">
                 <Avatar className="h-14 w-14 shadow-lg border border-border/50">
                   <AvatarImage src={member.image || ""} alt={member.name || "User"} className="object-cover" />
-                  <AvatarFallback className="bg-muted text-muted-foreground text-lg font-bold">
+                  <AvatarFallback className={`text-lg font-bold ${avatarColor}`}>
                     {member.name?.charAt(0) || member.email?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -154,12 +222,11 @@ export function MemberDetailsSheet({
                       </TooltipContent>
                     </Tooltip>
                     <div className="flex items-center gap-1 bg-background/50 backdrop-blur-sm p-0.5 rounded-lg border shrink-0">
-                      <CopyButton text={member.email} />
+                      <CopyButton text={member.email} memberId={member.id} memberEmail={member.email} />
                     </div>
                   </div>
                 </div>
               </div>
-              {/* Subtle background decoration */}
               <HugeiconsIcon
                 icon={UserIcon}
                 className="absolute -right-6 -bottom-6 h-32 w-32 opacity-[0.03] rotate-12"
@@ -167,12 +234,76 @@ export function MemberDetailsSheet({
               />
             </div>
 
+            {/* Account Status */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium px-1">Account Status</h4>
+              <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ${statusConfig.color} bg-opacity-10`}>
+                  <HugeiconsIcon icon={statusConfig.icon} className="h-5 w-5" color="currentColor" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-1.5 w-1.5 rounded-full ${statusConfig.dot}`} />
+                    <p className="text-sm font-medium">{statusConfig.label}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {accountStatus === "locked"
+                      ? `Account locked until ${format(new Date(member.lockedUntil!), "MMM d, h:mm a")}`
+                      : accountStatus === "inactive"
+                      ? "This account has been deactivated"
+                      : "Account is in good standing"}
+                  </p>
+                </div>
+                <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-2 py-0 border-none rounded-full shrink-0 ${statusConfig.color}`}>
+                  {statusConfig.label}
+                </Badge>
+              </div>
+
+              {/* Last Login (Activity Pulse) */}
+              <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 shadow-sm ring-1 ring-violet-500/20">
+                  <HugeiconsIcon icon={Clock01Icon} className="h-5 w-5" color="currentColor" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Last Login</p>
+                  <p className="text-sm font-medium mt-0.5">
+                    {member.lastLoginAt
+                      ? format(new Date(member.lastLoginAt), "MMM d, yyyy · h:mm a")
+                      : "Never logged in"}
+                  </p>
+                </div>
+                {member.lastLoginAt && (
+                  <Badge variant="secondary" className="font-mono text-[10px] py-0 px-1.5 shrink-0">
+                    {formatDistanceToNow(new Date(member.lastLoginAt), { addSuffix: true })}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
+            {/* Role Description */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium px-1">Role & Permissions</h4>
+              <div className="flex items-start gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 shadow-sm ring-1 ring-indigo-500/20">
+                  <HugeiconsIcon icon={Shield01Icon} className="h-5 w-5" color="currentColor" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{roleDesc.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{roleDesc.description}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
             {/* Access Scope Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <h4 className="text-sm font-medium">Grant & Access Scope</h4>
+                <h4 className="text-sm font-medium">Election Access</h4>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full ring-1 ring-border">
-                  {member.role === UserRole.ORG_ADMIN || member.hasAllElectionsAccess ? "Unrestricted" : "Granular"}
+                  {member.role === UserRole.ORG_ADMIN || member.hasAllElectionsAccess ? "All Elections" : "Assigned Only"}
                 </span>
               </div>
 
@@ -182,9 +313,9 @@ export function MemberDetailsSheet({
                     <HugeiconsIcon icon={Shield01Icon} className="h-5 w-5" color="currentColor" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">Governance Level Access</p>
+                    <p className="text-sm font-medium">Access to All Elections</p>
                     <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                      Complete visibility and management rights across all current and future elections.
+                      This member can see and manage all current and future elections automatically.
                     </p>
                   </div>
                 </div>
@@ -199,7 +330,7 @@ export function MemberDetailsSheet({
                         {member.electionAccess.length} Assigned {member.electionAccess.length === 1 ? 'Election' : 'Elections'}
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                        Limited to specific assigned campaigns.
+                        Limited to specific assigned elections only.
                       </p>
                     </div>
                   </div>
@@ -288,7 +419,7 @@ export function MemberDetailsSheet({
                         <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
                           <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
                             <AvatarImage src={addedBy.image || ""} alt={addedBy.name || "User"} className="object-cover" />
-                            <AvatarFallback className="bg-green-500/5 text-green-600 text-[10px] font-bold">
+                            <AvatarFallback className={`text-[10px] font-bold ${getAvatarColor(addedBy.email)}`}>
                               {addedBy.name?.charAt(0) || addedBy.email?.charAt(0) || "U"}
                             </AvatarFallback>
                           </Avatar>
@@ -321,7 +452,7 @@ export function MemberDetailsSheet({
                         <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
                           <Avatar className="h-10 w-10 shadow-sm border border-border/50 shrink-0">
                             <AvatarImage src={updatedBy.image || ""} alt={updatedBy.name || "User"} className="object-cover" />
-                            <AvatarFallback className="bg-purple-500/5 text-purple-600 text-[10px] font-bold">
+                            <AvatarFallback className={`text-[10px] font-bold ${getAvatarColor(updatedBy.email)}`}>
                               {updatedBy.name?.charAt(0) || updatedBy.email?.charAt(0) || "U"}
                             </AvatarFallback>
                           </Avatar>
@@ -382,8 +513,31 @@ export function MemberDetailsSheet({
               </Button>
             </SheetFooter>
           )}
+
+          {isCurrentUser && !isOwner && (
+            <LeaveOrgButton onClose={() => onOpenChange(false)} />
+          )}
         </SheetContent>
       </Sheet>
     </TooltipProvider>
+  )
+}
+
+function LeaveOrgButton({ onClose }: { onClose: () => void }) {
+  const router = useRouter()
+  return (
+    <SheetFooter className="mt-auto border-t py-4 px-6 bg-muted/5 lg:backdrop-blur-sm">
+      <Button
+        variant="outline"
+        className="w-full bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-700 transition-colors gap-2"
+        onClick={() => {
+          onClose()
+          setTimeout(() => router.push("/user/settings?tab=danger"), 300)
+        }}
+      >
+        <HugeiconsIcon icon={LogoutSquare01Icon} className="h-4 w-4 shrink-0" color="currentColor" />
+        Leave Organization
+      </Button>
+    </SheetFooter>
   )
 }

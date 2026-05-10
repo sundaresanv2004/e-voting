@@ -14,6 +14,7 @@ import {
   PauseIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -89,13 +90,19 @@ function getStatusDot(status: string) {
   }
 }
 
-function CopyButton({ text }: { text: string }) {
+import { logOrganizationElectionCodeCopy } from "../_actions"
+
+function CopyButton({ text, electionId }: { text: string; electionId: string }) {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    
+    // Log the action without blocking UI
+    logOrganizationElectionCodeCopy(electionId).catch(() => {})
+    toast.success("Election code copied to clipboard")
   }
 
   return (
@@ -164,7 +171,7 @@ export function ElectionDetailsSheet({
                   </code>
                 </div>
                 <div className="flex items-center gap-2 bg-background/50 backdrop-blur-sm p-1 rounded-xl border shrink-0">
-                  <CopyButton text={election.code} />
+                  <CopyButton text={election.code} electionId={election.id} />
                 </div>
               </div>
               {/* Subtle background decoration */}
@@ -220,7 +227,7 @@ export function ElectionDetailsSheet({
 
             {/* Integrity Logs & Metadata */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium px-1">Integrity Logs</h4>
+              <h4 className="text-sm font-medium px-1">Integrity Logs & Metadata</h4>
               <div className="grid gap-3">
                 {/* Creator Card */}
                 <div className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:bg-muted/10">
