@@ -8,7 +8,7 @@ if [ -z "${DATABASE_URL}" ]; then
   exit 1
 fi
 
-npx prisma migrate deploy --schema=prisma/schema.prisma
+node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
 
 echo "Starting the application..."
 exec node server.js
