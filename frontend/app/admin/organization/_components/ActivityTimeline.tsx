@@ -138,10 +138,10 @@ export function ActivityTimelineSkeleton() {
     <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
       <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
         <div className="space-y-1.5">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-5 w-40 rounded-lg" />
+          <Skeleton className="h-3 w-32 rounded-full" />
         </div>
-        <Skeleton className="h-7 w-20" />
+        <Skeleton className="h-7 w-20 rounded-full" />
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-border/50">
@@ -150,11 +150,11 @@ export function ActivityTimelineSkeleton() {
               <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-start justify-between gap-3">
-                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
                   <Skeleton className="h-4 w-16 rounded-full" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-3 w-1/2 rounded-full" />
                   <Skeleton className="h-3 w-12 rounded-full" />
                 </div>
               </div>

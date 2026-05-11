@@ -12,10 +12,10 @@ interface UserHeroProps {
 }
 
 const UserHero: React.FC<UserHeroProps> = ({ 
-    title = "User Settings", 
+    title = "Account Settings", 
     description,
     icon = UserCircleIcon, 
-    color = "text-indigo-600",
+    color = "text-primary",
     children 
 }) => {
     const currentDate = new Date().toLocaleDateString("en-US", {
@@ -26,27 +26,32 @@ const UserHero: React.FC<UserHeroProps> = ({
     })
 
     return (
-        <div className="relative overflow-hidden border-b">
-            <div className="relative z-10 flex flex-col space-y-4 py-6 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
-                <div className="flex items-center gap-4">
+        <div className="relative overflow-hidden rounded-3xl bg-card border shadow-sm w-full mb-8">
+            {/* Abstract Background Elements */}
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-48 w-48 rounded-full bg-primary/5 blur-3xl" />
+
+            <div className="relative z-10 flex flex-col space-y-6 py-8 px-6 sm:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 w-full">
+                <div className="flex items-center gap-6">
                     <div className={cn(
-                        "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-muted shadow-sm ring-1 ring-border",
+                        "relative flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.25rem] bg-background shadow-md border",
                         color
                     )}>
-                        <HugeiconsIcon icon={icon} className="h-6 w-6 relative z-10" color="currentColor" />
+                        <div className="absolute inset-0 rounded-[1.25rem] bg-current opacity-[0.03]" />
+                        <HugeiconsIcon icon={icon} className="h-8 w-8 relative z-10" />
                     </div>
-                    <div className="space-y-0.5">
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                    <div className="space-y-1.5">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
                             {title}
                         </h1>
                         <div className="flex items-center text-sm text-muted-foreground">
                             {description ? (
-                                <p className="font-medium">{description}</p>
+                                <p className="font-medium text-muted-foreground/80">{description}</p>
                             ) : (
-                                <>
-                                    <HugeiconsIcon icon={Calendar02Icon} className="mr-1.5 h-4 w-4" color="currentColor" />
-                                    <p className="font-medium">{currentDate}</p>
-                                </>
+                                <div className="flex items-center gap-2 font-medium text-muted-foreground/80">
+                                    <HugeiconsIcon icon={Calendar02Icon} className="h-4 w-4" />
+                                    <span>{currentDate}</span>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -60,3 +65,19 @@ const UserHero: React.FC<UserHeroProps> = ({
 }
 
 export default UserHero
+
+export function UserHeroSkeleton() {
+    return (
+        <div className="relative overflow-hidden rounded-3xl bg-card border shadow-sm w-full mb-8">
+            <div className="relative z-10 flex flex-col space-y-6 py-8 px-6 sm:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 w-full">
+                <div className="flex items-center gap-6">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.25rem] bg-muted shadow-md border animate-pulse" />
+                    <div className="space-y-2">
+                        <div className="h-8 w-48 bg-muted rounded-md animate-pulse" />
+                        <div className="h-4 w-64 bg-muted rounded-md animate-pulse" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

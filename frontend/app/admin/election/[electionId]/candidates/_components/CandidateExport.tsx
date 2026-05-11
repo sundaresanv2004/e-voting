@@ -81,24 +81,43 @@ export function CandidateExport({ data, electionName }: CandidateExportProps) {
           ) : (
             <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
           )}
-          <span>{isExporting ? "Generating..." : "Export"}</span>
+          <span className="font-semibold">{isExporting ? "Generating..." : "Export"}</span>
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-xl border-primary/10">
+        <DropdownMenuLabel className="px-3 py-2 text-xs font-black uppercase tracking-widest text-muted-foreground/60">
           Choose Format
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-          <HugeiconsIcon icon={TableIcon} className="h-4 w-4" />
-          <span>Excel Spreadsheet</span>
+        <DropdownMenuSeparator className="mx-1" />
+
+        <DropdownMenuItem
+          onClick={() => handleExport("xlsx")}
+          className="rounded-xl flex items-center gap-3 py-2.5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+        >
+          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600">
+            <HugeiconsIcon icon={TableIcon} className="h-4 w-4" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm">Excel Spreadsheet</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Full candidate data breakdown</span>
+          </div>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExport("csv")}>
-          <HugeiconsIcon icon={File02Icon} className="h-4 w-4" />
-          <span>CSV File</span>
+
+        <DropdownMenuItem
+          onClick={() => handleExport("csv")}
+          className="rounded-xl flex items-center gap-3 py-2.5 focus:bg-primary/5 focus:text-primary transition-colors cursor-pointer"
+        >
+          <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600">
+            <HugeiconsIcon icon={File02Icon} className="h-4 w-4" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm">CSV File</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Simple text-based format</span>
+          </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
+

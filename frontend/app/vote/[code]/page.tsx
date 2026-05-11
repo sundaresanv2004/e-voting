@@ -11,21 +11,19 @@ export default async function VotePage({
   
   const election = await db.election.findUnique({
     where: { code: code.toUpperCase() },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      status: true,
       organization: {
         select: {
           name: true,
           logo: true
         }
       },
-      settings: true,
-      roles: {
-        where: {
-          candidates: { some: {} }
-        },
-        orderBy: { order: "asc" },
-        include: {
-          candidates: true
+      settings: {
+        select: {
+          allowOnlineVoting: true
         }
       }
     }

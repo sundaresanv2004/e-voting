@@ -37,43 +37,51 @@ export default function AccountSettingsPage() {
   const activeTabDetails = TABS.find((t) => t.id === currentTab) || TABS[0]
 
   return (
-    <div className="flex flex-col flex-1 w-full max-w-7xl mx-auto pt-20 pb-8 px-4 md:px-8 relative">
+    <div className="flex flex-col flex-1 w-full max-w-[1400px] mx-auto pt-24 pb-8 px-4 md:px-8 relative">
+      <UserHero
+        title="Account Settings"
+        description="Manage your profile, security, and preferences."
+        icon={activeTabDetails.icon}
+        color={activeTabDetails.color}
+      />
 
-
-      <div className="mb-8">
-        <UserHero
-          title="Account Settings"
-          description="Manage your profile, security, and preferences."
-          icon={activeTabDetails.icon}
-          color={activeTabDetails.color}
-        />
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-8">
+      <div className="flex flex-col md:flex-row gap-8 lg:gap-12 mt-4">
         {/* Navigation Sidebar */}
-        <aside className="w-full md:w-64 shrink-0">
-          <nav className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={cn(
-                  "flex items-center hover:cursor-pointer gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
-                  currentTab === tab.id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : cn("text-muted-foreground hover:bg-muted/50 hover:text-foreground")
-                )}
-              >
-                <HugeiconsIcon icon={tab.icon} className="h-4 w-4 shrink-0" />
-                {tab.label}
-              </button>
-            ))}
+        <aside className="w-full md:w-64 lg:w-72 shrink-0">
+          <nav className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-none">
+            {TABS.map((tab) => {
+              const isActive = currentTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={cn(
+                    "flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap group relative overflow-hidden",
+                    isActive
+                      ? "bg-background shadow-sm border border-border/50 text-foreground"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent"
+                  )}
+                >
+                  {isActive && (
+                    <div className={cn("absolute inset-0 bg-gradient-to-r to-transparent pointer-events-none", tab.color.replace("text-", "from-").replace("-600", "-500/5").replace("-500", "-500/5"))} />
+                  )}
+                  <div className={cn(
+                    "p-2 rounded-xl transition-colors relative z-10 overflow-hidden",
+                    isActive ? tab.color : "bg-muted text-muted-foreground group-hover:bg-muted-foreground/10 group-hover:text-foreground"
+                  )}>
+                    {isActive && <div className="absolute inset-0 bg-current opacity-10 pointer-events-none" />}
+                    <HugeiconsIcon icon={tab.icon} className="h-4 w-4 shrink-0 relative z-10" />
+                  </div>
+                  <span className="relative z-10">{tab.label}</span>
+                </button>
+              )
+            })}
           </nav>
         </aside>
 
         {/* Content Area */}
         <main className="flex-1 min-w-0">
-          <div className="flex flex-col space-y-8">
+          <div className="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {currentTab === "profile" && <PersonalInfo />}
 
             {currentTab === "security" && <SecuritySettings />}
@@ -95,3 +103,4 @@ export default function AccountSettingsPage() {
     </div>
   )
 }
+

@@ -49,7 +49,7 @@ export function VoterIdDialog({
                     <div className="space-y-1">
                         <DialogTitle className="text-2xl font-bold">Voter Identification</DialogTitle>
                         <DialogDescription className="text-muted-foreground font-medium">
-                            Enter your Unique ID (Student ID, Employee Code, or assigned code) to authenticate. This ID is provided by your election administrator.
+                            Enter the unique voter ID provided by your election administrator.
                         </DialogDescription>
                     </div>
                 </DialogHeader>

@@ -331,10 +331,11 @@ model Candidate {
 }
 
 model Ballot {
-  id         String   @id @default(cuid())
-  electionId String
-  systemId   String
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  electionId    String
+  systemId      String
+  submissionKey String?  @unique
+  createdAt     DateTime @default(now())
 
   election Election         @relation(fields: [electionId], references: [id], onDelete: Cascade)
   system   AuthorizedSystem @relation(fields: [systemId], references: [id])

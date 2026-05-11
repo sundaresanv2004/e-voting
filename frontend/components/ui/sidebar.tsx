@@ -509,6 +509,11 @@ function SidebarMenuButton({
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot.Root : "button"
   const { isMobile, state } = useSidebar()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const button = (
     <Comp
@@ -521,7 +526,7 @@ function SidebarMenuButton({
     />
   )
 
-  if (!tooltip) {
+  if (!tooltip || !mounted) {
     return button
   }
 
@@ -594,10 +599,10 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
-  const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  })
+  const [width, setWidth] = React.useState("80%")
+  React.useEffect(() => {
+    setWidth(`${Math.floor(Math.random() * 40) + 50}%`)
+  }, [])
 
   return (
     <div

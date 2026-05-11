@@ -507,10 +507,10 @@ export function ResultsDashboardSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="rounded-2xl border p-5 bg-muted/5 animate-pulse h-32">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-20 rounded-full" />
               <Skeleton className="h-8 w-8 rounded-lg" />
             </div>
-            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-24 rounded-full" />
           </div>
         ))}
       </div>
@@ -519,13 +519,13 @@ export function ResultsDashboardSkeleton() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex gap-2">
-            <Skeleton className="h-10 w-28 rounded-md" />
-            <Skeleton className="h-10 w-28 rounded-md" />
-            <Skeleton className="h-10 w-28 rounded-md" />
+            <Skeleton className="h-10 w-28 rounded-full" />
+            <Skeleton className="h-10 w-28 rounded-full" />
+            <Skeleton className="h-10 w-28 rounded-full" />
           </div>
           <div className="flex gap-3">
-            <Skeleton className="h-10 w-[220px] rounded-lg" />
-            <Skeleton className="h-10 w-[180px] rounded-lg" />
+            <Skeleton className="h-10 w-[220px] rounded-xl" />
+            <Skeleton className="h-10 w-[180px] rounded-xl" />
           </div>
         </div>
 
@@ -537,8 +537,8 @@ export function ResultsDashboardSkeleton() {
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-9 w-9 rounded-xl" />
                   <div className="space-y-1.5">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-40" />
+                    <Skeleton className="h-4 w-32 rounded-full" />
+                    <Skeleton className="h-3 w-40 rounded-full" />
                   </div>
                 </div>
               </div>
@@ -548,12 +548,12 @@ export function ResultsDashboardSkeleton() {
                     <Skeleton className="h-8 w-8 rounded-lg" />
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-2 w-full" />
+                      <Skeleton className="h-4 w-1/2 rounded-full" />
+                      <Skeleton className="h-2 w-full rounded-full" />
                     </div>
                     <div className="space-y-1 text-right">
-                      <Skeleton className="h-4 w-12 ml-auto" />
-                      <Skeleton className="h-2 w-16 ml-auto" />
+                      <Skeleton className="h-4 w-12 ml-auto rounded-full" />
+                      <Skeleton className="h-2 w-16 ml-auto rounded-full" />
                     </div>
                   </div>
                 ))}
