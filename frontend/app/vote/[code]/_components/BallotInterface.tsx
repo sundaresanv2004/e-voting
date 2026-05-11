@@ -4,68 +4,120 @@ import React, { useState } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserIcon, Image01Icon, Tick02Icon, ArrowLeft01Icon, ArrowRight01Icon, CheckmarkBadge01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, Image01Icon, Tick02Icon, ArrowLeft01Icon, ArrowRight01Icon, CheckmarkBadge01Icon, PencilEdit01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
+export interface BallotCandidate {
+    id: string
+    name: string
+    profileImage?: string | null
+    symbolImage?: string | null
+    isNota?: boolean
+}
+
+export interface BallotRole {
+    id: string
+    name: string
+    order: number
+    candidates: BallotCandidate[]
+}
+
+export interface BallotElection {
+    id: string
+    name: string
+    settings: {
+        showCandidateProfiles: boolean
+        showCandidateSymbols: boolean
+        shuffleCandidates: boolean
+        allowNota: boolean
+    }
+    roles: BallotRole[]
+}
+
+export interface VoterData {
+    id: string
+    uniqueId: string
+    name: string
+    image?: string | null
+    additionalDetails?: unknown
+    ballotsCount: number
+    maxVotes: number
+}
+
 interface BallotInterfaceProps {
-    election: any
-    voterData: any
+    election: BallotElection
+    voterData: VoterData
     onSubmitBallot: (votes: Record<string, string>) => void
     onBack: () => void
     isSubmitting: boolean
+}
+
+function stableHash(value: string) {
+    let hash = 0
+    for (let i = 0; i < value.length; i++) {
+        hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0
+    }
+    return hash >>> 0
+}
+
+function prepareRoles(election: BallotElection, voterId: string) {
+    const settings = election.settings || {}
+
+    return [...(election.roles || [])]
+        .sort((a, b) => a.order - b.order)
+        .map((role) => {
+            const candidates = [...(role.candidates || [])]
+
+            if (settings.shuffleCandidates) {
+                candidates.sort((a, b) => {
+                    const left = stableHash(`${election.id}:${voterId}:${role.id}:${a.id}`)
+                    const right = stableHash(`${election.id}:${voterId}:${role.id}:${b.id}`)
+                    return left - right
+                })
+            }
+
+            if (settings.allowNota) {
+                candidates.push({
+                    id: "NOTA",
+                    name: "None of the Above (NOTA)",
+                    isNota: true
+                })
+            }
+
+            return {
+                ...role,
+                candidates,
+            }
+        })
 }
 
 export function BallotInterface({ election, voterData, onSubmitBallot, onBack, isSubmitting }: BallotInterfaceProps) {
     const [votes, setVotes] = useState<Record<string, string>>({})
     const [activeRoleIndex, setActiveRoleIndex] = useState(0)
     const [isReviewing, setIsReviewing] = useState(false)
-
-    // Sort roles by order
-    const roles = [...(election.roles || [])].sort((a, b) => a.order - b.order)
+    const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+    const [roles] = useState(() => prepareRoles(election, voterData.id))
     const settings = election.settings || {}
 
     const currentRole = roles[activeRoleIndex]
     const currentVote = currentRole ? votes[currentRole.id] : null
-
-    // Prepare candidates for the current role
-    const candidates = React.useMemo(() => {
-        if (!currentRole) return []
-        let cands = [...(currentRole.candidates || [])]
-
-        // Shuffle candidates if enabled
-        if (settings.shuffleCandidates) {
-            for (let i = cands.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cands[i], cands[j]] = [cands[j], cands[i]];
-            }
-        }
-
-        // Append NOTA if enabled
-        if (settings.allowNota) {
-            cands.push({
-                id: "NOTA",
-                name: "None of the Above (NOTA)",
-                isNota: true
-            })
-        }
-
-        return cands
-    }, [currentRole, settings.shuffleCandidates, settings.allowNota])
+    const candidates = currentRole?.candidates || []
 
     const handleVoteChange = (roleId: string, candidateId: string) => {
         setVotes(prev => ({ ...prev, [roleId]: candidateId }))
-
-        // Auto-advance after a short delay for better UX
-        setTimeout(() => {
-            if (activeRoleIndex < roles.length - 1) {
-                setActiveRoleIndex(prev => prev + 1)
-            } else {
-                // Last role — go straight to review
-                setIsReviewing(true)
-            }
-        }, 600)
     }
 
     const handleNext = () => {
@@ -86,11 +138,15 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
     }
 
     const handleSubmit = () => {
+        setIsSubmitDialogOpen(true)
+    }
+
+    const handleConfirmSubmit = () => {
         onSubmitBallot(votes)
     }
 
-    const allVoted = Object.keys(votes).length === roles.length
-    const progress = isReviewing ? 100 : ((activeRoleIndex) / roles.length) * 100
+    const allVoted = roles.length > 0 && roles.every((role) => Boolean(votes[role.id]))
+    const progress = roles.length === 0 ? 0 : isReviewing ? 100 : ((activeRoleIndex + 1) / roles.length) * 100
 
     if (!roles.length) {
         return (
@@ -115,18 +171,35 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
         <div className="flex flex-col min-h-screen">
             {/* ─── Top Bar: Election Name (centered, full width) ─── */}
             <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
-                <div className="w-full flex items-center justify-center px-6 py-4 sm:px-8 sm:py-5">
-                    <h2 className="text-base sm:text-lg font-bold text-foreground text-center">{election.name}</h2>
+                <div className="w-full grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={isSubmitting}
+                        onClick={() => setIsCancelDialogOpen(true)}
+                    >
+                        <HugeiconsIcon icon={Logout01Icon} className="w-4 h-4" />
+                        Cancel
+                    </Button>
+                    <div className="min-w-0 text-center">
+                        <h2 className="text-base sm:text-lg font-bold text-foreground leading-snug break-words">{election.name}</h2>
+                    </div>
+                    <div className="hidden sm:flex justify-end">
+                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-400">
+                            Verified Voter
+                        </span>
+                    </div>
                 </div>
             </header>
 
             {/* ─── Step indicator: fixed top-right corner ─── */}
             <div className="fixed top-3 right-4 sm:top-4 sm:right-6 z-40 flex items-center gap-2.5 bg-background/70 backdrop-blur-md rounded-full px-3 py-1.5 border border-border/40">
                 <span className="text-xs font-bold text-muted-foreground tabular-nums">
-                    {isReviewing ? "Review" : `${activeRoleIndex + 1} / ${roles.length}`}
+                    {isReviewing ? "Review" : `${activeRoleIndex + 1} of ${roles.length}`}
                 </span>
                 <div className="flex gap-1.5">
-                    {roles.map((_: any, i: number) => (
+                    {roles.map((_, i) => (
                         <div
                             key={i}
                             className={cn(
@@ -154,7 +227,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                             <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-primary/80">
                                 Select your candidate
                             </p>
-                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground break-words">
                                 {currentRole.name}
                             </h3>
                         </div>
@@ -165,7 +238,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                             onValueChange={(val) => handleVoteChange(currentRole.id, val)}
                             className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5"
                         >
-                            {candidates.map((candidate: any) => {
+                            {candidates.map((candidate) => {
                                 const isSelected = votes[currentRole.id] === candidate.id
 
                                 return (
@@ -266,7 +339,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                             {/* Candidate Name */}
                                             <div className="w-full text-left mt-auto">
                                                 <p className={cn(
-                                                    "text-sm sm:text-base font-bold leading-tight transition-colors duration-300 max-w-full",
+                                                    "text-sm sm:text-base font-bold leading-tight transition-colors duration-300 max-w-full break-words",
                                                     isSelected ? "text-foreground" : "text-foreground/80 group-hover:text-foreground"
                                                 )}>
                                                     {candidate.isNota ? "NOTA" : candidate.name}
@@ -291,7 +364,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 mb-2">
                                 <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-8 h-8" />
                             </div>
-                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                            <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground break-words">
                                 Review Your Ballot
                             </h3>
                             <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
@@ -300,14 +373,10 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                         </div>
 
                         <div className="space-y-3">
-                            {roles.map((role: any, roleIndex: number) => {
+                            {roles.map((role, roleIndex) => {
                                 const selectedCandidateId = votes[role.id]
 
-                                // Reconstruct candidate including NOTA
-                                let candidate = role.candidates.find((c: any) => c.id === selectedCandidateId)
-                                if (selectedCandidateId === "NOTA") {
-                                    candidate = { id: "NOTA", name: "None of the Above (NOTA)", isNota: true }
-                                }
+                                const candidate = role.candidates.find((c) => c.id === selectedCandidateId)
 
                                 return (
                                     <div
@@ -350,9 +419,9 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
 
                                         {/* Role & Candidate Name */}
                                         <div className="flex-1 min-w-0 space-y-0.5">
-                                            <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-muted-foreground/70">{role.name}</p>
+                                            <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-muted-foreground/70 break-words">{role.name}</p>
                                             {candidate ? (
-                                                <p className="text-base sm:text-lg font-bold text-foreground truncate">{candidate.name}</p>
+                                                <p className="text-base sm:text-lg font-bold text-foreground break-words">{candidate.name}</p>
                                             ) : (
                                                 <p className="text-base font-bold text-destructive">No Selection</p>
                                             )}
@@ -365,7 +434,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                             className="text-xs font-bold text-muted-foreground hover:text-primary shrink-0 gap-1.5 rounded-xl opacity-60 group-hover:opacity-100 transition-opacity duration-200"
                                             onClick={() => {
                                                 setIsReviewing(false)
-                                                setActiveRoleIndex(roles.findIndex((r: any) => r.id === role.id))
+                                                setActiveRoleIndex(roles.findIndex((r) => r.id === role.id))
                                             }}
                                         >
                                             <HugeiconsIcon icon={PencilEdit01Icon} className="w-3.5 h-3.5" />
@@ -411,7 +480,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                 </div>
                             )}
                         </div>
-                        <p className="text-[11px] font-bold text-muted-foreground truncate max-w-[140px]">
+                        <p className="text-[11px] font-bold text-muted-foreground break-words max-w-[180px] leading-tight">
                             {voterData.name}
                         </p>
                         {voterData.maxVotes > 1 && (
@@ -446,6 +515,56 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                     )}
                 </div>
             </div>
+
+            <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cast this ballot?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You are about to submit your ballot for {election.name} as {voterData.name}. After submission, your choices cannot be changed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                        <AlertDialogCancel disabled={isSubmitting}>
+                            Review Again
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <Button
+                                className="bg-emerald-600 hover:bg-emerald-500"
+                                disabled={isSubmitting}
+                                onClick={handleConfirmSubmit}
+                            >
+                                {isSubmitting ? "Submitting..." : "Confirm Cast Ballot"}
+                            </Button>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel this ballot?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your current selections will be cleared and no ballot will be submitted.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                        <AlertDialogCancel disabled={isSubmitting}>
+                            Continue Voting
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <Button
+                                variant="destructive"
+                                disabled={isSubmitting}
+                                onClick={onBack}
+                            >
+                                Cancel Ballot
+                            </Button>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

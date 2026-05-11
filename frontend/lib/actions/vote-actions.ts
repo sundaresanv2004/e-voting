@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { format } from "date-fns"
-import { VoterIdSchema } from "@/lib/schemas/vote"
+import { AuditStatus, Prisma } from "@prisma/client"
 import { syncElectionStatus } from "@/lib/elections/status-sync"
 import { 
     enforceRateLimit, 
@@ -13,23 +13,6 @@ import {
 
 export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: string) {
     try {
-        const voter = await db.voter.findFirst({
-            where: {
-                electionId,
-                uniqueId: uniqueId.trim()
-            },
-            include: {
-                ballots: true,
-                election: {
-                    select: {
-                        id: true,
-                        status: true,
-                        settings: true
-                    }
-                }
-            }
-        })
-
         const ip = await getClientIp()
         await enforceRateLimit({
             action: "voter-verify",
@@ -38,8 +21,46 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
             windowMs: 60 * 60 * 1000,
         })
 
+        const voter = await db.voter.findFirst({
+            where: {
+                electionId,
+                uniqueId: uniqueId.trim()
+            },
+            include: {
+                ballots: true,
+                election: {
+                    include: {
+                        settings: true,
+                        roles: {
+                            where: {
+                                candidates: { some: {} }
+                            },
+                            orderBy: { order: "asc" },
+                            select: {
+                                id: true,
+                                name: true,
+                                order: true,
+                                candidates: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        profileImage: true,
+                                        symbolImage: true,
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+            }
+        })
+
         if (!voter) {
             return { error: "We couldn't find this Voter ID. Please double-check and try again." }
+        }
+
+        if (!voter.election.settings?.allowOnlineVoting || !voter.election.settings?.authorizeVoters) {
+            return { error: "Online voter verification is not available for this election." }
         }
 
         // --- Current Status Check ---
@@ -72,6 +93,17 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
                 additionalDetails: voter.additionalDetails,
                 ballotsCount: voter.ballots.length,
                 maxVotes: maxVotes
+            },
+            ballot: {
+                id: voter.election.id,
+                name: voter.election.name,
+                settings: {
+                    showCandidateProfiles: voter.election.settings.showCandidateProfiles,
+                    showCandidateSymbols: voter.election.settings.showCandidateSymbols,
+                    shuffleCandidates: voter.election.settings.shuffleCandidates,
+                    allowNota: voter.election.settings.allowNota,
+                },
+                roles: voter.election.roles,
             }
         }
     } catch (error) {
@@ -153,71 +185,200 @@ export async function validateElectionCodeAction(code: string) {
 
 export async function submitBallotAction(electionId: string, voterId: string, votes: Record<string, string>) {
     try {
-        const voter = await db.voter.findUnique({
-            where: { id: voterId },
-            include: {
-                election: { include: { organization: true, settings: true } },
-                ballots: true
-            }
-        })
-
-        if (!voter) return { error: "Voter not found. Please try again." }
-        
-        const maxVotes = voter.election.settings?.allowMultipleVotes 
-            ? (voter.election.settings.maxVotesPerUser || 1) 
-            : 1;
-
-        if (voter.ballots.length >= maxVotes) return { error: "A vote has already been cast using this ID." }
-        if (voter.election.status !== "ACTIVE") {
-            if (voter.election.status === "PAUSED") {
-                return { error: "This election is currently paused.", status: "PAUSED" }
-            }
-            return { error: "This election is not active.", status: voter.election.status }
+        if (!electionId || !voterId || !votes || typeof votes !== "object") {
+            return { error: "Invalid ballot submission. Please try again." }
         }
 
-        // Find or create a default "Web Voting Portal" authorized system for this organization
-        let webSystem = await db.authorizedSystem.findFirst({
-            where: {
-                organizationId: voter.election.organizationId,
-                name: "Web Voting System"
-            }
+        await syncElectionStatus(electionId, {
+            reason: "Online ballot submission",
         })
 
-        if (!webSystem) {
-            webSystem = await db.authorizedSystem.create({
-                data: {
-                    organizationId: voter.election.organizationId,
-                    name: "Web Voting System",
-                    status: "APPROVED"
+        const ip = await getClientIp()
+
+        await db.$transaction(async (prisma) => {
+            const voter = await prisma.voter.findFirst({
+                where: {
+                    id: voterId,
+                    electionId,
+                },
+                include: {
+                    election: {
+                        include: {
+                            settings: true,
+                            roles: {
+                                where: {
+                                    candidates: { some: {} }
+                                },
+                                include: {
+                                    candidates: true
+                                }
+                            }
+                        }
+                    },
                 }
             })
-        }
 
-        // Prepare the votes creation payload
-        const voteEntries = Object.entries(votes).map(([roleId, candidateId]) => ({
-            electionRoleId: roleId,
-            candidateId: candidateId === "NOTA" ? null : candidateId
-        }))
+            if (!voter) {
+                throw new Error("VOTER_NOT_FOUND")
+            }
 
-        // Execute ballot creation and vote entries inside a transaction
-        await db.$transaction(async (prisma) => {
+            const { election } = voter
+            const settings = election.settings
+
+            if (!settings?.allowOnlineVoting || !settings.authorizeVoters) {
+                throw new Error("ONLINE_VOTING_UNAVAILABLE")
+            }
+
+            if (election.status !== "ACTIVE") {
+                if (election.status === "PAUSED") {
+                    throw new Error("ELECTION_PAUSED")
+                }
+                throw new Error(`ELECTION_NOT_ACTIVE:${election.status}`)
+            }
+
+            const roles = [...election.roles].sort((a, b) => a.order - b.order)
+            const submittedEntries = Object.entries(votes)
+            const submittedRoleIds = new Set(submittedEntries.map(([roleId]) => roleId))
+
+            if (submittedEntries.length !== roles.length || submittedRoleIds.size !== roles.length) {
+                throw new Error("INCOMPLETE_BALLOT")
+            }
+
+            for (const role of roles) {
+                if (!submittedRoleIds.has(role.id)) {
+                    throw new Error("INCOMPLETE_BALLOT")
+                }
+            }
+
+            const voteEntries = roles.map((role) => {
+                const candidateId = votes[role.id]
+
+                if (!candidateId) {
+                    throw new Error("INCOMPLETE_BALLOT")
+                }
+
+                if (candidateId === "NOTA") {
+                    if (!settings.allowNota) {
+                        throw new Error("INVALID_NOTA_SELECTION")
+                    }
+
+                    return {
+                        electionRoleId: role.id,
+                        candidateId: null,
+                    }
+                }
+
+                const candidate = role.candidates.find((item) => item.id === candidateId)
+                if (!candidate) {
+                    throw new Error("INVALID_CANDIDATE_SELECTION")
+                }
+
+                return {
+                    electionRoleId: role.id,
+                    candidateId: candidate.id,
+                }
+            })
+
+            const maxVotes = settings.allowMultipleVotes
+                ? (settings.maxVotesPerUser || 1)
+                : 1
+
+            const ballotsCount = await prisma.ballot.count({
+                where: {
+                    electionId,
+                    voterId,
+                }
+            })
+
+            if (ballotsCount >= maxVotes) {
+                throw new Error("VOTE_LIMIT_REACHED")
+            }
+
+            const submissionKey = `${electionId}:${voterId}:${ballotsCount + 1}`
+
+            let webSystem = await prisma.authorizedSystem.findFirst({
+                where: {
+                    organizationId: election.organizationId,
+                    name: "Web Voting System"
+                }
+            })
+
+            if (!webSystem) {
+                webSystem = await prisma.authorizedSystem.create({
+                    data: {
+                        organizationId: election.organizationId,
+                        name: "Web Voting System",
+                        status: "APPROVED"
+                    }
+                })
+            }
+
             const ballot = await prisma.ballot.create({
                 data: {
-                    electionId: electionId,
+                    electionId,
                     systemId: webSystem.id,
-                    voterId: voterId,
+                    submissionKey,
+                    voterId,
                     votes: {
                         create: voteEntries
                     }
                 }
             })
-            return ballot
+
+            await prisma.systemAuditLog.create({
+                data: {
+                    systemId: webSystem.id,
+                    electionId,
+                    action: "ONLINE_BALLOT_SUBMITTED",
+                    status: AuditStatus.SUCCESS,
+                    ipAddress: ip,
+                    metadata: {
+                        mode: "ONLINE",
+                        verifiedVoter: true,
+                        ballotId: ballot.id,
+                        voterId,
+                        rolesCount: voteEntries.length,
+                    }
+                }
+            })
+        }, {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         })
 
         return { success: true }
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : undefined
+        const prismaCode = error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined
+
+        if (message === "VOTER_NOT_FOUND") {
+            return { error: "Voter not found for this election. Please verify your identity again." }
+        }
+        if (message === "ONLINE_VOTING_UNAVAILABLE") {
+            return { error: "Online verified voting is not available for this election." }
+        }
+        if (message === "ELECTION_PAUSED") {
+            return { error: "This election is currently paused.", status: "PAUSED" }
+        }
+        if (message?.startsWith("ELECTION_NOT_ACTIVE:")) {
+            return { error: "This election is not active.", status: message.split(":")[1] }
+        }
+        if (message === "INCOMPLETE_BALLOT") {
+            return { error: "Please make a valid selection for every role before casting your ballot." }
+        }
+        if (message === "INVALID_NOTA_SELECTION") {
+            return { error: "NOTA is not enabled for this election." }
+        }
+        if (message === "INVALID_CANDIDATE_SELECTION") {
+            return { error: "Your ballot contains an invalid candidate selection. Please refresh and try again." }
+        }
+        if (message === "VOTE_LIMIT_REACHED") {
+            return { error: "A vote has already been cast using this ID." }
+        }
+        if (prismaCode === "P2034") {
+            return { error: "A vote is already being processed for this ID. Please wait a moment and try again." }
+        }
         console.error("Ballot submission error:", error)
-        if (error?.code === 'P2002') {
+        if (prismaCode === 'P2002') {
             return { error: "A vote has already been recorded for this ID." } // Prisma unique constraint handling
         }
         return { error: "Something went wrong while submitting your ballot. Please try again." }

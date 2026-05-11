@@ -170,10 +170,10 @@ function VoteForm() {
                                 <div className="space-y-3 text-[13px]">
                                     <p className="font-medium text-amber-600 dark:text-amber-400">Important Disclaimer:</p>
                                     <p>
-                                        To ensure a fast and smooth voting experience, especially for in-person setups, election data (like roles and candidates) is <strong>cached locally</strong> on your device.
+                                        Your ballot will open only after voter identification is verified for this election.
                                     </p>
                                     <p className="italic text-muted-foreground">
-                                        This means any changes made to the election dashboard will not appear immediately. If you need the latest updates, you must exit and re-enter the election portal.
+                                        Use focused voting mode while casting your ballot and review your selections carefully before final submission.
                                     </p>
                                 </div>
                             </div>

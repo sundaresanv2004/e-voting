@@ -3,7 +3,7 @@
 import React, { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { PlayIcon, Logout01Icon } from '@hugeicons/core-free-icons'
+import { PlayIcon, Logout01Icon, CheckmarkBadge01Icon } from '@hugeicons/core-free-icons'
 import { Button } from "@/components/ui/button"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -20,23 +20,31 @@ import { VoterExitDialog } from "./VoterExitDialog"
 import { BallotInterface } from "./BallotInterface"
 import SetTheme from "@/components/shared/setTheme"
 import { cn } from "@/lib/utils"
+import type { BallotElection, VoterData } from "./BallotInterface"
 
 interface VoterSessionPortalProps {
-    election: any
+    election: {
+        id: string
+        name: string
+        organization: {
+            name: string
+            logo: string | null
+        }
+    }
 }
 
 export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     const router = useRouter()
-    const [mounted, setMounted] = React.useState(false)
-    const [isFullscreen, setIsFullscreen] = useState(false)
     const [isIdDialogOpen, setIsIdDialogOpen] = useState(false)
     const [isVoterInfoDialogOpen, setIsVoterInfoDialogOpen] = useState(false)
     const [isPausedDialogOpen, setIsPausedDialogOpen] = useState(false)
     const [isExitDialogOpen, setIsExitDialogOpen] = useState(false)
     const [isVoting, setIsVoting] = useState(false)
+    const [isBallotSubmitted, setIsBallotSubmitted] = useState(false)
     const [isSubmittingBallot, setIsSubmittingBallot] = useState(false)
     const [isPending, startTransition] = useTransition()
-    const [voterData, setVoterData] = useState<any>(null)
+    const [voterData, setVoterData] = useState<VoterData | null>(null)
+    const [ballotElection, setBallotElection] = useState<BallotElection | null>(null)
     const [lastUsedId, setLastUsedId] = useState("")
     const [hasConfirmedIdentity, setHasConfirmedIdentity] = useState(false)
     const [verificationError, setVerificationError] = useState<string | null>(null)
@@ -50,10 +58,9 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
 
     // Handle mounting for theme consistency and welcome toast
     useEffect(() => {
-        setMounted(true)
         if (!toastShown.current) {
             toast.info("Secure Session Initiated", {
-                description: "Your identification will be required to access the ballot.",
+                description: "Your identification will be required before the ballot opens.",
                 duration: 4000
             })
             toastShown.current = true
@@ -64,29 +71,24 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     // Monitor fullscreen status
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement)
+            if (!document.fullscreenElement && (isIdDialogOpen || isVoterInfoDialogOpen || isPausedDialogOpen || isVoting)) {
+                setIsIdDialogOpen(false)
+                setIsVoterInfoDialogOpen(false)
+                setIsPausedDialogOpen(false)
+                setIsVoting(false) // Dump out of ballot if they exit
+                toast.warning("Focused voting mode was interrupted. Please re-enable fullscreen to continue.")
+            }
         }
         document.addEventListener("fullscreenchange", handleFullscreenChange)
         return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }, [])
+    }, [isIdDialogOpen, isPausedDialogOpen, isVoterInfoDialogOpen, isVoting])
 
-    // Clear errors when dialog is closed
-    useEffect(() => {
-        if (!isIdDialogOpen) {
+    const handleIdDialogOpenChange = (open: boolean) => {
+        setIsIdDialogOpen(open)
+        if (!open) {
             setVerificationError(null)
         }
-    }, [isIdDialogOpen])
-
-    // Strict mode: close dialogs if fullscreen exited
-    useEffect(() => {
-        if (!isFullscreen && (isIdDialogOpen || isVoterInfoDialogOpen || isPausedDialogOpen || isVoting)) {
-            setIsIdDialogOpen(false)
-            setIsVoterInfoDialogOpen(false)
-            setIsPausedDialogOpen(false)
-            setIsVoting(false) // Dump out of ballot if they exit
-            toast.warning("Secure session interrupted. Please re-enable fullscreen to continue.")
-        }
-    }, [isFullscreen])
+    }
 
     const handleExitClick = () => {
         setIsExitDialogOpen(true)
@@ -97,14 +99,28 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             document.exitFullscreen().catch(() => { })
         }
         setIsVoting(false)
+        setIsBallotSubmitted(false)
         setVoterData(null)
+        setBallotElection(null)
         setHasConfirmedIdentity(false)
         setLastUsedId("")
         form.reset()
         toast.info("Session Concluded", {
-            description: "You have safely exited the election portal."
+            description: "You have exited the election portal."
         })
         router.push("/auth/vote")
+    }
+
+    const handleCancelBallot = () => {
+        setIsVoting(false)
+        setVoterData(null)
+        setBallotElection(null)
+        setHasConfirmedIdentity(false)
+        setLastUsedId("")
+        form.reset()
+        toast.info("Ballot cancelled", {
+            description: "No vote was submitted."
+        })
     }
 
     const handleStartAction = () => {
@@ -115,7 +131,7 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
                     form.reset()
                     setIsIdDialogOpen(true)
                 }).catch(() => {
-                    toast.error("Secure mode is required. Please enable fullscreen to continue.")
+                    toast.error("Focused voting mode is required. Please enable fullscreen to continue.")
                 })
                 return
             }
@@ -141,8 +157,8 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             }
 
             if (result.voter) {
-                router.refresh() // Update the cached election data from server
                 setVoterData(result.voter)
+                setBallotElection(result.ballot)
                 setHasConfirmedIdentity(false) // Reset for new voter
                 setIsIdDialogOpen(false)
                 setIsPausedDialogOpen(false)
@@ -162,9 +178,9 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     }
 
     const handleStartVoting = () => {
-        if (!hasConfirmedIdentity) return
+        if (!hasConfirmedIdentity || !ballotElection) return
         toast.success("Identity Verified", {
-            description: `Welcome, ${voterData?.name}. You may now cast your ballot.`,
+            description: `Welcome, ${voterData?.name}. Your ballot is ready.`,
             duration: 3000
         })
         setIsVoterInfoDialogOpen(false)
@@ -174,6 +190,7 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
     const handleChangeId = () => {
         setHasConfirmedIdentity(false)
         setIsVoterInfoDialogOpen(false)
+        setBallotElection(null)
         setIsIdDialogOpen(true)
     }
 
@@ -197,24 +214,20 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             }
 
             toast.success("Ballot submitted successfully!")
+            setIsSubmittingBallot(false)
+            setIsVoting(false)
+            setIsBallotSubmitted(true)
+            setVoterData(null)
+            setBallotElection(null)
+            setHasConfirmedIdentity(false)
+            setLastUsedId("")
+            form.reset()
 
-            // Wait slightly before exiting the screen
-            setTimeout(() => {
-                setIsSubmittingBallot(false)
-                setIsVoting(false)
-                setVoterData(null)
-                setHasConfirmedIdentity(false)
-                setLastUsedId("")
-                form.reset()
-            }, 1000)
-
-        } catch (error) {
+        } catch {
             toast.error("Failed to submit ballot. Please try again.")
             setIsSubmittingBallot(false)
         }
     }
-
-    if (!mounted) return null
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-primary/20">
@@ -258,8 +271,35 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
                 <SetTheme />
             </div>
 
+            {/* Submitted Screen */}
+            {!isVoting && isBallotSubmitted && (
+                <div className="max-w-xl w-full flex flex-col items-center text-center space-y-8 z-10 transition-all duration-500">
+                    <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                        <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-10 h-10" />
+                    </div>
+                    <div className="space-y-3">
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
+                            Ballot Submitted
+                        </p>
+                        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground break-words">
+                            Thank you for voting
+                        </h1>
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-md mx-auto">
+                            Your ballot for {election.name} has been recorded. You may now leave this device or return to the voting portal.
+                        </p>
+                    </div>
+                    <Button
+                        size="lg"
+                        className="w-full max-w-xs rounded-xl bg-emerald-600 hover:bg-emerald-500"
+                        onClick={handleConfirmExit}
+                    >
+                        Leave Portal
+                    </Button>
+                </div>
+            )}
+
             {/* Main Content - Entry Screen */}
-            {!isVoting && (
+            {!isVoting && !isBallotSubmitted && (
                 <div className="max-w-4xl w-full flex flex-col items-center space-y-16 z-10 -mt-24 transition-all duration-500">
                     {/* Organization Logo - Clean & Integrated */}
                     {election.organization.logo && (
@@ -286,11 +326,11 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
                             </span>
                             Live Election Session
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight lg:text-6xl">
+                        <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight lg:text-6xl break-words">
                             {election.name}
                         </h1>
                         <p className="text-muted-foreground dark:text-foreground/60 max-w-sm mx-auto text-sm md:text-base leading-relaxed font-medium">
-                            This is a secure, monitored environment. Ensure you have your unique voter identification ready.
+                            This online ballot opens after voter identification. Keep your unique voter ID ready.
                         </p>
                     </div>
 
@@ -311,13 +351,13 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             )}
 
             {/* Voting Interface */}
-            {isVoting && voterData && (
+            {isVoting && voterData && ballotElection && (
                 <div className="absolute inset-0 overflow-y-auto no-scrollbar z-20 bg-background animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <BallotInterface
-                        election={election}
+                        election={ballotElection}
                         voterData={voterData}
                         onSubmitBallot={handleSubmitBallot}
-                        onBack={() => setIsVoting(false)}
+                        onBack={handleCancelBallot}
                         isSubmitting={isSubmittingBallot}
                     />
                 </div>
@@ -326,7 +366,7 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
             {/* Voter ID Dialog */}
             <VoterIdDialog
                 open={isIdDialogOpen}
-                onOpenChange={setIsIdDialogOpen}
+                onOpenChange={handleIdDialogOpenChange}
                 form={form}
                 onSubmit={onIdSubmit}
                 isPending={isPending}

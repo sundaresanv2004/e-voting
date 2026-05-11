@@ -14,19 +14,45 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import Image from "next/image"
 import { Badge } from '@/components/ui/badge'
+import type { VoterData } from "./BallotInterface"
+
+const visibleDetailKeys = new Set([
+    "studentId",
+    "student_id",
+    "rollNo",
+    "roll_no",
+    "admissionNo",
+    "admission_no",
+    "employeeId",
+    "employee_id",
+    "class",
+    "grade",
+    "section",
+    "department",
+    "designation",
+])
+
+function formatDetailLabel(key: string) {
+    return key
+        .replace(/_/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function getVisibleDetails(details: unknown) {
+    if (!details || typeof details !== "object" || Array.isArray(details)) {
+        return []
+    }
+
+    return Object.entries(details as Record<string, unknown>)
+        .filter(([key, value]) => visibleDetailKeys.has(key) && value !== null && value !== undefined && value !== "")
+        .map(([key, value]) => [formatDetailLabel(key), String(value)] as const)
+}
 
 interface VoterConfirmDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    voterData: {
-        id: string;
-        uniqueId: string;
-        name: string;
-        image?: string | null;
-        additionalDetails?: any | null;
-        ballotsCount?: number;
-        maxVotes?: number;
-    } | null
+    voterData: VoterData | null
     hasConfirmed: boolean
     onConfirmChange: (confirmed: boolean) => void
     onStartVoting: () => void
@@ -42,7 +68,7 @@ export function VoterConfirmDialog({
     onStartVoting,
     onChangeId
 }: VoterConfirmDialogProps) {
-    const details = (voterData?.additionalDetails as Record<string, any>) || {}
+    const details = getVisibleDetails(voterData?.additionalDetails)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,15 +102,15 @@ export function VoterConfirmDialog({
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Authorized Voter</p>
-                                <p className="text-xl font-bold text-foreground leading-none">{voterData?.name}</p>
+                                <p className="text-xl font-bold text-foreground leading-tight break-words">{voterData?.name}</p>
                             </div>
                         </div>
 
-                        {Object.entries(details).map(([key, value]) => (
+                        {details.map(([key, value]) => (
                             <div key={key} className="border-t border-border/50 pt-3 pb-1">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground font-medium capitalize">{key}</span>
-                                    <span className="font-mono font-bold text-foreground">{String(value)}</span>
+                                    <span className="text-muted-foreground font-medium">{key}</span>
+                                    <span className="font-mono font-bold text-foreground text-right break-words">{String(value)}</span>
                                 </div>
                             </div>
                         ))}
