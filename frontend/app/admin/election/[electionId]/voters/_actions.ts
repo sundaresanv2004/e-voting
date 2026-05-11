@@ -60,6 +60,35 @@ export async function getNewUniqueCode(electionId: string) {
   }
 }
 
+export async function logVoterIdAccess(electionId: string, voterId: string, action: "copied") {
+  try {
+    const { userId, organizationId } = await getAuthorizedUser(electionId)
+
+    const voter = await db.voter.findUnique({
+      where: { id: voterId, electionId },
+      select: { name: true, uniqueId: true }
+    })
+
+    if (!voter) return { error: "Voter not found" }
+
+    await db.adminAuditLog.create({
+      data: {
+        action: "VOTER_ID_COPIED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: electionId,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        metadata: { voterId, name: voter.name, uniqueId: voter.uniqueId },
+      },
+    })
+
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Failed to log access" }
+  }
+}
+
 export async function createVoter(electionId: string, values: VoterFormValues) {
   try {
     const { userId, organizationId } = await getAuthorizedUser(electionId)

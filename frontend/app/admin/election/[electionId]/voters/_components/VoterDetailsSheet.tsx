@@ -3,6 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { logVoterIdAccess } from "../_actions"
 import {
   PencilEdit01Icon,
   Delete02Icon,
@@ -57,13 +58,19 @@ export type VoterDetails = {
 }
 
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, electionId, voterId }: { text: string; electionId: string; voterId: string }) {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+
+    try {
+      await logVoterIdAccess(electionId, voterId, "copied")
+    } catch {
+      // The copy action should not fail just because audit logging had a transient issue.
+    }
   }
 
   return (
@@ -156,7 +163,7 @@ export function VoterDetailsSheet({
                   </div>
                 </div>
                 <div className="bg-background/50 backdrop-blur-sm p-1 rounded-xl border shrink-0">
-                  <CopyButton text={voter.uniqueId} />
+                  <CopyButton text={voter.uniqueId} electionId={voter.electionId} voterId={voter.id} />
                 </div>
               </div>
 

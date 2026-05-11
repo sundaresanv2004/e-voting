@@ -131,28 +131,51 @@ export default async function ElectionDashboardPage({
                 break
             case "CANDIDATE_ADDED":
             case "CANDIDATE_UPDATED":
-                title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
-                description = `${log.action === "CANDIDATE_ADDED" ? "Candidate added" : "Candidate updated"} by ${adminName}`
-                break
             case "CANDIDATE_REMOVED":
-            case "CANDIDATE_DELETED":
-                title = (log.metadata as any)?.name ? `"${(log.metadata as any).name}"` : title
-                description = `Candidate removed by ${adminName}`
+                title = (log.metadata as any)?.name ? `Candidate: ${(log.metadata as any).name}` : title
+                description = log.action === "CANDIDATE_ADDED" ? `Added by ${adminName}` :
+                             log.action === "CANDIDATE_UPDATED" ? `Updated by ${adminName}` :
+                             `Removed by ${adminName}`
                 break
             case "ROLE_CREATED":
+            case "ROLE_UPDATED":
             case "ROLE_DELETED":
-                title = (log.metadata as any)?.title || title
-                description = `${log.action === "ROLE_CREATED" ? "Role created" : "Role deleted"} by ${adminName}`
+                title = (log.metadata as any)?.name ? `Role: ${(log.metadata as any).name}` : title
+                description = log.action === "ROLE_CREATED" ? `Created by ${adminName}` :
+                             log.action === "ROLE_UPDATED" ? `Updated by ${adminName}` :
+                             `Deleted by ${adminName}`
                 break
+            case "VOTER_CREATED":
             case "VOTER_ADDED":
+            case "VOTER_UPDATED":
+            case "VOTER_REMOVED":
             case "VOTER_DELETED":
-                title = (log.metadata as any)?.identifier || (log.metadata as any)?.email || title
-                description = `${log.action === "VOTER_ADDED" ? "Voter added" : "Voter removed"} by ${adminName}`
+                title = (log.metadata as any)?.name ? `Voter: ${(log.metadata as any).name}` : title
+                description = (log.action === "VOTER_CREATED" || log.action === "VOTER_ADDED") ? `Registered by ${adminName}` :
+                             log.action === "VOTER_UPDATED" ? `Profile updated by ${adminName}` :
+                             `Removed by ${adminName}`
+                break
+            case "VOTERS_BULK_IMPORT":
+                title = "Bulk Voter Import"
+                description = `Imported ${(log.metadata as any)?.count || 0} voters by ${adminName}`
+                break
+            case "VOTER_VOTE_RESET":
+                title = `Reset Vote: ${(log.metadata as any)?.name || "Voter"}`
+                description = `Ballot cleared by ${adminName}`
+                break
+            case "VOTER_ID_COPIED":
+                title = `Voter ID Accessed: ${(log.metadata as any)?.name || "Voter"}`
+                description = `Copied by ${adminName}`
                 break
             case "ELECTION_CODE_REVEALED":
             case "ELECTION_CODE_COPIED":
-                title = "Election code accessed"
+                title = log.action === "ELECTION_CODE_REVEALED" ? "Election code revealed" : "Election code copied"
                 description = `By ${adminName}`
+                break
+            case "ELECTION_SETTINGS_UPDATED":
+            case "ELECTION_CORE_UPDATED":
+                title = "Settings Updated"
+                description = `Election configuration changed by ${adminName}`
                 break
         }
 

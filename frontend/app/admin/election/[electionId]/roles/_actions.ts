@@ -89,11 +89,11 @@ export async function createRole(electionId: string, data: RoleFormValues) {
         data: {
           action: "ROLE_CREATED",
           entityType: AuditEntityType.ELECTION_ROLE,
-          entityId: role.id,
+          entityId: electionId,
           adminId: access.userId,
           organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
-          metadata: { electionId, name, order, systemIds: finalSystemIds },
+          metadata: { roleId: role.id, electionId, name, order, systemIds: finalSystemIds },
         },
       })
 
@@ -185,11 +185,12 @@ export async function updateRole(roleId: string, electionId: string, data: RoleF
         data: {
           action: "ROLE_UPDATED",
           entityType: AuditEntityType.ELECTION_ROLE,
-          entityId: roleId,
+          entityId: electionId,
           adminId: access.userId,
           organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
           metadata: {
+            roleId,
             electionId,
             before: { name: role.name, order: role.order },
             after: { name, order, systemIds: finalSystemIds },
@@ -243,11 +244,11 @@ export async function deleteRole(roleId: string, electionId: string) {
         data: {
           action: "ROLE_DELETED",
           entityType: AuditEntityType.ELECTION_ROLE,
-          entityId: roleId,
+          entityId: electionId,
           adminId: access.userId,
           organizationId: access.organizationId,
           status: AuditStatus.SUCCESS,
-          metadata: { electionId, name: role.name, order: role.order, candidateCount: role._count.candidates },
+          metadata: { roleId, electionId, name: role.name, order: role.order, candidateCount: role._count.candidates },
         },
       })
 
