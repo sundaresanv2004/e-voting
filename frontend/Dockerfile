@@ -34,6 +34,12 @@ RUN npx prisma generate
 
 RUN npm run build
 
+# Install production dependencies only
+FROM base AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
 # Production image, copy all the files and run next
 FROM base AS runner
 RUN apk add --no-cache openssl
@@ -50,20 +56,18 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder /app/public ./public
 
 # Copy the standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy prisma folder to include schema and migrations
+# Copy prisma folder for migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Copy Prisma CLI, client, and the .bin symlink so start.sh can call node_modules/.bin/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# Copy production node_modules to ensure Prisma CLI and all dependencies (like 'effect') are available for migrations
+COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
