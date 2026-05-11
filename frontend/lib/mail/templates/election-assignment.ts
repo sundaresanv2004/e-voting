@@ -1,34 +1,31 @@
-import { renderEmailLayout } from "./layout"
+import { renderEmailLayout, es } from './layout'
 
 export const ElectionAssignmentTemplate = (name: string, orgName: string, electionName: string, role: string, electionId: string) => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const content = `
-    <div class="greeting">You've been assigned to ${electionName}! 🗳️</div>
-    <div class="message">
-      Hi ${name}, you have been assigned to help manage or view <strong>${electionName}</strong>. 
-      Your role in this election is <strong>${role}</strong>.
-    </div>
-    
-    <div style="background-color: #f3f4f6; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #e5e7eb;">
-      <h3 style="margin-top: 0; color: #111827; font-size: 16px;">What you can do:</h3>
-      <ul style="margin-bottom: 0; padding-left: 20px; color: #4b5563; line-height: 1.6;">
-        <li>Access election configurations</li>
-        <li>Monitor voter turnout</li>
-        <li>View or manage candidate details</li>
-        <li>Verify results after conclusion</li>
-      </ul>
+    <h2 style="${es.h1}">You've been assigned to an election</h2>
+    <p style="${es.p}">
+      Hi ${name}, you have been granted access to manage <strong style="${es.strong}">${electionName}</strong> under <strong style="${es.strong}">${orgName}</strong>.
+    </p>
+
+    <div style="${es.card('#3b82f6')}">
+      <p style="margin:0 0 12px 0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;">Assignment Details</p>
+      <p style="${es.row}"><strong style="${es.strong}">Election:</strong> ${electionName}</p>
+      <p style="${es.row}"><strong style="${es.strong}">Organization:</strong> ${orgName}</p>
+      <p style="margin:0;font-size:14px;color:#475569;"><strong style="${es.strong}">Your Role:</strong> ${role}</p>
     </div>
 
-    <div class="message">
-      You can now access this election from your dashboard.
+    <p style="${es.p}">
+      You can now access this election's dashboard to review configuration, monitor voter turnout, manage candidates, and verify results.
+    </p>
+
+    <div style="${es.cta}">
+      <a href="${appUrl}/admin/election/${electionId}" style="${es.button('#3b82f6')}">Open Election Dashboard</a>
     </div>
 
-    <div class="button-container">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/admin/election/${electionId}" class="button">Go to Election</a>
-    </div>
-
-    <div class="message" style="margin-bottom: 0;">
-      If you have any questions or need clarify on your responsibilities, please contact your organization administrator.
-    </div>
+    <p style="${es.small}">
+      If you have questions about your responsibilities, contact your organization administrator.
+    </p>
   `
-  return renderEmailLayout(content, orgName)
+  return renderEmailLayout(content, `Election Assignment: ${electionName} — E-Voting`, 'info')
 }

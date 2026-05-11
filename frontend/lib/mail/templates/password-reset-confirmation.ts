@@ -1,19 +1,24 @@
-import { renderEmailLayout } from "./layout"
+import { renderEmailLayout, es } from './layout'
 
 export const PasswordResetConfirmationTemplate = () => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const content = `
-    <div class="greeting">Password Reset Successful</div>
-    <div class="message">
-      Your password has been reset successfully. If you did not perform this action, please contact our support team immediately.
+    <h2 style="${es.h1}">Password updated successfully</h2>
+    <p style="${es.p}">
+      Your E-Voting account password has been changed. You can now sign in using your new credentials.
+    </p>
+
+    <div style="${es.successBox}">
+      <p style="margin:0;font-size:15px;font-weight:600;color:#166534;">&#10003;&nbsp; Password changed on ${new Date().toLocaleString('en-IN', { dateStyle: 'long', timeStyle: 'short' })}</p>
     </div>
-    <div style="text-align: center; margin: 32px 0;">
-      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 16px; border-radius: 8px;">
-        Your password has been changed.
-      </div>
+
+    <div style="${es.cta}">
+      <a href="${appUrl}/auth/login" style="${es.button('#10b981')}">Sign In Now</a>
     </div>
-    <div class="message">
-      You can now log in with your new password.
-    </div>
+
+    <p style="${es.small}">
+      If you did not make this change, please <a href="mailto:support@evoting.sundaresan.dev" style="color:#ef4444;text-decoration:none;">contact our support team immediately</a> to secure your account.
+    </p>
   `
-  return renderEmailLayout(content, "Password Updated - E-Voting")
+  return renderEmailLayout(content, 'Password Updated — E-Voting', 'success')
 }

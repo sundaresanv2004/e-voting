@@ -1,23 +1,28 @@
-import { renderEmailLayout } from "./layout"
+import { renderEmailLayout, es } from './layout'
 
 export const PasswordResetTemplate = (resetLink: string) => {
   const content = `
-    <div class="greeting">Reset your password</div>
-    <div class="message">
-      A password reset was requested for your account. If this was you, please click the button below to set a new password.
+    <h2 style="${es.h1}">Reset your password</h2>
+    <p style="${es.p}">
+      We received a request to reset the password for your E-Voting account. Click the button below to set a new one. This link is valid for <strong style="${es.strong}">1 hour</strong>.
+    </p>
+
+    <div style="${es.cta}">
+      <a href="${resetLink}" style="${es.button('#0f172a')}">Reset Password</a>
     </div>
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="${resetLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-        Reset Password
-      </a>
-    </div>
-    <div class="message">
-      This link will expire in 1 hour. If you did not request this, you can safely ignore this email.
-    </div>
-    <div class="footer-note" style="margin-top: 24px; font-size: 12px; color: #8898aa;">
-      If you're having trouble clicking the button, copy and paste the URL below into your browser: <br />
-      <a href="${resetLink}" style="color: #2563eb;">${resetLink}</a>
-    </div>
+
+    <hr style="${es.divider}" />
+
+    <p style="${es.smallSpaced}">
+      If the button doesn't work, copy and paste this link into your browser:
+    </p>
+    <p style="margin:0 0 24px 0;">
+      <a href="${resetLink}" style="${es.link}">${resetLink}</a>
+    </p>
+
+    <p style="${es.small}">
+      If you didn't request a password reset, you can safely ignore this email — your password will remain unchanged.
+    </p>
   `
-  return renderEmailLayout(content, "Reset Password - E-Voting")
+  return renderEmailLayout(content, 'Reset your password — E-Voting', 'security')
 }

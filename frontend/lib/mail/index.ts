@@ -1,3 +1,4 @@
+
 import { Resend } from "resend"
 import { VerificationTemplate } from "./templates/verification"
 import { WelcomeTemplate } from "./templates/welcome"
@@ -11,265 +12,370 @@ import { OwnershipTransferredTemplate } from "./templates/ownership-transferred"
 import { ElectionCreatedNotificationTemplate } from "./templates/election-created"
 import { SystemApprovedTemplate } from "./templates/system-approved"
 import { SystemExpiredTemplate } from "./templates/system-expired"
+import { AccountLockedTemplate } from "./templates/account-locked"
+import { ElectionStartingSoonTemplate } from "./templates/election-starting-soon"
+import { ElectionResultsPublishedTemplate } from "./templates/results-published"
+import { MemberRemovedTemplate } from "./templates/member-removed"
 
-// Use a placeholder at build time to prevent Resend constructor from throwing
-// when RESEND_API_KEY isn't set. Each send function already guards with
-// `!process.env.RESEND_API_KEY` before making any real API calls.
 const resend = new Resend(process.env.RESEND_API_KEY ?? "re_placeholder_build_time_only")
-
 
 export const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-export const sendPasswordResetConfirmationEmail = async (email: string) => {
+// Single source of truth for the sender address
+const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@evoting.sundaresan.dev"
+const FROM_NAME = "E-Voting"
+const FROM_SECURITY = `E-Voting Security <${FROM_EMAIL}>`
+const FROM = `${FROM_NAME} <${FROM_EMAIL}>`
+
+const isDevMode = () =>
+  !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder"
+
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+export const sendVerificationEmail = async (email: string, token: string) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Password reset confirmation email for ${email}`)
+    if (isDevMode()) {
+      console.log(`[DEV] Verification code for ${email}: ${token}`)
       return { success: true, dev: true }
     }
-
-    const html = PasswordResetConfirmationTemplate()
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "reset@yourdomain.com"}>`,
+      from: FROM,
       to: email,
-      subject: "Password Reset Successful - E-Voting",
-      html
+      subject: "Verify your email — E-Voting",
+      html: VerificationTemplate(token),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send password reset confirmation email:", error)
+    console.error("sendVerificationEmail:", error)
     return { success: false, error }
   }
 }
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
   const resetLink = `${domain}/auth/reset-password?token=${token}`
-
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+    if (isDevMode()) {
       console.log(`[DEV] Password reset link for ${email}: ${resetLink}`)
       return { success: true, dev: true }
     }
-
-    const html = PasswordResetTemplate(resetLink)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "reset@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: "Reset your password - E-Voting",
-      html
+      subject: "Reset your password — E-Voting",
+      html: PasswordResetTemplate(resetLink),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send password reset email:", error)
+    console.error("sendPasswordResetEmail:", error)
     return { success: false, error }
   }
 }
 
-export const sendVerificationEmail = async (email: string, token: string) => {
+export const sendPasswordResetConfirmationEmail = async (email: string) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Verification code for ${email}: ${token}`)
+    if (isDevMode()) {
+      console.log(`[DEV] Password reset confirmation for ${email}`)
       return { success: true, dev: true }
     }
-
-    const html = VerificationTemplate(token)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "verify@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: "Verify your email - E-Voting",
-      html
+      subject: "Password updated successfully — E-Voting",
+      html: PasswordResetConfirmationTemplate(),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send verification email:", error)
+    console.error("sendPasswordResetConfirmationEmail:", error)
     return { success: false, error }
   }
 }
 
 export const sendWelcomeEmail = async (email: string, name: string) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Sending welcome email to ${email} (${name})`)
+    if (isDevMode()) {
+      console.log(`[DEV] Welcome email for ${email} (${name})`)
       return { success: true, dev: true }
     }
-
-    const html = WelcomeTemplate(name)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "welcome@yourdomain.com"}>`,
+      from: FROM,
       to: email,
       subject: "Welcome to E-Voting!",
-      html
+      html: WelcomeTemplate(name),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send welcome email:", error)
+    console.error("sendWelcomeEmail:", error)
     return { success: false, error }
   }
 }
 
-export const sendOrgInvitationEmail = async (email: string, name: string, orgName: string, role: string) => {
+export const sendLoginNotificationEmail = async (
+  email: string,
+  name: string,
+  ip: string,
+  userAgent: string
+) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Sending organization invitation email to ${email} (${name}) for org: ${orgName}, role: ${role}`)
-      return { success: true, dev: true }
-    }
-
-    const html = OrgInvitationTemplate(name, orgName, role)
-
-    await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "invite@yourdomain.com"}>`,
-      to: email,
-      subject: `You've been added to ${orgName} - E-Voting`,
-      html
-    })
-
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to send organization invitation email:", error)
-    return { success: false, error }
-  }
-}
-
-export const sendElectionAssignmentEmail = async (email: string, name: string, orgName: string, electionName: string, role: string, electionId: string) => {
-  try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Sending election assignment email to ${email} (${name}) for election: ${electionName}, role: ${role}`)
-      return { success: true, dev: true }
-    }
-
-    const html = ElectionAssignmentTemplate(name, orgName, electionName, role, electionId)
-
-    await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "updates@yourdomain.com"}>`,
-      to: email,
-      subject: `New Assignment: ${electionName} - ${orgName}`,
-      html
-    })
-
-    return { success: true }
-  } catch (error) {
-    console.error("Failed to send election assignment email:", error)
-    return { success: false, error }
-  }
-}
-
-export const sendLoginNotificationEmail = async (email: string, name: string, ip: string, userAgent: string) => {
-  try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+    if (isDevMode()) {
       console.log(`[DEV] Login notification for ${email} from ${ip}`)
       return { success: true, dev: true }
     }
-
-    const html = LoginNotificationTemplate(name, ip, userAgent)
-
     await resend.emails.send({
-      from: `E-Voting Security <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: "Security Alert: New Login Detected",
-      html
+      subject: "New sign-in detected — E-Voting",
+      html: LoginNotificationTemplate(name, ip, userAgent),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send login notification email:", error)
+    console.error("sendLoginNotificationEmail:", error)
     return { success: false, error }
   }
 }
 
-export const sendOrgCreatedEmail = async (email: string, name: string, orgName: string, orgCode: string) => {
+export const sendAccountLockedEmail = async (
+  email: string,
+  name: string,
+  unlockTime?: string
+) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Organization created email for ${email}: ${orgName} (${orgCode})`)
+    if (isDevMode()) {
+      console.log(`[DEV] Account locked email for ${email}`)
       return { success: true, dev: true }
     }
-
-    const html = OrganizationCreatedTemplate(name, orgName, orgCode)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "onboarding@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: `Success: ${orgName} has been created - E-Voting`,
-      html
+      subject: "Security Alert: Account Temporarily Locked — E-Voting",
+      html: AccountLockedTemplate(name, unlockTime),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send organization created email:", error)
+    console.error("sendAccountLockedEmail:", error)
     return { success: false, error }
   }
 }
 
-export const sendOwnershipTransferredEmail = async (email: string, name: string, orgName: string, previousOwnerName: string, previousOwnerEmail: string) => {
+
+// ─── Organization ────────────────────────────────────────────────────────────
+
+export const sendOrgCreatedEmail = async (
+  email: string,
+  name: string,
+  orgName: string,
+  orgCode: string
+) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] Ownership transferred email for ${email} in ${orgName}`)
+    if (isDevMode()) {
+      console.log(`[DEV] Org created: ${orgName} (${orgCode}) for ${email}`)
       return { success: true, dev: true }
     }
-
-    const html = OwnershipTransferredTemplate(name, orgName, previousOwnerName, previousOwnerEmail)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "onboarding@yourdomain.com"}>`,
+      from: FROM,
       to: email,
-      subject: `Notice: You are now the owner of ${orgName} - E-Voting`,
-      html
+      subject: `${orgName} is ready — E-Voting`,
+      html: OrganizationCreatedTemplate(name, orgName, orgCode),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send ownership transfer email:", error)
+    console.error("sendOrgCreatedEmail:", error)
     return { success: false, error }
   }
 }
+
+export const sendOrgInvitationEmail = async (
+  email: string,
+  name: string,
+  orgName: string,
+  role: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Org invitation for ${email} to ${orgName} as ${role}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `You've been added to ${orgName} — E-Voting`,
+      html: OrgInvitationTemplate(name, orgName, role),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendOrgInvitationEmail:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendOwnershipTransferredEmail = async (
+  email: string,
+  name: string,
+  orgName: string,
+  previousOwnerName: string,
+  previousOwnerEmail: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Ownership transferred to ${email} for ${orgName}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `You are now the owner of ${orgName} — E-Voting`,
+      html: OwnershipTransferredTemplate(name, orgName, previousOwnerName, previousOwnerEmail),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendOwnershipTransferredEmail:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendMemberRemovedEmail = async (
+  email: string,
+  name: string,
+  orgName: string,
+  removedByName: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Member removed: ${email} from ${orgName}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `Your membership in ${orgName} has been removed — E-Voting`,
+      html: MemberRemovedTemplate(name, orgName, removedByName),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendMemberRemovedEmail:", error)
+    return { success: false, error }
+  }
+}
+
+
+// ─── Elections ───────────────────────────────────────────────────────────────
 
 export const sendElectionCreatedNotificationEmail = async (
-  recipientEmail: string, 
-  recipientName: string, 
-  orgName: string, 
-  electionName: string, 
+  recipientEmail: string,
+  recipientName: string,
+  orgName: string,
+  electionName: string,
   electionCode: string,
   startTime: Date,
   endTime: Date,
-  creatorName: string, 
+  creatorName: string,
   electionId: string
 ) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
+    if (isDevMode()) {
       console.log(`[DEV] Election created notification for ${recipientEmail}: ${electionName}`)
       return { success: true, dev: true }
     }
-
-    const html = ElectionCreatedNotificationTemplate(
-      recipientName, 
-      orgName, 
-      electionName, 
-      electionCode,
-      startTime,
-      endTime,
-      creatorName, 
-      electionId
-    )
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "updates@yourdomain.com"}>`,
+      from: FROM,
       to: recipientEmail,
-      subject: `Notification: New Election Created - ${electionName}`,
-      html
+      subject: `New Election Created: ${electionName} — E-Voting`,
+      html: ElectionCreatedNotificationTemplate(
+        recipientName, orgName, electionName, electionCode,
+        startTime, endTime, creatorName, electionId
+      ),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send election creation notification email:", error)
+    console.error("sendElectionCreatedNotificationEmail:", error)
     return { success: false, error }
   }
 }
+
+export const sendElectionAssignmentEmail = async (
+  email: string,
+  name: string,
+  orgName: string,
+  electionName: string,
+  role: string,
+  electionId: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Election assignment for ${email}: ${electionName} as ${role}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `Election Assignment: ${electionName} — E-Voting`,
+      html: ElectionAssignmentTemplate(name, orgName, electionName, role, electionId),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendElectionAssignmentEmail:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendElectionStartingSoonEmail = async (
+  email: string,
+  name: string,
+  electionName: string,
+  orgName: string,
+  startTime: Date,
+  electionId: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Election starting soon for ${email}: ${electionName}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `Reminder: ${electionName} is starting soon — E-Voting`,
+      html: ElectionStartingSoonTemplate(name, electionName, orgName, startTime, electionId),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendElectionStartingSoonEmail:", error)
+    return { success: false, error }
+  }
+}
+
+export const sendElectionResultsPublishedEmail = async (
+  email: string,
+  name: string,
+  electionName: string,
+  orgName: string,
+  totalVoters: number,
+  totalBallots: number,
+  turnout: number,
+  electionId: string
+) => {
+  try {
+    if (isDevMode()) {
+      console.log(`[DEV] Results published for ${email}: ${electionName}`)
+      return { success: true, dev: true }
+    }
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `Results Published: ${electionName} — E-Voting`,
+      html: ElectionResultsPublishedTemplate(
+        name, electionName, orgName, totalVoters, totalBallots, turnout, electionId
+      ),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("sendElectionResultsPublishedEmail:", error)
+    return { success: false, error }
+  }
+}
+
+
+// ─── Systems ─────────────────────────────────────────────────────────────────
 
 export const sendSystemApprovedEmail = async (
   email: string,
@@ -281,23 +387,19 @@ export const sendSystemApprovedEmail = async (
   approvedByName: string
 ) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] System approved email for ${email}: ${systemName}`)
+    if (isDevMode()) {
+      console.log(`[DEV] System approved for ${email}: ${systemName}`)
       return { success: true, dev: true }
     }
-
-    const html = SystemApprovedTemplate(adminName, systemName, hostName, ipAddress, orgName, approvedByName, domain)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: `Terminal Authorized: ${systemName}`,
-      html
+      subject: `Terminal Authorized: ${systemName} — E-Voting`,
+      html: SystemApprovedTemplate(adminName, systemName, hostName, ipAddress, orgName, approvedByName, domain),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send system approved email:", error)
+    console.error("sendSystemApprovedEmail:", error)
     return { success: false, error }
   }
 }
@@ -311,23 +413,19 @@ export const sendSystemExpiredEmail = async (
   orgName: string
 ) => {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re-placeholder") {
-      console.log(`[DEV] System expired email for ${email}: ${systemName}`)
+    if (isDevMode()) {
+      console.log(`[DEV] System expired for ${email}: ${systemName}`)
       return { success: true, dev: true }
     }
-
-    const html = SystemExpiredTemplate(adminName, systemName, hostName, ipAddress, orgName, domain)
-
     await resend.emails.send({
-      from: `E-Voting <${process.env.EMAIL_FROM || "security@yourdomain.com"}>`,
+      from: FROM_SECURITY,
       to: email,
-      subject: `Security Alert: System Token Expired`,
-      html
+      subject: `Security Alert: Terminal Token Expired — E-Voting`,
+      html: SystemExpiredTemplate(adminName, systemName, hostName, ipAddress, orgName, domain),
     })
-
     return { success: true }
   } catch (error) {
-    console.error("Failed to send system expired email:", error)
+    console.error("sendSystemExpiredEmail:", error)
     return { success: false, error }
   }
 }

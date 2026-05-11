@@ -1,32 +1,36 @@
-import { renderEmailLayout } from "./layout"
+import { renderEmailLayout, es } from './layout'
 
-export const OwnershipTransferredTemplate = (name: string, orgName: string, previousOwnerName: string, previousOwnerEmail: string) => {
+export const OwnershipTransferredTemplate = (
+  name: string,
+  orgName: string,
+  previousOwnerName: string,
+  previousOwnerEmail: string
+) => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const content = `
-    <div class="greeting">Organization Ownership Transferred! 👑</div>
-    <div class="message">
-      Hi ${name}, you have been appointed as the new owner of <strong>${orgName}</strong>.
-    </div>
-    
-    <div style="background-color: #f0f7ff; border: 1px solid #cce3ff; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-      <h3 style="margin-top: 0; color: #1e40af; font-size: 16px;">Transfer Details</h3>
-      <p style="margin: 10px 0 0 0; font-size: 14px; color: #1e40af;"><strong>Organization:</strong> ${orgName}</p>
-      <p style="margin: 5px 0 0 0; font-size: 14px; color: #1e40af;"><strong>From:</strong> ${previousOwnerName} (${previousOwnerEmail})</p>
-      <p style="margin: 5px 0 0 0; font-size: 14px; color: #1e40af;"><strong>New Role:</strong> Organization Owner (Admin)</p>
+    <h2 style="${es.h1}">You are now the owner of ${orgName}</h2>
+    <p style="${es.p}">
+      Hi ${name}, ownership of <strong style="${es.strong}">${orgName}</strong> has been transferred to you. You now have full administrative control over the organization.
+    </p>
+
+    <div style="${es.card('#ef4444')}">
+      <p style="margin:0 0 12px 0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;">Transfer Details</p>
+      <p style="${es.row}"><strong style="${es.strong}">Organization:</strong> ${orgName}</p>
+      <p style="${es.row}"><strong style="${es.strong}">Transferred From:</strong> ${previousOwnerName} (${previousOwnerEmail})</p>
+      <p style="margin:0;font-size:14px;color:#475569;"><strong style="${es.strong}">Your New Role:</strong> Organization Owner (Admin)</p>
     </div>
 
-    <div class="message">
-      As the owner, you now have full control over the organization's settings, elections, system authorizations, and membership.
+    <p style="${es.p}">
+      As owner, you can manage all elections, configure organization settings, authorize voting terminals, and control membership — including transferring ownership again if needed.
+    </p>
+
+    <div style="${es.cta}">
+      <a href="${appUrl}/admin/organization/settings" style="${es.button('#ef4444')}">Manage Organization Settings</a>
     </div>
 
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/admin/organization/settings" class="button">
-        Manage Organization Settings
-      </a>
-    </div>
-
-    <div class="message" style="margin-bottom: 0;">
-      This was an administrative action. If you believe this transfer was a mistake, please coordinate with the previous owner or your election administrator.
-    </div>
+    <p style="${es.small}">
+      If you believe this transfer was made in error, please coordinate with the previous owner or contact support immediately.
+    </p>
   `
-  return renderEmailLayout(content, "E-Voting")
+  return renderEmailLayout(content, `Ownership Transfer: ${orgName} — E-Voting`, 'warning')
 }
