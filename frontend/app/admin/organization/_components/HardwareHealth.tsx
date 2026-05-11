@@ -31,8 +31,8 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
   ]
 
   return (
-    <Card className="border-border/50 overflow-hidden py-0 gap-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
+    <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pt-6 px-4">
         <div className="space-y-0.5">
           <CardTitle className="text-md font-bold tracking-tight flex items-center gap-2">
             <HugeiconsIcon icon={ComputerIcon} className="h-5 w-5 text-emerald-500" />
@@ -52,7 +52,7 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
           <HugeiconsIcon icon={ArrowRight01Icon} className="h-3 w-3" />
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4 pb-6">
+      <CardContent className="pt-4 pb-6">
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -61,34 +61,32 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
             <p className="text-xs text-muted-foreground">No devices connected yet</p>
           </div>
         ) : (
-          <>
-            {/* Horizontal status bar */}
-            <div className="flex h-2 rounded-full overflow-hidden bg-muted">
-              {segments.map((seg) => {
-                if (seg.count === 0) return null
-                return (
-                  <div
-                    key={seg.label}
-                    className={`${seg.barClass} transition-all duration-300`}
-                    style={{ width: `${(seg.count / total) * 100}%` }}
-                  />
-                )
-              })}
-            </div>
-
-            {/* Legend — only show segments with count > 0 or Approved always */}
-            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-              {segments.filter(seg => seg.count > 0 || seg.label === "Approved").map((seg) => (
-                <div key={seg.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${seg.dotClass}`} />
-                    <span className={`text-xs ${seg.warn ? "text-destructive font-bold" : "text-muted-foreground"}`}>{seg.label}</span>
+          <div className="space-y-3">
+            {segments.filter(seg => seg.count > 0 || seg.label === "Approved").map((seg) => {
+              const pct = total > 0 ? (seg.count / total) * 100 : 0
+              return (
+                <div key={seg.label} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${seg.dotClass}`} />
+                      <span className={`font-medium ${seg.warn ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                        {seg.label}
+                      </span>
+                    </div>
+                    <span className={`font-bold tabular-nums ${seg.warn ? "text-destructive" : "text-foreground"}`}>
+                      {seg.count}
+                    </span>
                   </div>
-                  <span className={`text-xs font-medium tabular-nums ${seg.warn ? "text-destructive" : ""}`}>{seg.count}</span>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${seg.barClass} transition-all duration-300`}
+                      style={{ width: `${Math.max(pct, seg.count > 0 ? 4 : 0)}%` }}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
-          </>
+              )
+            })}
+          </div>
         )}
       </CardContent>
     </Card>
@@ -97,29 +95,28 @@ export function HardwareHealth({ approved, pending, rejected, revoked, suspended
 
 export function HardwareHealthSkeleton() {
   return (
-    <Card className="border-border/50 overflow-hidden py-0 gap-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b pt-6 px-4">
+    <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 pt-6 px-4">
         <div className="space-y-1.5">
           <Skeleton className="h-5 w-32 rounded-lg" />
           <Skeleton className="h-3 w-24 rounded-full" />
         </div>
         <Skeleton className="h-7 w-16 rounded-full" />
       </CardHeader>
-      <CardContent className="space-y-4 pb-6">
-        <Skeleton className="h-2 w-full rounded-full" />
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center justify-between">
+      <CardContent className="pt-4 pb-6 space-y-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-2 w-2 rounded-full" />
                 <Skeleton className="h-3 w-16 rounded-full" />
               </div>
               <Skeleton className="h-3 w-4 rounded-full" />
             </div>
-          ))}
-        </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+          </div>
+        ))}
       </CardContent>
     </Card>
   )
 }
-
