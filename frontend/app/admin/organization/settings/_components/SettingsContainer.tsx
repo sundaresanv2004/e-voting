@@ -581,9 +581,9 @@ export function SettingsContainerSkeleton() {
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center gap-2 border-b pb-2">
-        <Skeleton className="h-9 w-24 rounded-md" />
-        <Skeleton className="h-9 w-24 rounded-md" />
-        <Skeleton className="h-9 w-32 rounded-md" />
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-32 rounded-full" />
       </div>
       <div className="space-y-5 mt-6">
         {[1, 2, 3].map((i) => (
@@ -592,15 +592,15 @@ export function SettingsContainerSkeleton() {
               <div className="flex items-center gap-3">
                 <Skeleton className="h-8 w-8 rounded-lg" />
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-3 w-64" />
+                  <Skeleton className="h-4 w-40 rounded-full" />
+                  <Skeleton className="h-3 w-64 rounded-full" />
                 </div>
               </div>
-              <Skeleton className="h-10 w-full max-w-2xl" />
+              <Skeleton className="h-10 w-full max-w-2xl rounded-xl" />
             </div>
             <div className="px-6 py-3 bg-muted/40 border-t flex justify-between items-center">
-              <Skeleton className="h-3 w-48" />
-              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-48 rounded-full" />
+              <Skeleton className="h-8 w-16 rounded-full" />
             </div>
           </div>
         ))}

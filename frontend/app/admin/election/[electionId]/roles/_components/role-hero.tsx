@@ -18,7 +18,7 @@ const RoleHero: React.FC<RoleHeroProps> = ({ title = "Election Roles", subtitle,
     })
 
     return (
-        <div className="relative overflow-hidden border-b bg-card/50 backdrop-blur-sm">
+        <div className="relative overflow-hidden border-b backdrop-blur-sm">
             <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full">
                 <div className="flex items-center gap-5">
                     <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-sm ring-1 ring-amber-500/20 group transition-all duration-300 hover:rotate-3">
@@ -41,8 +41,8 @@ const RoleHero: React.FC<RoleHeroProps> = ({ title = "Election Roles", subtitle,
             </div>
 
             {/* Premium Decorations */}
-            <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-amber-500/5 rounded-full blur-3xl opacity-60" />
-            <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-64 w-64 bg-primary/5 rounded-full blur-3xl opacity-60" />
+            {/* <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-amber-500/5 rounded-full blur-3xl opacity-60" /> */}
+            {/* <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-64 w-64 bg-primary/5 rounded-full blur-3xl opacity-60" /> */}
         </div>
     )
 }
@@ -54,15 +54,15 @@ export const RoleHeroSkeleton: React.FC = () => {
                 <div className="flex items-center gap-5">
                     <Skeleton className="h-14 w-14 rounded-2xl" />
                     <div className="space-y-2">
-                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-8 w-64 rounded-lg" />
                         <div className="flex items-center gap-2">
                             <Skeleton className="h-4 w-4 rounded-full" />
-                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-4 w-48 rounded-full" />
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 relative z-10">
-                    <Skeleton className="h-10 w-32 rounded-lg" />
+                    <Skeleton className="h-10 w-32 rounded-full" />
                 </div>
             </div>
         </div>

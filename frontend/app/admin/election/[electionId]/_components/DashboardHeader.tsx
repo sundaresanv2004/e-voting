@@ -54,15 +54,15 @@ export function DashboardHeaderSkeleton() {
                 <div className="flex items-center gap-5">
                     <Skeleton className="h-14 w-14 rounded-[16px]" />
                     <div className="space-y-2">
-                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-8 w-64 rounded-lg" />
                         <div className="flex items-center gap-3">
-                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-4 w-48 rounded-full" />
                             <Skeleton className="h-5 w-20 rounded-full" />
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Skeleton className="h-10 w-24 rounded-md" />
+                    <Skeleton className="h-10 w-24 rounded-full" />
                 </div>
             </div>
         </div>

@@ -88,8 +88,8 @@ export function ManagementCoreSkeleton() {
         <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
                 <div className="space-y-1.5">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-5 w-40 rounded-lg" />
+                    <Skeleton className="h-3 w-32 rounded-full" />
                 </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -102,8 +102,8 @@ export function ManagementCoreSkeleton() {
                             <div className="flex items-center gap-4">
                                 <Skeleton className="h-11 w-11 rounded-xl" />
                                 <div className="space-y-1.5">
-                                    <Skeleton className="h-4 w-24" />
-                                    <Skeleton className="h-3 w-40" />
+                                    <Skeleton className="h-4 w-24 rounded-lg" />
+                                    <Skeleton className="h-3 w-40 rounded-full" />
                                 </div>
                             </div>
                         </div>

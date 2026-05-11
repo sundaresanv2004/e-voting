@@ -65,16 +65,16 @@ export function ConfigurationCardSkeleton() {
         <Card className="border-border/50 shadow-sm overflow-hidden py-0 gap-0">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-3 px-4">
                 <div className="space-y-1.5">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-5 w-32 rounded-lg" />
+                    <Skeleton className="h-3 w-24 rounded-full" />
                 </div>
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-7 w-16 rounded-full" />
             </CardHeader>
             <CardContent className="p-0">
                 <div className="divide-y divide-border/50">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                         <div key={i} className="flex items-center justify-between py-3 px-4">
-                            <Skeleton className="h-3 w-24" />
+                            <Skeleton className="h-3 w-24 rounded-full" />
                             <Skeleton className="h-4 w-16 rounded-full" />
                         </div>
                     ))}

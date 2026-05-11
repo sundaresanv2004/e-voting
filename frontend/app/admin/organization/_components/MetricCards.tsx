@@ -96,12 +96,12 @@ export function MetricCardsSkeleton() {
       {[1, 2, 3].map((i) => (
         <Card key={i} className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-24 rounded-full" />
             <Skeleton className="h-4 w-4 rounded-full" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-8 w-12 mb-2" />
-            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-8 w-12 mb-2 rounded-lg" />
+            <Skeleton className="h-3 w-32 rounded-full" />
           </CardContent>
         </Card>
       ))}

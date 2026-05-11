@@ -55,10 +55,10 @@ export const SettingsHeroSkeleton: React.FC = () => {
                 <div className="flex items-center gap-5">
                     <Skeleton className="h-14 w-14 rounded-2xl" />
                     <div className="space-y-2">
-                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-8 w-64 rounded-lg" />
                         <div className="flex items-center gap-2">
                             <Skeleton className="h-4 w-4 rounded-full" />
-                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-4 w-48 rounded-full" />
                         </div>
                     </div>
                 </div>
