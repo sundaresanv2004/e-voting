@@ -61,11 +61,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy prisma folder to include schema and migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+
+# Copy Prisma CLI and Client so that the migration deploy has access to 'prisma/config'
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
-
-# Install the Prisma CLI globally in the runner image for migrate deploy
-RUN npm install -g prisma@7.6.0
 
 # Give execution permission to the start script
 RUN chmod +x ./start.sh
