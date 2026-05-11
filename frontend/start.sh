@@ -1,5 +1,6 @@
 #!/bin/sh
 # start.sh
+set -e
 
 echo "Running database migrations..."
 if [ -z "${DATABASE_URL}" ]; then
