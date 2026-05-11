@@ -17,8 +17,8 @@ export async function verifyVoterUniqueIdAction(electionId: string, uniqueId: st
         await enforceRateLimit({
             action: "voter-verify",
             identifiers: [`ip:${ip}`, `election:${electionId}`],
-            limit: 10,
-            windowMs: 60 * 60 * 1000,
+            limit: 15,
+            windowMs: 5 * 60 * 1000,
         })
 
         const voter = await db.voter.findFirst({

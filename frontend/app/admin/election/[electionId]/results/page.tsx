@@ -37,6 +37,12 @@ export default async function ResultsPage({
       status: true,
       startTime: true,
       endTime: true,
+      organization: {
+        select: {
+          name: true,
+          logo: true
+        }
+      },
       result: {
         select: {
           isFinalized: true,
@@ -160,7 +166,11 @@ export default async function ResultsPage({
         actions={
           <div className="flex items-center gap-6">
             <LiveToggle />
-            <ResultsExport data={roleResults} electionName={election.name} />
+            <ResultsExport 
+              data={roleResults} 
+              electionName={election.name} 
+              organization={election.organization}
+            />
           </div>
         }
       />

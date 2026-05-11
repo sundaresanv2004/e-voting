@@ -111,6 +111,15 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
         router.push("/auth/vote")
     }
 
+    const handleReturnToElectionLobby = () => {
+        setIsBallotSubmitted(false)
+        setVoterData(null)
+        setBallotElection(null)
+        setHasConfirmedIdentity(false)
+        setLastUsedId("")
+        form.reset()
+    }
+
     const handleCancelBallot = () => {
         setIsVoting(false)
         setVoterData(null)
@@ -288,13 +297,23 @@ export function VoterSessionPortal({ election }: VoterSessionPortalProps) {
                             Your ballot for {election.name} has been recorded. You may now leave this device or return to the voting portal.
                         </p>
                     </div>
-                    <Button
-                        size="lg"
-                        className="w-full max-w-xs rounded-xl bg-emerald-600 hover:bg-emerald-500"
-                        onClick={handleConfirmExit}
-                    >
-                        Leave Portal
-                    </Button>
+                    <div className="w-full max-w-sm grid gap-3 sm:grid-cols-2">
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={handleReturnToElectionLobby}
+                        >
+                            Return to Election
+                        </Button>
+                        <Button
+                            size="lg"
+                            className="rounded-xl bg-emerald-600 hover:bg-emerald-500"
+                            onClick={handleExitClick}
+                        >
+                            Leave Portal
+                        </Button>
+                    </div>
                 </div>
             )}
 

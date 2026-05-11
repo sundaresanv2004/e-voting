@@ -242,7 +242,7 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                 const isSelected = votes[currentRole.id] === candidate.id
 
                                 return (
-                                    <div key={candidate.id} className="relative group">
+                                    <div key={candidate.id} className="relative group h-full">
                                         <RadioGroupItem
                                             value={candidate.id}
                                             id={`candidate-${candidate.id}`}
@@ -251,13 +251,13 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                         <Label
                                             htmlFor={`candidate-${candidate.id}`}
                                             className={cn(
-                                                "relative flex flex-col justify-between text-left rounded-2xl border-2 p-4 sm:p-5 cursor-pointer transition-all duration-400 overflow-hidden",
+                                                "relative flex h-[190px] sm:h-[220px] flex-col justify-between text-left rounded-2xl border-2 p-4 sm:p-5 cursor-pointer transition-all duration-400 overflow-hidden",
                                                 isSelected
-                                                    ? "border-primary bg-primary/[0.04] shadow-[0_0_30px_-5px] shadow-primary/25 scale-[1.02]"
+                                                    ? "border-primary bg-primary/[0.04] shadow-[0_0_30px_-5px] shadow-primary/25"
                                                     : "border-border/40 bg-card/80 hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5"
                                             )}
                                         >
-                                            <div className="flex w-full items-start justify-between gap-3 mb-4">
+                                            <div className="flex w-full items-start justify-between gap-3 mb-3">
                                                 {/* Left side: Profile Photo / NOTA */}
                                                 {!candidate.isNota ? (
                                                     <div className="relative shrink-0">
@@ -323,12 +323,12 @@ export function BallotInterface({ election, voterData, onSubmitBallot, onBack, i
                                                     {settings.showCandidateSymbols && !candidate.isNota && (
                                                         <div className="mt-auto">
                                                             {candidate.symbolImage ? (
-                                                                <div className="relative w-10 h-10 sm:w-12 sm:h-12">
-                                                                    <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" sizes="48px" />
+                                                                <div className="relative w-11 h-14 sm:w-12 sm:h-16 rounded-xl border border-border/40 bg-background/80 shadow-sm overflow-hidden">
+                                                                    <Image src={candidate.symbolImage} alt="Symbol" fill className="object-cover" sizes="48px" />
                                                                 </div>
                                                             ) : (
-                                                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-dashed border-border/30 flex items-center justify-center">
-                                                                    <HugeiconsIcon icon={Image01Icon} className="w-4 h-4 text-muted-foreground/25" />
+                                                                <div className="w-11 h-14 sm:w-12 sm:h-16 rounded-xl border border-dashed border-border/30 bg-background/70 flex items-center justify-center">
+                                                                    <HugeiconsIcon icon={Image01Icon} className="w-5 h-5 text-muted-foreground/25" />
                                                                 </div>
                                                             )}
                                                         </div>
