@@ -61,6 +61,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy prisma folder to include schema and migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
 
