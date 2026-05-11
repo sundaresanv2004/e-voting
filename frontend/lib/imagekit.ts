@@ -1,17 +1,23 @@
 import ImageKit from "@imagekit/nodejs";
 
-if (!process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY) {
-  throw new Error("Missing NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY");
-}
+let _imagekit: ImageKit | null = null;
 
-if (!process.env.IMAGEKIT_PRIVATE_KEY) {
-  throw new Error("Missing IMAGEKIT_PRIVATE_KEY");
-}
+/** Lazy getter — throws at request time (not build time) if env vars are missing */
+export function getImageKit(): ImageKit {
+  if (_imagekit) return _imagekit;
 
-if (!process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT) {
-  throw new Error("Missing NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT");
-}
+  if (!process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY) {
+    throw new Error("Missing NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY");
+  }
+  if (!process.env.IMAGEKIT_PRIVATE_KEY) {
+    throw new Error("Missing IMAGEKIT_PRIVATE_KEY");
+  }
+  if (!process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT) {
+    throw new Error("Missing NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT");
+  }
 
-export const imagekit = new ImageKit({
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-});
+  _imagekit = new ImageKit({
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  });
+  return _imagekit;
+}

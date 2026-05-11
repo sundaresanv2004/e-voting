@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
-import { imagekit } from "@/lib/imagekit";
+import { getImageKit } from "@/lib/imagekit";
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 
 export const GET = async () => {
   try {
@@ -13,7 +15,7 @@ export const GET = async () => {
       );
     }
 
-    const authParameters = imagekit.helper.getAuthenticationParameters();
+    const authParameters = getImageKit().helper.getAuthenticationParameters();
     return NextResponse.json(authParameters);
   } catch (error) {
     console.error("ImageKit auth error:", error);

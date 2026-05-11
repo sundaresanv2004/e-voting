@@ -12,7 +12,11 @@ import { ElectionCreatedNotificationTemplate } from "./templates/election-create
 import { SystemApprovedTemplate } from "./templates/system-approved"
 import { SystemExpiredTemplate } from "./templates/system-expired"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Use a placeholder at build time to prevent Resend constructor from throwing
+// when RESEND_API_KEY isn't set. Each send function already guards with
+// `!process.env.RESEND_API_KEY` before making any real API calls.
+const resend = new Resend(process.env.RESEND_API_KEY ?? "re_placeholder_build_time_only")
+
 
 export const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 

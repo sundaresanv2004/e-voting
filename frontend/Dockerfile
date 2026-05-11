@@ -15,24 +15,22 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate the custom Prisma client output
-RUN npx prisma generate
-
-# Next.js collects completely anonymous telemetry data about general usage.
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Add standard build-time arguments for NEXT_PUBLIC environment variables
+# Build-time public env vars (safe to bake into the image)
 ARG NEXT_PUBLIC_APP_NAME
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
 ARG NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-ARG DATABASE_URL=postgresql://build:build@localhost:5432/build?schema=public
 
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=$NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
 ENV NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=$NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-ENV DATABASE_URL=$DATABASE_URL
+
+# Next.js telemetry
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Generate the Prisma client (reads schema structure only — no DB connection needed)
+RUN npx prisma generate
 
 RUN npm run build
 
@@ -61,11 +59,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy prisma folder to include schema and migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
 
-# Copy Prisma CLI and Client so that the migration deploy has access to 'prisma/config'
+# Copy Prisma CLI, client, and the .bin symlink so start.sh can call node_modules/.bin/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
