@@ -459,7 +459,7 @@ model Voter {
   createdBy User @relation("VoterCreatedBy", fields: [createdByUserId], references: [id])
   updatedBy User @relation("VoterUpdatedBy", fields: [updatedByUserId], references: [id])
 
-  @@unique([uniqueId])
+  @@unique([electionId, uniqueId])
   @@index([electionId])
   @@index([createdByUserId])
   @@index([updatedByUserId])

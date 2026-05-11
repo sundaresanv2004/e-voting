@@ -24,7 +24,7 @@ async function getAuthorizedUser(electionId: string) {
 /**
  * Generates a unique, non-repeating ID for a voter in a specific election
  */
-async function generateSafeUniqueId(): Promise<string> {
+async function generateSafeUniqueId(electionId: string): Promise<string> {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
   let isUnique = false
   let code = ""
@@ -34,10 +34,10 @@ async function generateSafeUniqueId(): Promise<string> {
     const raw = Array.from(bytes, (byte) => chars[byte % chars.length]).join("")
     code = raw.slice(0, 4) + "-" + raw.slice(4)
     
-    // Check DB for collision
+    // Check DB for collision within this election only
     const existing = await db.voter.findUnique({
       where: {
-        uniqueId: code
+        electionId_uniqueId: { electionId, uniqueId: code }
       }
     })
     
@@ -53,7 +53,7 @@ async function generateSafeUniqueId(): Promise<string> {
 export async function getNewUniqueCode(electionId: string) {
   try {
     await getAuthorizedUser(electionId)
-    const code = await generateSafeUniqueId()
+    const code = await generateSafeUniqueId(electionId)
     return { code }
   } catch (error: any) {
     return { error: error.message || "Failed to generate code" }
@@ -100,20 +100,20 @@ export async function createVoter(electionId: string, values: VoterFormValues) {
 
     const { name, uniqueId: providedId, image, additionalDetails } = validatedFields.data
 
-    // Generate ID if missing
+    // Generate ID if missing — scoped to this election
     const uniqueId = (providedId && providedId.trim() !== "") 
       ? providedId 
-      : await generateSafeUniqueId()
+      : await generateSafeUniqueId(electionId)
 
-    // User IDs are globally unique to avoid confusion across elections.
+    // Check uniqueness within this election only
     const existingVoter = await db.voter.findUnique({
       where: {
-        uniqueId
+        electionId_uniqueId: { electionId, uniqueId }
       }
     })
 
     if (existingVoter) {
-      return { error: "This Unique ID is already assigned to another voter" }
+      return { error: "This Unique ID is already assigned to another voter in this election" }
     }
 
 
@@ -162,21 +162,22 @@ export async function updateVoter(voterId: string, electionId: string, values: V
 
     const { name, uniqueId: providedId, image, additionalDetails } = validatedFields.data
 
-    // Generate ID if missing
+    // Generate ID if missing — scoped to this election
     const uniqueId = (providedId && providedId.trim() !== "") 
       ? providedId 
-      : await generateSafeUniqueId()
+      : await generateSafeUniqueId(electionId)
 
-    // Check if another voter has the same uniqueId anywhere in the system.
+    // Check uniqueness within this election only (excluding self)
     const existingVoter = await db.voter.findFirst({
       where: {
+        electionId,
         uniqueId: String(uniqueId),
         NOT: { id: voterId }
       }
     })
 
     if (existingVoter) {
-      return { error: "Another voter with this Unique ID already exists" }
+      return { error: "Another voter with this Unique ID already exists in this election" }
     }
 
 
@@ -352,10 +353,11 @@ export async function verifyVotersBulk(electionId: string, voterData: any[]) {
       .filter(v => v.unique_id && String(v.unique_id).trim() !== "")
       .map(v => String(v.unique_id))
 
-    // Find existing voters in this election with these IDs
+    // Find existing voters in this election with these IDs (scoped to this election)
     const existingVoters = providedIds.length > 0 
       ? await db.voter.findMany({
           where: {
+            electionId,
             uniqueId: { in: providedIds }
           },
           select: { uniqueId: true }
@@ -405,11 +407,11 @@ export async function importVotersBulk(electionId: string, voterData: any[]) {
         ? String(unique_id) 
         : null
 
-      // If missing, generate one that isn't in DB AND isn't in this batch
+      // If missing, generate one that isn't in DB (scoped to election) AND isn't in this batch
       if (!finalUniqueId) {
         let isBatchUnique = false
         while (!isBatchUnique) {
-          const newId = await generateSafeUniqueId()
+          const newId = await generateSafeUniqueId(electionId)
           if (!generatedInBatch.has(newId)) {
             finalUniqueId = newId
             generatedInBatch.add(newId)
