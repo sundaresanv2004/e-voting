@@ -61,8 +61,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy prisma folder to include schema and migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-# Copy Prisma config needed by Prisma 7 migrate in runtime
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 # Copy the start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
 
