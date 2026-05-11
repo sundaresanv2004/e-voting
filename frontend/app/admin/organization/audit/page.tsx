@@ -6,8 +6,11 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { requireOrgAdmin } from "@/lib/authz"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import AuditHero from "./_components/AuditHero"
+import { AuditFilters } from "./_components/AuditFilters"
+import { AuditMetadata } from "./_components/AuditMetadata"
 import { actionConfig, typeConfig, statusBadgeStyles } from "../_components/activity-config"
 import { AuditEntityType, AuditStatus, Prisma } from "@prisma/client"
 import { DashboardPoller } from "../_components/DashboardPoller"
@@ -18,6 +21,21 @@ type AuditSearchParams = Promise<{ [key: string]: string | string[] | undefined 
 
 const entityTypes = Object.values(AuditEntityType)
 const auditStatuses = Object.values(AuditStatus)
+
+const entityBadgeStyles: Record<string, string> = {
+  ORGANIZATION: "bg-indigo-500/10 text-indigo-600",
+  ELECTION: "bg-amber-500/10 text-amber-600",
+  SYSTEM: "bg-emerald-500/10 text-emerald-600",
+  MEMBER: "bg-cyan-500/10 text-cyan-600",
+  USER: "bg-blue-500/10 text-blue-600",
+  SECURITY: "bg-rose-500/10 text-rose-600",
+  SETTINGS: "bg-slate-500/10 text-slate-600",
+  VOTER: "bg-violet-500/10 text-violet-600",
+  CANDIDATE: "bg-purple-500/10 text-purple-600",
+  ELECTION_ROLE: "bg-amber-600/10 text-amber-700",
+  AUTH: "bg-rose-600/10 text-rose-700",
+  DEFAULT: "bg-gray-500/10 text-gray-600",
+}
 
 function getParam(params: Awaited<AuditSearchParams>, key: string) {
   const value = params[key]
@@ -55,7 +73,6 @@ export default async function OrganizationAuditPage({ searchParams }: { searchPa
   const params = await searchParams
 
   const query = getParam(params, "q")?.trim() || ""
-  const action = getParam(params, "action")?.trim() || ""
   const entityTypeParam = getParam(params, "entityType")?.trim() || ""
   const statusParam = getParam(params, "status")?.trim() || ""
   const from = getDateBoundary(getParam(params, "from"))
@@ -72,18 +89,17 @@ export default async function OrganizationAuditPage({ searchParams }: { searchPa
     organizationId: access.organizationId,
     ...(entityType ? { entityType } : {}),
     ...(status ? { status } : {}),
-    ...(action ? { action: { contains: action, mode: "insensitive" } } : {}),
     ...((from || to) ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
     ...(query
       ? {
-          OR: [
-            { action: { contains: query, mode: "insensitive" } },
-            { description: { contains: query, mode: "insensitive" } },
-            { entityId: { contains: query, mode: "insensitive" } },
-            { admin: { name: { contains: query, mode: "insensitive" } } },
-            { admin: { email: { contains: query, mode: "insensitive" } } },
-          ],
-        }
+        OR: [
+          { action: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+          { entityId: { contains: query, mode: "insensitive" } },
+          { admin: { name: { contains: query, mode: "insensitive" } } },
+          { admin: { email: { contains: query, mode: "insensitive" } } },
+        ],
+      }
       : {}),
   }
 
@@ -115,7 +131,7 @@ export default async function OrganizationAuditPage({ searchParams }: { searchPa
     }),
   ])
 
-  const hasFilters = Boolean(query || action || entityType || status || from || to)
+  const hasFilters = Boolean(query || entityType || status || from || to)
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-16">
@@ -128,118 +144,54 @@ export default async function OrganizationAuditPage({ searchParams }: { searchPa
       <div className="flex-1 px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full space-y-5">
         <Card className="border-border/50 py-0">
           <CardContent className="p-4 md:p-5 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-              <div className="space-y-1 lg:col-span-2">
-                <label htmlFor="audit-q" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search</label>
-                <input
-                  id="audit-q"
-                  name="q"
-                  form="audit-filter-form"
-                  defaultValue={query}
-                  placeholder="Actor, action, record ID..."
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                />
-              </div>
+            <AuditFilters
+              initialValues={{
+                q: query,
+                entityType: entityTypeParam,
+                status: statusParam,
+                from: getParam(params, "from") || "",
+                to: getParam(params, "to") || ""
+              }}
+              entityTypes={entityTypes}
+              auditStatuses={auditStatuses}
+            />
 
-              <div className="space-y-1">
-                <label htmlFor="audit-action" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Action</label>
-                <input
-                  id="audit-action"
-                  name="action"
-                  form="audit-filter-form"
-                  defaultValue={action}
-                  placeholder="SYSTEM_EXPIRED"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="audit-entity" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Entity</label>
-                <select
-                  id="audit-entity"
-                  name="entityType"
-                  form="audit-filter-form"
-                  defaultValue={entityType || ""}
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                >
-                  <option value="">All entities</option>
-                  {entityTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="audit-status" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</label>
-                <select
-                  id="audit-status"
-                  name="status"
-                  form="audit-filter-form"
-                  defaultValue={status || ""}
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                >
-                  <option value="">All statuses</option>
-                  {auditStatuses.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="audit-from" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">From</label>
-                <input
-                  id="audit-from"
-                  name="from"
-                  form="audit-filter-form"
-                  type="date"
-                  defaultValue={getParam(params, "from") || ""}
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="audit-to" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">To</label>
-                <input
-                  id="audit-to"
-                  name="to"
-                  form="audit-filter-form"
-                  type="date"
-                  defaultValue={getParam(params, "to") || ""}
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary"
-                />
-              </div>
-            </div>
-
-            <form id="audit-filter-form" className="flex flex-wrap items-center gap-2" action="/admin/organization/audit">
-              <button type="submit" className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">
-                Apply Filters
-              </button>
-              {hasFilters && (
-                <Link href="/admin/organization/audit" className="h-9 rounded-md border px-4 text-sm font-semibold inline-flex items-center">
-                  Reset
-                </Link>
-              )}
-              <p className="text-xs text-muted-foreground ml-auto">
+            <div className="flex items-center justify-end pt-2">
+              <p className="text-xs font-bold text-muted-foreground tracking-tight">
                 Showing {auditLogs.length} of {totalMatching} matching records
               </p>
-            </form>
+            </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-lg border bg-muted/20 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">By Status</p>
+                <p className="text-xs text-muted-foreground mb-2">By Status</p>
                 <div className="flex flex-wrap gap-2">
                   {statusSummary.map((item) => (
-                    <Badge key={item.status} variant="outline" className={statusBadgeStyles[item.status] || statusBadgeStyles.SUCCESS}>
+                    <Badge 
+                      key={item.status} 
+                      variant="outline" 
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border-none shadow-sm", 
+                        statusBadgeStyles[item.status] || statusBadgeStyles.SUCCESS
+                      )}
+                    >
                       {item.status}: {item._count._all}
                     </Badge>
                   ))}
                 </div>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">By Entity</p>
+                <p className="text-xs text-muted-foreground mb-2">By Entity</p>
                 <div className="flex flex-wrap gap-2">
                   {typeSummary.map((item) => (
-                    <Badge key={item.entityType} variant="secondary">
+                    <Badge 
+                      key={item.entityType} 
+                      variant="outline" 
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border-none shadow-sm", 
+                        entityBadgeStyles[item.entityType] || entityBadgeStyles.DEFAULT
+                      )}
+                    >
                       {item.entityType}: {item._count._all}
                     </Badge>
                   ))}
@@ -310,22 +262,13 @@ export default async function OrganizationAuditPage({ searchParams }: { searchPa
 
                         <div className="mt-2 space-y-2">
                           {metadataText && (
-                            <div className="p-3 rounded-lg bg-muted/40 border border-border/40 max-w-2xl">
+                            <div className="px-4 py-2.5 rounded-3xl bg-muted/20 border border-border/40 max-w-3xl">
                               <p className="text-[11px] font-mono text-muted-foreground/90 leading-relaxed break-all">
                                 {metadataText}
                               </p>
                             </div>
                           )}
-                          {log.metadata && (
-                            <details className="group max-w-3xl rounded-lg border border-border/40 bg-background/70">
-                              <summary className="cursor-pointer px-3 py-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground group-open:border-b">
-                                Full Metadata
-                              </summary>
-                              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all p-3 text-[11px] leading-relaxed text-muted-foreground">
-                                {JSON.stringify(log.metadata, null, 2)}
-                              </pre>
-                            </details>
-                          )}
+                          <AuditMetadata metadata={log.metadata} />
                         </div>
                       </div>
 

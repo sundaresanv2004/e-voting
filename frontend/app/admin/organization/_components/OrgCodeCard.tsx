@@ -18,11 +18,6 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    if (!isVisible) {
-      toast.error("Reveal the organization code before copying it")
-      return
-    }
-
     navigator.clipboard.writeText(code)
     setCopied(true)
     toast.success("Organization code copied to clipboard")
@@ -70,6 +65,7 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors"
                 onClick={handleReveal}
+                aria-label={isVisible ? "Hide organization code" : "Reveal organization code"}
               >
                 <HugeiconsIcon icon={isVisible ? ViewOffSlashIcon : ViewIcon} className="h-3.5 w-3.5" />
               </Button>
@@ -78,8 +74,7 @@ export function OrgCodeCard({ code }: OrgCodeCardProps) {
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors"
                 onClick={handleCopy}
-                disabled={!isVisible}
-                aria-label={isVisible ? "Copy organization code" : "Reveal organization code before copying"}
+                aria-label="Copy organization code"
               >
                 <HugeiconsIcon icon={copied ? CheckmarkCircle02Icon : Copy01Icon} className={`h-3.5 w-3.5 ${copied ? "text-emerald-500" : ""}`} />
               </Button>
