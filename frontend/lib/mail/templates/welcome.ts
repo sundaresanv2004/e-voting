@@ -1,32 +1,27 @@
-import { renderEmailLayout } from "./layout"
+import { renderEmailLayout, es } from './layout'
 
 export const WelcomeTemplate = (name: string) => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const content = `
-    <div class="greeting">Welcome to E-Voting, ${name}! 🎉</div>
-    <div class="message">
-      We're absolutely thrilled to have you join our secure voting community. Our mission is to provide you with the most transparent, reliable, and user-friendly experience for all your organizational voting needs.
-    </div>
-    
-    <div style="background-color: #f3f4f6; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #e5e7eb;">
-      <h3 style="margin-top: 0; color: #111827; font-size: 16px;">What's next?</h3>
-      <ul style="margin-bottom: 0; padding-left: 20px; color: #4b5563; line-height: 1.6;">
-        <li>Create or join an organization</li>
-        <li>Set up your first election</li>
-        <li>Invite team members to participate</li>
-      </ul>
+    <h2 style="${es.h1}">Welcome aboard, ${name}! 🎉</h2>
+    <p style="${es.p}">
+      Your E-Voting account is ready. You're now part of a secure, transparent platform built to power fair elections for organizations of every size.
+    </p>
+
+    <div style="${es.infoCard}">
+      <p style="margin:0 0 14px 0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;">Get started in 3 steps</p>
+      <p style="${es.row}"><strong style="${es.strong}">1. Create or join an organization</strong><br /><span style="color:#94a3b8;font-size:13px;">Set up your institution or accept an invitation from an existing one.</span></p>
+      <p style="${es.row}"><strong style="${es.strong}">2. Set up your first election</strong><br /><span style="color:#94a3b8;font-size:13px;">Configure roles, candidates, and voter lists in minutes.</span></p>
+      <p style="margin:0;font-size:14px;color:#475569;"><strong style="${es.strong}">3. Run your election</strong><br /><span style="color:#94a3b8;font-size:13px;">Authorize terminals or enable online voting — secure and auditable.</span></p>
     </div>
 
-    <div class="message">
-      Ready to get started? Log in to your dashboard to begin setting up your elections.
+    <div style="${es.cta}">
+      <a href="${appUrl}" style="${es.button('#10b981')}">Go to Dashboard</a>
     </div>
 
-    <div class="button-container">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/login" class="button">Go to Dashboard</a>
-    </div>
-
-    <div class="message" style="margin-bottom: 0;">
-      If you have any questions or need assistance, our support team is always here to help. Just reply to this email!
-    </div>
+    <p style="${es.small}">
+      Have questions? Reply to this email or contact us at <a href="mailto:support@evoting.sundaresan.dev" style="color:#3b82f6;text-decoration:none;">support@evoting.sundaresan.dev</a>
+    </p>
   `
-  return renderEmailLayout(content, "E-Voting")
+  return renderEmailLayout(content, 'Welcome to E-Voting', 'success')
 }
