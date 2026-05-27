@@ -1,1 +1,0 @@
-# Mail service package
