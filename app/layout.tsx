@@ -20,7 +20,7 @@ export default function RootLayout({
       className={cn("antialiased", "font-sans", spaceGrotesk.variable, bricolageHeading.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
       </body>
     </html>
   )
