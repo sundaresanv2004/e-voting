@@ -71,7 +71,7 @@ export function ElectionSwitcher({
 
   const onSelect = (electionId: string) => {
     Cookies.set(ELECTION_COOKIE_KEY, electionId, { expires: 30 })
-    router.push(`/admin/election/${electionId}`)
+    router.push(`/organisation/election/${electionId}`)
   }
 
   return (
@@ -159,7 +159,7 @@ export function ElectionSwitcher({
                   <DropdownMenuItem
                     className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
                     onClick={() =>
-                      router.push("/admin/organization/elections?new=true")
+                      router.push("/organisation/elections?new=true")
                     }
                   >
                     <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">

@@ -53,7 +53,7 @@ export function NavElection({
               <SidebarMenuButton
                 className="w-full justify-start gap-2 text-primary hover:cursor-pointer hover:text-primary transition-colors data-[state=collapsed]:justify-center"
                 onClick={() =>
-                  router.push("/admin/organization/elections?new=true")
+                  router.push("/organisation/elections?new=true")
                 }
                 tooltip="Create New Election"
               >

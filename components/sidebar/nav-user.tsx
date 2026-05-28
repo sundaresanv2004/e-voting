@@ -107,7 +107,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/user/settings" className="cursor-pointer">
+                <Link href="/organisation/settings" className="cursor-pointer">
                   <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
                   Account Settings
                 </Link>

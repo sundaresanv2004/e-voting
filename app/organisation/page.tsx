@@ -12,6 +12,8 @@ import {
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { PageHeader } from "@/components/shared/page-header"
+import { Building06Icon } from "@hugeicons/core-free-icons"
 
 export default async function DashboardPage() {
     const session = await auth.api.getSession({
@@ -41,13 +43,14 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="flex-1 px-4 md:px-8 py-8 space-y-8 max-w-[1400px] mx-auto w-full">
-            <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">Welcome to {org.name}</h1>
-                <p className="text-muted-foreground">Manage your elections, members, and systems from the dashboard.</p>
-            </div>
-
-            {/* Metric Cards - Sleek modern glassmorphism aesthetic */}
+        <div className="flex-1 w-full">
+            <PageHeader
+                title={`Welcome to ${org.name}`}
+                description="Manage your elections, members, and systems from the dashboard."
+                icon={Building06Icon}
+            />
+            <div className="px-4 md:px-8 py-8 space-y-8 max-w-[1400px] mx-auto w-full">
+                {/* Metric Cards - Sleek modern glassmorphism aesthetic */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-card/50 backdrop-blur-xl border-primary/10 hover:border-primary/30 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -127,6 +130,7 @@ export default async function DashboardPage() {
                         </Button>
                     </CardContent>
                 </Card>
+            </div>
             </div>
         </div>
     )
