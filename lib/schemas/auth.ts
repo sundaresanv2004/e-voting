@@ -25,3 +25,11 @@ export const forgotPasswordSchema = z.object({
 export const verifySchema = z.object({
     code: z.string().length(6, "Please enter the 6-digit code."),
 })
+
+export const resetPasswordSchema = z.object({
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match.",
+    path: ["confirmPassword"],
+})

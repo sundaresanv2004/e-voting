@@ -57,7 +57,19 @@ function SignupForm() {
         if (error) {
             setErrorMsg(error.message === "USER_ALREADY_EXISTS" ? "An account already exists with this email." : (error.message || "An account already exists with this email."))
         } else {
-            toast.success("Account created successfully. Please verify your email.")
+            // Manually send verification OTP for both new users and existing unverified users
+            const { authClient } = await import("@/lib/auth-client")
+            const res = await authClient.emailOtp.sendVerificationOtp({
+                email: values.email,
+                type: "email-verification"
+            })
+            
+            if (res.error) {
+                toast.error("Account created, but failed to send verification email. Please try resending on the next page.")
+            } else {
+                toast.success("Account created successfully. Please verify your email.")
+            }
+            
             router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
         }
     }

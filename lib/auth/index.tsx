@@ -42,7 +42,7 @@ export const auth = betterAuth({
         }
       },
       overrideDefaultEmailVerification: true,
-      sendVerificationOnSignUp: true,
+      sendVerificationOnSignUp: false,
     })
   ],
   onAPIError: {

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { PencilEdit01Icon } from '@hugeicons/core-free-icons'
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,7 +12,7 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Field, FieldLabel, FieldGroup, FieldError } from "@/components/ui/field"
+import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -65,6 +66,7 @@ function VerifyEmailForm() {
         
         if (error) {
             form.setError("code", { message: error.message || "Invalid code" })
+            form.setValue("code", "") // Automatically clear the invalid OTP
             return
         }
         
@@ -89,6 +91,13 @@ function VerifyEmailForm() {
             <CardContent className="px-0 space-y-4 md:px-6">
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-center w-full">
                     <div className="w-full max-w-[338px] flex flex-col items-center">
+                        {form.formState.errors.code && (
+                            <Alert variant="destructive" className="mb-4 w-full text-left">
+                                <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" />
+                                <AlertDescription>{form.formState.errors.code.message}</AlertDescription>
+                            </Alert>
+                        )}
+                        
                         <FieldGroup className="w-full flex flex-col items-center">
                             <Field data-invalid={!!form.formState.errors.code} className="flex flex-col items-center w-full">
                                 <FieldLabel htmlFor="code" className="sr-only">Verification Code</FieldLabel>
@@ -101,7 +110,17 @@ function VerifyEmailForm() {
                                             maxLength={6}
                                             pattern={REGEXP_ONLY_DIGITS}
                                             value={field.value}
-                                            onChange={field.onChange}
+                                            onChange={(val) => {
+                                                field.onChange(val)
+                                                // Clear error state as soon as user types
+                                                if (form.formState.errors.code) {
+                                                    form.clearErrors("code")
+                                                }
+                                                // Auto-submit when 6 digits are entered
+                                                if (val.length === 6) {
+                                                    setTimeout(() => form.handleSubmit(onSubmit)(), 0)
+                                                }
+                                            }}
                                             aria-invalid={!!form.formState.errors.code}
                                             containerClassName="justify-center"
                                             className="gap-2"
@@ -117,10 +136,6 @@ function VerifyEmailForm() {
                                         </InputOTP>
                                     )}
                                 />
-                                
-                                {form.formState.errors.code && (
-                                    <FieldError className="text-center mt-2">{form.formState.errors.code.message}</FieldError>
-                                )}
                             </Field>
                         </FieldGroup>
 

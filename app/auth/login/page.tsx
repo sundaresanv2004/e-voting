@@ -45,7 +45,26 @@ function LoginForm() {
         setIsSubmitting(false)
 
         if (error) {
-            setErrorMsg("Invalid email or password.")
+            // Intercept & Redirect approach for unverified emails
+            if (error.code === "EMAIL_NOT_VERIFIED" || error.message?.toLowerCase().includes("not verified")) {
+                toast.error("Please verify your email to login.")
+                // Send a fresh OTP automatically
+                const { authClient } = await import("@/lib/auth-client")
+                const res = await authClient.emailOtp.sendVerificationOtp({
+                    email: values.email,
+                    type: "email-verification",
+                })
+                
+                if (res.error) {
+                    toast.error(res.error.message || "Failed to send verification email. Please try resending from the next page.")
+                } else {
+                    toast.success("A new verification code has been sent to your email.")
+                }
+                
+                router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+                return
+            }
+            setErrorMsg(error.message || "Invalid email or password.")
         } else {
             toast.success("Successfully logged in!")
             router.push("/")
