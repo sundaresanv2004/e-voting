@@ -5,15 +5,32 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
-
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 
+import { loginSchema } from "@/lib/schemas/auth"
+
+type LoginValues = z.infer<typeof loginSchema>
+
 function LoginForm() {
     const [showPassword, setShowPassword] = useState(false)
+    const form = useForm<LoginValues>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        }
+    })
+
+    const onSubmit = (values: LoginValues) => {
+        console.log("Login submitted:", values)
+    }
 
     return (
         <Card className="w-full border-none ring-0 shadow-none bg-transparent md:border md:shadow-sm md:bg-card md:p-2 backdrop-blur-3xl bg-background/50">
@@ -32,44 +49,56 @@ function LoginForm() {
                     </div>
                 </div>
 
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                    <Field>
-                        <FieldLabel htmlFor="email">Email</FieldLabel>
-                        <Input
-                            id="email"
-                            placeholder="john@example.com"
-                            type="email"
-                        />
-                    </Field>
-
-                    <Field>
-                        <div className="flex items-center justify-between">
-                            <FieldLabel htmlFor="password">Password</FieldLabel>
-                            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">
-                                Forgot password?
-                            </Link>
-                        </div>
-                        <InputGroup>
-                            <InputGroupInput
-                                id="password"
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <FieldGroup>
+                        <Field data-invalid={!!form.formState.errors.email}>
+                            <FieldLabel htmlFor="email">Email</FieldLabel>
+                            <Input
+                                id="email"
+                                placeholder="john@example.com"
+                                type="email"
+                                aria-invalid={!!form.formState.errors.email}
+                                {...form.register("email")}
                             />
-                            <InputGroupAddon
-                                align="inline-end"
-                                className="cursor-pointer"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? (
-                                    <HugeiconsIcon icon={ViewOffSlashIcon} className="w-4 h-4" />
-                                ) : (
-                                    <HugeiconsIcon icon={ViewIcon} className="w-4 h-4" />
-                                )}
-                            </InputGroupAddon>
-                        </InputGroup>
-                    </Field>
+                            {form.formState.errors.email && (
+                                <FieldError>{form.formState.errors.email.message}</FieldError>
+                            )}
+                        </Field>
 
-                    <Button type="submit" className="w-full gap-2">
+                        <Field data-invalid={!!form.formState.errors.password}>
+                            <div className="flex items-center justify-between">
+                                <FieldLabel htmlFor="password">Password</FieldLabel>
+                                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">
+                                    Forgot password?
+                                </Link>
+                            </div>
+                            <InputGroup>
+                                <InputGroupInput
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    aria-invalid={!!form.formState.errors.password}
+                                    {...form.register("password")}
+                                />
+                                <InputGroupAddon
+                                    align="inline-end"
+                                    className="cursor-pointer"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <HugeiconsIcon icon={ViewOffSlashIcon} className="w-4 h-4" />
+                                    ) : (
+                                        <HugeiconsIcon icon={ViewIcon} className="w-4 h-4" />
+                                    )}
+                                </InputGroupAddon>
+                            </InputGroup>
+                            {form.formState.errors.password && (
+                                <FieldError>{form.formState.errors.password.message}</FieldError>
+                            )}
+                        </Field>
+                    </FieldGroup>
+
+                    <Button type="submit" className="w-full gap-2 mt-4">
                         Sign In
                     </Button>
                 </form>
