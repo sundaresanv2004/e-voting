@@ -1,27 +1,38 @@
 import { PageHeader } from "@/components/shared/page-header"
-import { UserGroupIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { UserGroupIcon } from "@hugeicons/core-free-icons"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 
-export default function MembersPage() {
+import { MembersDataTable } from "./_components/members-data-table"
+import { getOrganizationMembers } from "@/lib/actions/member"
+
+export default async function MembersPage() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
+
+  if (!session?.user) {
+    redirect("/auth/login")
+  }
+
+  // Fetch members server-side
+  const membersRes = await getOrganizationMembers()
+  const members = membersRes.success ? membersRes.members : []
+  const currentUserId = session.user.id
+
   return (
     <div className="flex-1 w-full">
       <PageHeader
         title="Members"
-        description="Manage your organization's members and their access levels."
+        description="Manage your organization team members and their election access."
         icon={UserGroupIcon}
-        actions={
-          <Button asChild>
-            <Link href="/organisation/members/invite" className="gap-2">
-              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="h-4 w-4" />
-              Invite Members
-            </Link>
-          </Button>
-        }
       />
       <div className="px-4 md:px-8 py-8 space-y-8 max-w-[1400px] mx-auto w-full">
-        <p className="text-muted-foreground">Member management coming soon.</p>
+        <MembersDataTable 
+          members={members || []} 
+          currentUserId={currentUserId}
+        />
       </div>
     </div>
   )

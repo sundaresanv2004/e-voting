@@ -4,7 +4,45 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-export default function ElectionsPage() {
+import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
+
+import { ElectionsDataTable } from "./_components/elections-data-table"
+
+export default async function ElectionsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
+
+  if (!session?.user) {
+    redirect("/auth/login")
+  }
+
+  // Find user's organization
+  const member = await db.member.findFirst({
+    where: { userId: session.user.id },
+  })
+
+  if (!member) {
+    redirect("/setup/organization")
+  }
+
+  // Fetch elections
+  const elections = await db.election.findMany({
+    where: { organizationId: member.organizationId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      createdBy: {
+        select: { id: true, name: true, email: true },
+      },
+      updatedBy: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  })
+
   return (
     <div className="flex-1 w-full">
       <PageHeader
@@ -21,7 +59,7 @@ export default function ElectionsPage() {
         }
       />
       <div className="px-4 md:px-8 py-8 space-y-8 max-w-[1400px] mx-auto w-full">
-        <p className="text-muted-foreground">No elections found.</p>
+        <ElectionsDataTable data={elections} />
       </div>
     </div>
   )
