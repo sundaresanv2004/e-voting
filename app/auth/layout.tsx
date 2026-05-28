@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 export default function AuthLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname()
     const isSignUp = pathname === "/auth/signup"
+    const isLogin = pathname === "/auth/login"
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-4 pb-4 pt-20 md:p-8 relative overflow-hidden bg-linear-to-b from-blue-50/30 via-background to-background dark:from-blue-950/20 dark:via-background dark:to-background w-full">
@@ -30,16 +31,22 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                     </Button>
                 </div>
                 <div className="flex items-center gap-1.5 pointer-events-auto">
-                    {isSignUp ? (
-                        <Button variant="ghost" size="sm" asChild>
-                            <Link href="/auth/login">Login</Link>
-                        </Button>
-                    ) : (
-                        <Button variant="ghost" size="sm" asChild>
-                            <Link href="/auth/signup">Sign Up</Link>
-                        </Button>
+                    {isSignUp && (
+                        <>
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href="/auth/login">Login</Link>
+                            </Button>
+                            <div className="w-px h-4 bg-border mx-1" />
+                        </>
                     )}
-                    <div className="w-px h-4 bg-border mx-1" />
+                    {isLogin && (
+                        <>
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href="/auth/signup">Sign Up</Link>
+                            </Button>
+                            <div className="w-px h-4 bg-border mx-1" />
+                        </>
+                    )}
                     <ThemeSwitch />
                 </div>
             </div>

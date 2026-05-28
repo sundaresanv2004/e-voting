@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
+import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 
 import { loginSchema } from "@/lib/schemas/auth"
@@ -19,7 +21,9 @@ import { loginSchema } from "@/lib/schemas/auth"
 type LoginValues = z.infer<typeof loginSchema>
 
 function LoginForm() {
+    const router = useRouter()
     const [showPassword, setShowPassword] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const form = useForm<LoginValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -28,8 +32,12 @@ function LoginForm() {
         }
     })
 
-    const onSubmit = (values: LoginValues) => {
+    const onSubmit = async (values: LoginValues) => {
+        setIsSubmitting(true)
         console.log("Login submitted:", values)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        setIsSubmitting(false)
+        router.push("/")
     }
 
     return (
@@ -98,8 +106,15 @@ function LoginForm() {
                         </Field>
                     </FieldGroup>
 
-                    <Button type="submit" className="w-full gap-2 mt-4">
-                        Sign In
+                    <Button type="submit" className="w-full gap-2 mt-4" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner />
+                                Signing In...
+                            </>
+                        ) : (
+                            "Sign In"
+                        )}
                     </Button>
                 </form>
             </CardContent>

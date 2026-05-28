@@ -22,11 +22,14 @@ export default function VerifiedPage() {
                     </CardDescription>
                 </CardHeader>
 
-                <CardContent className="px-0 md:px-6 mt-4">
-                    <Button className="w-full gap-2" asChild>
+                <CardContent className="px-0 md:px-6 mt-4 pb-6 md:pb-6">
+                    <Button className="w-full gap-2 group" asChild>
                         <Link href="/auth/login">
                             Continue to Login
-                            <HugeiconsIcon icon={ArrowRight01Icon} className="w-4 h-4" />
+                            <HugeiconsIcon 
+                                icon={ArrowRight01Icon} 
+                                className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" 
+                            />
                         </Link>
                     </Button>
                 </CardContent>

@@ -17,14 +17,18 @@ import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/c
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { useRouter } from "next/navigation"
+import { Spinner } from "@/components/ui/spinner"
 
 import { signupSchema } from "@/lib/schemas/auth"
 
 type SignupValues = z.infer<typeof signupSchema>
 
 function SignupForm() {
+    const router = useRouter()
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<SignupValues>({
         resolver: zodResolver(signupSchema),
@@ -39,8 +43,12 @@ function SignupForm() {
 
     const passwordValue = form.watch("password")
 
-    const onSubmit = (values: SignupValues) => {
+    const onSubmit = async (values: SignupValues) => {
+        setIsSubmitting(true)
         console.log("Signup submitted:", values)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        setIsSubmitting(false)
+        router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
     }
 
     return (
@@ -175,8 +183,15 @@ function SignupForm() {
                         </Field>
                     </FieldGroup>
 
-                    <Button type="submit" className="w-full gap-2 mt-4">
-                        Create Account
+                    <Button type="submit" className="w-full gap-2 mt-4" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner />
+                                Registering...
+                            </>
+                        ) : (
+                            "Create Account"
+                        )}
                     </Button>
                 </form>
             </CardContent>

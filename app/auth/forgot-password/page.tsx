@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 
 import { forgotPasswordSchema } from "@/lib/schemas/auth"
 
@@ -20,6 +21,7 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
 function ForgotPasswordForm() {
     const [isSubmitted, setIsSubmitted] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<ForgotPasswordValues>({
         resolver: zodResolver(forgotPasswordSchema),
@@ -28,8 +30,11 @@ function ForgotPasswordForm() {
         }
     })
 
-    const onSubmit = (values: ForgotPasswordValues) => {
+    const onSubmit = async (values: ForgotPasswordValues) => {
+        setIsSubmitting(true)
         console.log("Forgot password submitted:", values)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        setIsSubmitting(false)
         setIsSubmitted(true)
     }
 
@@ -45,7 +50,7 @@ function ForgotPasswordForm() {
                         We sent a password reset link to <span className="font-medium text-foreground">{form.getValues().email}</span>
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="px-0 md:px-6 flex flex-col gap-4">
+                <CardContent className="px-0 md:px-6 flex flex-col gap-4 pb-6 md:pb-6">
                     <Button variant="outline" className="w-full" asChild>
                         <Link href="/auth/login">Back to Login</Link>
                     </Button>
@@ -79,8 +84,15 @@ function ForgotPasswordForm() {
                         </Field>
                     </FieldGroup>
 
-                    <Button type="submit" className="w-full gap-2 mt-4">
-                        Send Reset Link
+                    <Button type="submit" className="w-full gap-2 mt-4" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner />
+                                Sending Link...
+                            </>
+                        ) : (
+                            "Send Reset Link"
+                        )}
                     </Button>
                 </form>
             </CardContent>

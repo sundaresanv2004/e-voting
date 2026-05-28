@@ -44,8 +44,11 @@ function ErrorContent() {
             </CardContent>
 
             <CardFooter className="flex justify-center border-t border-border/50 pb-4 pt-4 px-0 md:px-6">
-                <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4" />
+                <Link href="/" className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <HugeiconsIcon 
+                        icon={ArrowLeft01Icon} 
+                        className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" 
+                    />
                     Back to home
                 </Link>
             </CardFooter>
