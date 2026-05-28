@@ -1,0 +1,103 @@
+"use client"
+
+
+import { usePathname, useRouter } from "next/navigation"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { PlusSignIcon, Archive01Icon } from "@hugeicons/core-free-icons"
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
+import Link from "next/link"
+
+export function NavElection({
+  items,
+  isEmpty,
+  userRole,
+}: {
+  items: {
+    title: string
+    url: string
+    icon?: React.ReactNode
+    isActive?: boolean
+  }[]
+  isEmpty?: boolean
+  userRole?: string
+}) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { state } = useSidebar()
+
+  if (isEmpty) {
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>Election</SidebarGroupLabel>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            {state === "expanded" && (
+              <div className="px-2 py-3 mb-2 rounded-lg border border-dashed border-sidebar-border bg-sidebar-accent/30 text-center">
+                <HugeiconsIcon
+                  icon={Archive01Icon}
+                  className="mx-auto mb-2 h-4 w-4 text-sidebar-foreground/50"
+                />
+                <p className="text-[11px] font-medium text-sidebar-foreground/60 leading-tight">
+                  No active election found
+                </p>
+              </div>
+            )}
+            {userRole === "ORG_ADMIN" && (
+              <SidebarMenuButton
+                className="w-full justify-start gap-2 text-primary hover:cursor-pointer hover:text-primary transition-colors data-[state=collapsed]:justify-center"
+                onClick={() =>
+                  router.push("/admin/organization/elections?new=true")
+                }
+                tooltip="Create New Election"
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  strokeWidth={2.5}
+                  className="h-4 w-4"
+                />
+                {state === "expanded" && (
+                  <span className="font-semibold text-xs">
+                    Create New Election
+                  </span>
+                )}
+              </SidebarMenuButton>
+            )}
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+    )
+  }
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>Election</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => {
+          const isActive = pathname === item.url
+
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                isActive={isActive}
+              >
+                <Link href={item.url}>
+                  {item.icon}
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
+  )
+}

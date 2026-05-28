@@ -61,7 +61,7 @@ export function Navbar() {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
-                                <Link href="/dashboard" className="cursor-pointer w-full">
+                                <Link href="/organisation" className="cursor-pointer w-full">
                                     <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
                                     Dashboard
                                 </Link>
@@ -82,6 +82,7 @@ export function Navbar() {
                                         }
                                     }
                                 })}
+                                className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
                             >
                                 <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
                                 Log out

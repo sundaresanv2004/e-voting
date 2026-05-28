@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { betterFetch } from "@better-fetch/fetch";
 
-const protectedRoutes = ["/dashboard", "/admin", "/user"];
+const protectedRoutes = ["/organisation", "/admin", "/user", "/setup/organization"];
 const authRoutes = ["/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/reset-password"];
 
 export default async function middleware(request: NextRequest) {
@@ -35,7 +35,7 @@ export default async function middleware(request: NextRequest) {
 
     // If user is logged in and tries to access an auth route
     if (session && isAuthRoute) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        return NextResponse.redirect(new URL("/organisation", request.url));
     }
 
     return NextResponse.next();

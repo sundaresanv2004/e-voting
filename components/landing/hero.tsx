@@ -65,10 +65,9 @@ export function Hero() {
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-4">
                                 <Button asChild size="lg" className="group w-full sm:w-auto">
-                                    <Link href="/admin/organization" className="inline-flex items-center gap-2">
-                                        <HugeiconsIcon icon={Layout01Icon} className="w-4 h-4" strokeWidth={2} />
+                                    <Link href="/organisation" className="inline-flex items-center gap-2">
                                         Dashboard
-                                        {/* <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" /> */}
+                                        <HugeiconsIcon icon={ArrowRight01Icon} className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 </Button>
 

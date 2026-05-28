@@ -29,7 +29,22 @@ export const auth = betterAuth({
     }
   },
   plugins: [
-    organization(),
+    organization({
+      schema: {
+        organization: {
+          additionalFields: {
+            code: {
+              type: "string",
+              required: true
+            },
+            type: {
+              type: "string",
+              required: true
+            }
+          }
+        }
+      }
+    }),
     admin(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
