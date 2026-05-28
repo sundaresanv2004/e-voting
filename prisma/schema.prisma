@@ -59,6 +59,11 @@ model User {
   twoFactorEnabled      Boolean              @default(false)
   twoFactors            TwoFactor[]
 
+  // Better Auth Admin Plugin Fields
+  banned                Boolean?
+  banReason             String?
+  banExpires            DateTime?
+
   @@unique([email])
   @@map("user")
 }

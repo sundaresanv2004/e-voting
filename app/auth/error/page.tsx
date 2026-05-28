@@ -40,8 +40,11 @@ function ErrorContent() {
                     {errorMessage}
                 </CardDescription>
                 {error && (
-                    <div className="mt-4 inline-flex items-center rounded-md border bg-muted px-2.5 py-0.5 text-xs font-semibold font-mono text-muted-foreground">
-                        CODE: {error}
+                    <div className="mt-6 flex justify-center">
+                        <div className="inline-flex items-center rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-xs font-mono">
+                            <span className="font-semibold text-muted-foreground mr-2">CODE:</span>
+                            <span className="text-foreground">{error}</span>
+                        </div>
                     </div>
                 )}
             </CardHeader>

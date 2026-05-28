@@ -5,7 +5,7 @@ CREATE TYPE "AuditStatus" AS ENUM ('SUCCESS', 'FAILURE', 'WARNING', 'INFO');
 CREATE TYPE "AuditEntityType" AS ENUM ('ORGANIZATION', 'USER', 'ELECTION', 'ELECTION_ROLE', 'ELECTION_CATEGORY', 'CANDIDATE', 'BALLOT', 'VOTER', 'SETTINGS', 'AUTH', 'SECURITY', 'RESULT', 'MEMBER', 'ACCESS');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('USER', 'STAFF', 'VIEWER', 'ORG_ADMIN');
+CREATE TYPE "UserRole" AS ENUM ('user', 'admin', 'staff', 'viewer', 'org_admin');
 
 -- CreateEnum
 CREATE TYPE "OrganizationType" AS ENUM ('SCHOOL', 'COLLEGE', 'OTHER');
@@ -22,7 +22,7 @@ CREATE TABLE "user" (
     "image" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "role" "UserRole" NOT NULL DEFAULT 'user',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "failedLoginCount" INTEGER NOT NULL DEFAULT 0,
     "lockedUntil" TIMESTAMP(3),
@@ -31,6 +31,9 @@ CREATE TABLE "user" (
     "authVersion" INTEGER NOT NULL DEFAULT 1,
     "hasAllElectionsAccess" BOOLEAN NOT NULL DEFAULT false,
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "banned" BOOLEAN,
+    "banReason" TEXT,
+    "banExpires" TIMESTAMP(3),
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
@@ -700,7 +703,7 @@ ALTER TABLE "_CategoryRoles" ADD CONSTRAINT "_CategoryRoles_A_fkey" FOREIGN KEY 
 ALTER TABLE "_CategoryRoles" ADD CONSTRAINT "_CategoryRoles_B_fkey" FOREIGN KEY ("B") REFERENCES "ElectionRole"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ============================================
--- CHECK constraints (Prisma 7 does not support these natively)
+-- CHECK constraints (Prisma cannot define these)
 -- ============================================
 
 ALTER TABLE "Election"
