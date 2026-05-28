@@ -1,7 +1,27 @@
-export default function VotersPage({ params }: { params: { electionId: string } }) {
+import { Suspense } from "react"
+import { ElectionPageHeader } from "@/components/shared/election-page-header"
+import { UserGroupIcon } from "@hugeicons/core-free-icons"
+
+export default async function VotersPage({
+  params,
+}: {
+  params: Promise<{ electionId: string }>
+}) {
+  const { electionId } = await params
+  
   return (
-    <div className="flex-1 p-8">
-      <h1 className="text-3xl font-bold">Voters Page</h1>
+    <div className="flex flex-col flex-1 w-full">
+      <Suspense fallback={<div className="h-40 border-b bg-background/50 animate-pulse" />}>
+        <ElectionPageHeader 
+          electionId={electionId} 
+          title="Voters" 
+          description="Manage registered voters"
+          icon={UserGroupIcon} 
+        />
+      </Suspense>
+      <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
+        <p className="text-muted-foreground">Voters page coming soon&hellip;</p>
+      </div>
     </div>
   )
 }
