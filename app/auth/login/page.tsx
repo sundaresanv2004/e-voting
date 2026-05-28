@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons'
+import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
 import { useForm } from "react-hook-form"
@@ -11,10 +11,13 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { signIn } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 import { loginSchema } from "@/lib/schemas/auth"
 
@@ -24,6 +27,7 @@ function LoginForm() {
     const router = useRouter()
     const [showPassword, setShowPassword] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [errorMsg, setErrorMsg] = useState("")
     const form = useForm<LoginValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -34,10 +38,18 @@ function LoginForm() {
 
     const onSubmit = async (values: LoginValues) => {
         setIsSubmitting(true)
-        console.log("Login submitted:", values)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { data, error } = await signIn.email({
+            email: values.email,
+            password: values.password,
+        })
         setIsSubmitting(false)
-        router.push("/")
+
+        if (error) {
+            setErrorMsg("Invalid email or password.")
+        } else {
+            toast.success("Successfully logged in!")
+            router.push("/")
+        }
     }
 
     return (
@@ -56,6 +68,13 @@ function LoginForm() {
                         <span className="bg-background/80 backdrop-blur-md px-2 text-muted-foreground rounded-full">Or continue with</span>
                     </div>
                 </div>
+
+                {errorMsg && (
+                    <Alert variant="destructive" className="mb-4">
+                        <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" />
+                        <AlertDescription>{errorMsg}</AlertDescription>
+                    </Alert>
+                )}
 
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <FieldGroup>

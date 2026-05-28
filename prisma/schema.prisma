@@ -20,7 +20,7 @@ model User {
   members       Member[]
   invitations   Invitation[]
 
-  role     UserRole @default(USER)
+  role     UserRole @default(user)
   isActive Boolean  @default(true)
 
   // Custom App Security Fields
@@ -136,12 +136,12 @@ enum AuditEntityType {
   ACCESS
 }
 
-// Global System Roles (Platform level permissions)
 enum UserRole {
-  USER
-  STAFF
-  VIEWER
-  ORG_ADMIN
+  user
+  admin
+  staff
+  viewer
+  org_admin
 }
 
 enum OrganizationType {

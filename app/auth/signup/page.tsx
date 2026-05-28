@@ -2,23 +2,24 @@
 
 import React, { useState } from "react"
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons'
+import { ViewIcon, ViewOffSlashIcon, Alert01Icon } from '@hugeicons/core-free-icons'
 import Link from "next/link"
 import { PasswordStrength } from "@/components/auth/password-strength"
 import { OAuthButtons } from "@/components/auth/oauth-buttons"
-
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
+import { signUp } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 import { signupSchema } from "@/lib/schemas/auth"
 
@@ -29,6 +30,7 @@ function SignupForm() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [errorMsg, setErrorMsg] = useState("")
 
     const form = useForm<SignupValues>({
         resolver: zodResolver(signupSchema),
@@ -45,10 +47,19 @@ function SignupForm() {
 
     const onSubmit = async (values: SignupValues) => {
         setIsSubmitting(true)
-        console.log("Signup submitted:", values)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { data, error } = await signUp.email({
+            name: values.name,
+            email: values.email,
+            password: values.password,
+        })
         setIsSubmitting(false)
-        router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+
+        if (error) {
+            setErrorMsg(error.message === "USER_ALREADY_EXISTS" ? "An account already exists with this email." : (error.message || "An account already exists with this email."))
+        } else {
+            toast.success("Account created successfully. Please verify your email.")
+            router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
+        }
     }
 
     return (
@@ -67,6 +78,13 @@ function SignupForm() {
                         <span className="bg-background/80 backdrop-blur-md px-2 text-muted-foreground rounded-full">Or continue with</span>
                     </div>
                 </div>
+
+                {errorMsg && (
+                    <Alert variant="destructive" className="mb-4">
+                        <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" />
+                        <AlertDescription>{errorMsg}</AlertDescription>
+                    </Alert>
+                )}
 
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <FieldGroup>

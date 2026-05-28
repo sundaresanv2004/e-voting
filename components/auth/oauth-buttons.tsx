@@ -1,5 +1,6 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
+import { signIn } from "@/lib/auth-client"
 
 interface OAuthButtonsProps {
     disabled?: boolean
@@ -30,8 +31,12 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function OAuthButtons({ disabled = false, redirectTo }: OAuthButtonsProps) {
-    const handleGoogleLogin = () => {
-        console.log("Mock Google Login with redirect to", redirectTo)
+    const handleGoogleLogin = async () => {
+        await signIn.social({
+            provider: "google",
+            callbackURL: redirectTo || "/",
+            errorCallbackURL: "/auth/error",
+        })
     }
 
     return (

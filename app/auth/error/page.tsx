@@ -15,12 +15,18 @@ function ErrorContent() {
     
     let errorMessage = "An unknown error occurred during authentication."
     
-    if (error === "Configuration") {
+    if (error === "unable_to_create_user") {
+        errorMessage = "We could not create your account at this time. Please ensure your information is correct and try again."
+    } else if (error === "Configuration") {
         errorMessage = "There is a problem with the server configuration. Please contact support."
     } else if (error === "AccessDenied") {
         errorMessage = "You do not have permission to sign in."
     } else if (error === "Verification") {
         errorMessage = "The verification token has expired or has already been used."
+    } else if (error === "invalid_callback_request" || error === "state_not_found") {
+        errorMessage = "The login request expired or was invalid. Please try again."
+    } else if (error === "missing_profile" || error === "invalid_profile") {
+        errorMessage = "We could not securely retrieve your profile information from the provider."
     }
 
     return (
@@ -33,6 +39,11 @@ function ErrorContent() {
                 <CardDescription className="text-base mt-2">
                     {errorMessage}
                 </CardDescription>
+                {error && (
+                    <div className="mt-4 inline-flex items-center rounded-md border bg-muted px-2.5 py-0.5 text-xs font-semibold font-mono text-muted-foreground">
+                        CODE: {error}
+                    </div>
+                )}
             </CardHeader>
 
             <CardContent className="px-0 md:px-6 mt-4">

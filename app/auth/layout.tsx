@@ -103,7 +103,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                         </Link>
                     </div>
                     <div className="text-[10px] text-muted-foreground/60">
-                        © {new Date().getFullYear()} E-Voting. All rights reserved.
+                        © {new Date().getFullYear()} Sundaresan V. All rights reserved.
                     </div>
                 </div>
             </div>

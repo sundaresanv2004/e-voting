@@ -18,6 +18,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
+import { authClient } from "@/lib/auth-client"
+import { toast } from "sonner"
 import { verifySchema } from "@/lib/schemas/auth"
 
 type VerifyValues = z.infer<typeof verifySchema>
@@ -37,9 +39,13 @@ function VerifyEmailForm() {
         return () => clearInterval(timer)
     }, [countdown])
 
-    const handleResend = () => {
+    const handleResend = async () => {
         setCountdown(60)
-        console.log("OTP Resent")
+        await authClient.emailOtp.sendVerificationOtp({
+            email,
+            type: "email-verification",
+        })
+        toast.success("Verification code resent to your email")
     }
 
     const form = useForm<VerifyValues>({
@@ -51,9 +57,17 @@ function VerifyEmailForm() {
 
     const onSubmit = async (values: VerifyValues) => {
         setIsSubmitting(true)
-        console.log("OTP submitted:", values)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { error } = await authClient.emailOtp.verifyEmail({
+            email,
+            otp: values.code
+        })
         setIsSubmitting(false)
+        
+        if (error) {
+            form.setError("code", { message: error.message || "Invalid code" })
+            return
+        }
+        
         router.push("/auth/verified")
     }
 

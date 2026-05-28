@@ -4,16 +4,16 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MailSend01Icon } from '@hugeicons/core-free-icons'
-
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Field, FieldLabel, FieldDescription, FieldGroup, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { authClient } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 import { forgotPasswordSchema } from "@/lib/schemas/auth"
 
@@ -32,10 +32,16 @@ function ForgotPasswordForm() {
 
     const onSubmit = async (values: ForgotPasswordValues) => {
         setIsSubmitting(true)
-        console.log("Forgot password submitted:", values)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { data, error } = await authClient.requestPasswordReset({
+            email: values.email,
+            redirectTo: "/auth/reset-password",
+        })
         setIsSubmitting(false)
-        setIsSubmitted(true)
+        if (error) {
+            toast.error(error.message || "Something went wrong")
+        } else {
+            setIsSubmitted(true)
+        }
     }
 
     if (isSubmitted) {
