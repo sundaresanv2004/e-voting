@@ -5,12 +5,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/shared/theme-switch";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeftIcon } from "@hugeicons/core-free-icons";
+import { ArrowLeftIcon, LayoutBottomIcon, UserIcon, Logout01Icon } from "@hugeicons/core-free-icons";
+import { useSession, signOut } from "@/lib/auth-client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
     const isHomePage = pathname === "/";
+    const { data: session, isPending } = useSession();
 
     return (
         <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center pointer-events-none">
@@ -33,12 +44,60 @@ export function Navbar() {
                 <div />
             )}
             <div className="flex items-center gap-2 pointer-events-auto">
-                <Button variant="ghost" asChild>
-                    <Link href="/auth/login">Login</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/auth/signup">Sign Up</Link>
-                </Button>
+                {isPending ? (
+                    <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                ) : session ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger className="outline-none">
+                            <Avatar>
+                                <AvatarImage src={session.user.image || ""} />
+                                <AvatarFallback>{session.user.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                            </Avatar>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="flex flex-col space-y-1 font-normal min-w-0">
+                                <p className="text-sm font-medium leading-none truncate">{session.user.name}</p>
+                                <p className="text-xs leading-none text-muted-foreground truncate">{session.user.email}</p>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard" className="cursor-pointer w-full">
+                                    <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
+                                    Dashboard
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href="/profile" className="cursor-pointer w-full">
+                                    <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+                                    Profile
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => signOut({
+                                    fetchOptions: {
+                                        onSuccess: () => {
+                                            router.push("/");
+                                        }
+                                    }
+                                })}
+                            >
+                                <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
+                                Log out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <>
+                        <Button variant="ghost" asChild>
+                            <Link href="/auth/login">Login</Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href="/auth/signup">Sign Up</Link>
+                        </Button>
+                    </>
+                )}
                 <div className="w-px h-6 bg-border mx-2" />
                 <ThemeSwitch />
             </div>

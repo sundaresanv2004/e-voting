@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 import { signUp } from "@/lib/auth-client"
 import { toast } from "sonner"
+import { checkEmailExists } from "./actions"
 
 import { signupSchema } from "@/lib/schemas/auth"
 
@@ -30,7 +31,7 @@ function SignupForm() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [errorMsg, setErrorMsg] = useState("")
+    const [errorMsg, setErrorMsg] = useState<React.ReactNode>("")
 
     const form = useForm<SignupValues>({
         resolver: zodResolver(signupSchema),
@@ -47,6 +48,24 @@ function SignupForm() {
 
     const onSubmit = async (values: SignupValues) => {
         setIsSubmitting(true)
+        setErrorMsg("")
+        
+        // Check if email already exists before attempting sign up
+        const emailExists = await checkEmailExists(values.email)
+        
+        if (emailExists) {
+            setIsSubmitting(false)
+            setErrorMsg(
+                <>
+                    An account already exists with this email.{" "}
+                    <Link href="/auth/login" className="font-medium underline hover:text-foreground">
+                        Login
+                    </Link>
+                </>
+            )
+            return
+        }
+        
         const { data, error } = await signUp.email({
             name: values.name,
             email: values.email,
@@ -55,7 +74,14 @@ function SignupForm() {
         setIsSubmitting(false)
 
         if (error) {
-            setErrorMsg(error.message === "USER_ALREADY_EXISTS" ? "An account already exists with this email." : (error.message || "An account already exists with this email."))
+            setErrorMsg(error.message === "USER_ALREADY_EXISTS" ? (
+                <>
+                    An account already exists with this email.{" "}
+                    <Link href="/auth/login" className="font-medium underline hover:text-foreground">
+                        Login
+                    </Link>
+                </>
+            ) : (error.message || "An account already exists with this email."))
         } else {
             // Manually send verification OTP for both new users and existing unverified users
             const { authClient } = await import("@/lib/auth-client")
