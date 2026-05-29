@@ -4,7 +4,8 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert01Icon, Exchange01Icon } from "@hugeicons/core-free-icons"
+import { Alert01Icon, Exchange01Icon, UserGroupIcon } from "@hugeicons/core-free-icons"
+import Link from "next/link"
 
 import {
   Dialog,
@@ -25,7 +26,16 @@ import {
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty"
 
 import { getOrganizationMembersAction, transferOwnershipAction } from "@/lib/actions/settings"
 
@@ -42,7 +52,7 @@ export function TransferOwnershipDialog({
   const [members, setMembers] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  
+
   // We need to store both MemberId and UserId
   const [selectedMemberVal, setSelectedMemberVal] = React.useState<string>("")
 
@@ -67,7 +77,7 @@ export function TransferOwnershipDialog({
 
     // The value is stored as "memberId|userId"
     const [memberId, userId] = selectedMemberVal.split("|")
-    
+
     setIsSubmitting(true)
     try {
       const res = await transferOwnershipAction(memberId, userId)
@@ -95,13 +105,13 @@ export function TransferOwnershipDialog({
             Transfer Ownership
           </DialogTitle>
           <DialogDescription>
-            Transfer full ownership of this organization to another member. 
+            Transfer full ownership of this organization to another member.
             You will be demoted to an Org Admin.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
-          <Alert variant="destructive">
+        <div className="space-y-4">
+          <Alert variant="warning">
             <HugeiconsIcon icon={Alert01Icon} className="size-4" />
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
@@ -112,13 +122,26 @@ export function TransferOwnershipDialog({
           <div className="space-y-2">
             <Label htmlFor="new-owner">Select New Owner</Label>
             {isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 border rounded-md bg-muted/30">
-                <Spinner className="size-4" /> Loading members...
-              </div>
+              <Skeleton className="h-10 w-full" />
             ) : members.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/30">
-                No other members found in the organization.
-              </div>
+              <Empty className="border">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <HugeiconsIcon icon={UserGroupIcon} />
+                  </EmptyMedia>
+                  <EmptyTitle className="text-sm">No other members</EmptyTitle>
+                </EmptyHeader>
+                <EmptyContent>
+                  <EmptyDescription className="text-xs">
+                    You need to invite members before transferring ownership.
+                  </EmptyDescription>
+                  <Button variant="infoOutline" size="sm" asChild>
+                    <Link href="/organisation/members" onClick={() => onOpenChange(false)}>
+                      Add Members
+                    </Link>
+                  </Button>
+                </EmptyContent>
+              </Empty>
             ) : (
               <Select value={selectedMemberVal} onValueChange={setSelectedMemberVal}>
                 <SelectTrigger id="new-owner" className="w-full">
@@ -126,8 +149,8 @@ export function TransferOwnershipDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {members.map((member) => (
-                    <SelectItem 
-                      key={member.memberId} 
+                    <SelectItem
+                      key={member.memberId}
                       value={`${member.memberId}|${member.userId}`}
                     >
                       <div className="flex items-center gap-2">
@@ -162,7 +185,13 @@ export function TransferOwnershipDialog({
             onClick={handleTransfer}
             disabled={!selectedMemberVal || isSubmitting}
           >
-            {isSubmitting ? "Transferring..." : "Transfer Ownership"}
+            {isSubmitting ? (
+              <>
+                <Spinner className="size-4" /> Transferring...
+              </>
+            ) : (
+              "Transfer Ownership"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

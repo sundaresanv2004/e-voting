@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { AuditEntityType, AuditStatus } from "@prisma/client"
+import { logAdminAction } from "@/lib/auth/audit"
 
 /**
  * Gets all members for the active organization, including their custom user fields
@@ -201,16 +202,15 @@ export async function addMemberAction(
       }
 
       // Log the addition
-      await tx.adminAuditLog.create({
-        data: {
-          action: "MEMBER_ADDED",
-          entityType: AuditEntityType.USER,
-          entityId: userId,
-          adminId,
-          organizationId: orgId,
-          status: AuditStatus.SUCCESS,
-          metadata: { role, hasAllAccess, electionIds: validElectionIds }
-        }
+      await logAdminAction({
+        action: "MEMBER_ADDED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { role, hasAllAccess, electionIds: validElectionIds }
       })
     })
 
@@ -219,16 +219,14 @@ export async function addMemberAction(
   } catch (error: any) {
     console.error("[ADD_MEMBER]", error)
     try {
-      await db.adminAuditLog.create({
-        data: {
-          action: "MEMBER_ADDED",
-          entityType: AuditEntityType.USER,
-          entityId: userId,
-          adminId,
-          organizationId: orgId,
-          status: AuditStatus.FAILURE,
-          metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
-        }
+      await logAdminAction({
+        action: "MEMBER_ADDED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.FAILURE,
+        metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
       })
     } catch(e) {}
     return { success: false, error: error.message || "Failed to add member" }
@@ -310,16 +308,15 @@ export async function updateMemberAccess(
       }
 
       // Log the change
-      await tx.adminAuditLog.create({
-        data: {
-          action: "MEMBER_ACCESS_UPDATED",
-          entityType: AuditEntityType.USER,
-          entityId: userId,
-          adminId,
-          organizationId: orgId,
-          status: AuditStatus.SUCCESS,
-          metadata: { role, hasAllAccess, electionIds: validElectionIds }
-        }
+      await logAdminAction({
+        action: "MEMBER_ACCESS_UPDATED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { role, hasAllAccess, electionIds: validElectionIds }
       })
     })
 
@@ -328,16 +325,14 @@ export async function updateMemberAccess(
   } catch (error: any) {
     console.error("[UPDATE_MEMBER_ACCESS]", error)
     try {
-      await db.adminAuditLog.create({
-        data: {
-          action: "MEMBER_ACCESS_UPDATED",
-          entityType: AuditEntityType.USER,
-          entityId: userId,
-          adminId,
-          organizationId: orgId,
-          status: AuditStatus.FAILURE,
-          metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
-        }
+      await logAdminAction({
+        action: "MEMBER_ACCESS_UPDATED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.FAILURE,
+        metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
       })
     } catch(e) {}
     return { success: false, error: "Failed to update member access" }

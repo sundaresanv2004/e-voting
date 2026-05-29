@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { ElectionStatus, AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
+import { logAdminAction } from "@/lib/auth/audit"
 import { cookies, headers } from "next/headers"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
@@ -116,16 +117,15 @@ export async function createElection(formData: {
         },
       })
 
-      await tx.adminAuditLog.create({
-        data: {
-          action: "ELECTION_CREATED",
-          entityType: AuditEntityType.ELECTION,
-          entityId: election.id,
-          adminId: userId,
-          organizationId: organizationId,
-          status: AuditStatus.SUCCESS,
-          metadata: { name: election.name, startTime: election.startTime, endTime: election.endTime, code: election.code },
-        }
+      await logAdminAction({
+        action: "ELECTION_CREATED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: election.id,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { name: election.name, startTime: election.startTime, endTime: election.endTime, code: election.code },
       })
 
       return election
@@ -143,16 +143,14 @@ export async function createElection(formData: {
     console.error("[CREATE_ELECTION_ACTION]", error)
     if (adminId && orgId) {
       try {
-        await db.adminAuditLog.create({
-          data: {
-            action: "ELECTION_CREATED",
-            entityType: AuditEntityType.ELECTION,
-            entityId: "UNKNOWN",
-            adminId,
-            organizationId: orgId,
-            status: AuditStatus.FAILURE,
-            metadata: { formData, error: error?.message || "Unknown error" }
-          }
+        await logAdminAction({
+          action: "ELECTION_CREATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: "UNKNOWN",
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { formData, error: error?.message || "Unknown error" }
         })
       } catch (e) {}
     }
@@ -211,16 +209,15 @@ export async function updateElection(
         },
       })
 
-      await tx.adminAuditLog.create({
-        data: {
-          action: "ELECTION_UPDATED",
-          entityType: AuditEntityType.ELECTION,
-          entityId: election.id,
-          adminId: userId,
-          organizationId: organizationId,
-          status: AuditStatus.SUCCESS,
-          metadata: { old: oldElection, new: { name: election.name, startTime: election.startTime, endTime: election.endTime, status: election.status } },
-        }
+      await logAdminAction({
+        action: "ELECTION_UPDATED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: election.id,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { old: oldElection, new: { name: election.name, startTime: election.startTime, endTime: election.endTime, status: election.status } },
       })
 
       return election
@@ -232,16 +229,14 @@ export async function updateElection(
     console.error("[UPDATE_ELECTION_ACTION]", error)
     if (adminId && orgId) {
       try {
-        await db.adminAuditLog.create({
-          data: {
-            action: "ELECTION_UPDATED",
-            entityType: AuditEntityType.ELECTION,
-            entityId: id,
-            adminId,
-            organizationId: orgId,
-            status: AuditStatus.FAILURE,
-            metadata: { formData, error: error?.message || "Unknown error" }
-          }
+        await logAdminAction({
+          action: "ELECTION_UPDATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: id,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { formData, error: error?.message || "Unknown error" }
         })
       } catch (e) {}
     }
@@ -266,16 +261,15 @@ export async function deleteElection(id: string) {
 
       if (!election) throw new Error("Election not found")
 
-      await tx.adminAuditLog.create({
-        data: {
-          action: "ELECTION_DELETED",
-          entityType: AuditEntityType.ELECTION,
-          entityId: id,
-          adminId: userId,
-          organizationId: organizationId,
-          status: AuditStatus.SUCCESS,
-          metadata: { name: election.name, code: election.code },
-        }
+      await logAdminAction({
+        action: "ELECTION_DELETED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: id,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { name: election.name, code: election.code },
       })
 
       await tx.election.delete({
@@ -292,16 +286,14 @@ export async function deleteElection(id: string) {
     console.error("[DELETE_ELECTION_ACTION]", error)
     if (adminId && orgId) {
       try {
-        await db.adminAuditLog.create({
-          data: {
-            action: "ELECTION_DELETED",
-            entityType: AuditEntityType.ELECTION,
-            entityId: id,
-            adminId,
-            organizationId: orgId,
-            status: AuditStatus.FAILURE,
-            metadata: { error: error?.message || "Unknown error" }
-          }
+        await logAdminAction({
+          action: "ELECTION_DELETED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: id,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { error: error?.message || "Unknown error" }
         })
       } catch (e) {}
     }
@@ -345,20 +337,19 @@ export async function toggleElectionStatus(id: string) {
         }
       })
 
-      await tx.adminAuditLog.create({
-        data: {
-          action: newStatus === ElectionStatus.PAUSED ? "ELECTION_PAUSED" : "ELECTION_RESUMED",
-          entityType: AuditEntityType.ELECTION,
-          entityId: id,
-          adminId: userId,
-          organizationId: organizationId,
-          status: AuditStatus.SUCCESS,
-          metadata: {
-            name: election.name,
-            previousStatus: election.status,
-            newStatus
-          },
-        }
+      await logAdminAction({
+        action: newStatus === ElectionStatus.PAUSED ? "ELECTION_PAUSED" : "ELECTION_RESUMED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: id,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: {
+          name: election.name,
+          previousStatus: election.status,
+          newStatus
+        },
       })
 
       return updated
@@ -371,16 +362,14 @@ export async function toggleElectionStatus(id: string) {
     console.error("[TOGGLE_ELECTION_STATUS_ACTION]", error)
     if (adminId && orgId) {
       try {
-        await db.adminAuditLog.create({
-          data: {
-            action: "ELECTION_STATUS_TOGGLED",
-            entityType: AuditEntityType.ELECTION,
-            entityId: id,
-            adminId,
-            organizationId: orgId,
-            status: AuditStatus.FAILURE,
-            metadata: { error: error?.message || "Unknown error" }
-          }
+        await logAdminAction({
+          action: "ELECTION_STATUS_TOGGLED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: id,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { error: error?.message || "Unknown error" }
         })
       } catch (e) {}
     }
@@ -393,15 +382,13 @@ export async function logElectionCodeCopy(electionId: string) {
     const access = await requireOrgAdmin()
     const { userId, organizationId } = access
 
-    await db.adminAuditLog.create({
-      data: {
-        action: "ELECTION_CODE_COPIED",
-        entityType: AuditEntityType.ELECTION,
-        entityId: electionId,
-        adminId: userId,
-        organizationId: organizationId,
-        status: AuditStatus.INFO,
-      }
+    await logAdminAction({
+      action: "ELECTION_CODE_COPIED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+      adminId: userId,
+      organizationId: organizationId,
+      status: AuditStatus.INFO,
     })
     return { success: true }
   } catch (error) {

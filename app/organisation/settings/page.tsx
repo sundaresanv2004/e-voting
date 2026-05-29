@@ -31,7 +31,7 @@ export default async function OrganizationSettingsPage() {
         description="Manage your organization's general information and critical settings."
         icon={Settings02Icon}
       />
-      <div className="px-4 md:px-8 py-8 max-w-[1000px] w-full">
+      <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <SettingsContainer 
           organization={organization} 
           currentUserId={currentUserId}

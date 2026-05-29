@@ -81,7 +81,7 @@ import { toggleElectionStatus } from "@/lib/actions/election"
 type SortField = "name" | "status" | "startTime" | "endTime"
 type SortDir = "asc" | "desc"
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 10
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -147,6 +147,14 @@ export function ElectionsDataTable({ data, isAdmin = false }: ElectionsDataTable
 
   // Reset page whenever filters change
   React.useEffect(() => { setPage(1) }, [search, statusFilter])
+
+  // Poll for updates every 40 seconds
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh()
+    }, 40000)
+    return () => clearInterval(interval)
+  }, [router])
 
   // ─── Filtering + Sorting ─────────────────────────────────────────────────
 
@@ -347,7 +355,7 @@ export function ElectionsDataTable({ data, isAdmin = false }: ElectionsDataTable
                               Edit Schedule
                             </DropdownMenuItem>
                             {(election.status === "ACTIVE" || election.status === "PAUSED") && (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleToggleStatus(election.id)}
                                 variant={election.status === "ACTIVE" ? "warning" : "success"}
                               >
@@ -415,7 +423,7 @@ export function ElectionsDataTable({ data, isAdmin = false }: ElectionsDataTable
             {filtered.length} election{filtered.length !== 1 ? "s" : ""}
           </p>
           {totalPages > 1 && (
-            <Pagination>
+            <Pagination className="mx-0 w-auto">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious

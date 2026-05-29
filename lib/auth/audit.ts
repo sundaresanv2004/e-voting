@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { AuditStatus } from "@prisma/client";
+import { AuditStatus, AuditEntityType } from "@prisma/client";
+import { headers } from "next/headers";
 
 export async function logUserAction(ctx: any, status: AuditStatus, errorReason?: string) {
     try {
@@ -18,6 +19,7 @@ export async function logUserAction(ctx: any, status: AuditStatus, errorReason?:
         ];
         
         // Check if current path matches any tracked path prefixes
+        if (!path) return; // Ignore if path is undefined
         const actionPath = trackedPaths.find(p => path.startsWith(p));
         if (!actionPath) return; // Not a user action we want to track
         
@@ -74,3 +76,51 @@ export async function logUserAction(ctx: any, status: AuditStatus, errorReason?:
         console.error("Failed to log user audit action:", error);
     }
 }
+
+export async function logAdminAction({
+  adminId,
+  organizationId,
+  action,
+  entityType,
+  entityId,
+  status = AuditStatus.INFO,
+  description,
+  metadata,
+  tx,
+}: {
+  adminId?: string | null
+  organizationId?: string | null
+  action: string
+  entityType: AuditEntityType
+  entityId?: string | null
+  status?: AuditStatus
+  description?: string | null
+  metadata?: any
+  tx?: any
+}) {
+  try {
+    const headerList = await headers()
+    const ipAddress = headerList.get("x-forwarded-for") || headerList.get("x-real-ip") || null
+    const userAgent = headerList.get("user-agent") || null
+
+    const client = tx || db
+
+    await client.adminAuditLog.create({
+      data: {
+        adminId,
+        organizationId,
+        action,
+        entityType,
+        entityId,
+        status,
+        description,
+        ipAddress,
+        userAgent,
+        metadata: metadata || undefined,
+      },
+    })
+  } catch (error) {
+    console.error("Failed to log admin action:", error)
+  }
+}
+

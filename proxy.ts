@@ -38,25 +38,6 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/organisation", request.url));
     }
 
-    // Organization Routing Logic
-    if (authData) {
-        // We can check if they have an active organization via the session object
-        const hasOrg = !!authData.session?.activeOrganizationId;
-
-        if (pathname.startsWith("/setup")) {
-            if (hasOrg) {
-                // If they try to access setup but already have an org, redirect to org dashboard
-                return NextResponse.redirect(new URL("/organisation", request.url));
-            }
-        }
-
-        if (pathname.startsWith("/organisation")) {
-            if (!hasOrg) {
-                // If they try to access org dashboard but don't have an org, redirect to setup
-                return NextResponse.redirect(new URL("/setup/organization", request.url));
-            }
-        }
-    }
 
     return NextResponse.next();
 }

@@ -1,12 +1,23 @@
 "use client"
 
 import * as React from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Building03Icon, Shield01Icon } from "@hugeicons/core-free-icons"
+import { Building03Icon, Shield01Icon, Settings02Icon, Alert01Icon } from "@hugeicons/core-free-icons"
 import { OrganizationType } from "@prisma/client"
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
 import { SettingsProfileForm } from "./settings-profile-form"
+import { SettingsLimitsForm } from "./settings-limits-form"
 import { TransferOwnershipDialog } from "./transfer-ownership-dialog"
 import { DeleteOrganizationDialog } from "./delete-organization-dialog"
 
@@ -18,98 +29,148 @@ interface SettingsContainerProps {
     logo?: string | null
     code: string
     ownerId?: string | null
+    settings?: {
+      maxElections: number
+      maxMembers: number
+      allowCustomBranding: boolean
+    } | null
   }
   currentUserId: string
 }
 
 export function SettingsContainer({ organization, currentUserId }: SettingsContainerProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isOwner = organization.ownerId === currentUserId
+
   const [transferOpen, setTransferOpen] = React.useState(false)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
 
-  const isOwner = organization.ownerId === currentUserId
+  const [activeTab, setActiveTab] = React.useState(() => {
+    const tab = searchParams.get("tab") || "general"
+    if (tab === "danger" && !isOwner) return "general"
+    return tab
+  })
+
+  React.useEffect(() => {
+    const tab = searchParams.get("tab") || "general"
+    if (tab === "danger" && !isOwner) {
+      setActiveTab("general")
+    } else {
+      setActiveTab(tab)
+    }
+  }, [searchParams, isOwner])
+
+  const handleTabChange = (value: string) => {
+    if (value === "danger" && !isOwner) return
+    setActiveTab(value)
+    const params = new URLSearchParams(searchParams)
+    params.set("tab", value)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
 
   return (
-    <div className="space-y-12">
-      {/* Profile Section */}
-      <section className="space-y-6">
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2">
-            <HugeiconsIcon icon={Building03Icon} className="size-5 text-muted-foreground" />
-            Organization Profile
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Update your organization's general information and branding.
-          </p>
-        </div>
-        
-        <SettingsProfileForm organization={organization} />
-      </section>
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      className="w-full"
+    >
+      <TabsList className="mb-8">
+        <TabsTrigger value="general">
+          <HugeiconsIcon icon={Building03Icon} className="size-4 shrink-0" />
+          General
+        </TabsTrigger>
+        <TabsTrigger value="settings">
+          <HugeiconsIcon icon={Settings02Icon} className="size-4 shrink-0" />
+          Settings
+        </TabsTrigger>
+        {isOwner && (
+          <TabsTrigger
+            value="danger"
+            className="!text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 data-[state=active]:bg-destructive/10 dark:data-[state=active]:bg-destructive/20"
+          >
+            <HugeiconsIcon icon={Alert01Icon} className="size-4 shrink-0" />
+            Danger Zone
+          </TabsTrigger>
+        )}
+      </TabsList>
 
-      {/* Danger Zone */}
-      {isOwner && (
-        <section className="space-y-6 pt-8 border-t">
-          <div>
-            <h3 className="text-lg font-medium text-destructive flex items-center gap-2">
-              <HugeiconsIcon icon={Shield01Icon} className="size-5" />
-              Danger Zone
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Critical actions that affect the entire organization.
-            </p>
-          </div>
+      <div className="w-full">
+        <TabsContent value="general" className="space-y-6 mt-0 outline-none">
+          <SettingsProfileForm organization={organization} />
+        </TabsContent>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 space-y-4">
-              <div>
-                <h4 className="font-medium text-destructive">Transfer Ownership</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Transfer full control of this organization to another member. 
-                  You will lose owner privileges.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                onClick={() => setTransferOpen(true)}
-              >
-                Transfer Ownership
-              </Button>
+        <TabsContent value="settings" className="space-y-6 mt-0 outline-none">
+          {organization.settings ? (
+            <SettingsLimitsForm settings={organization.settings} />
+          ) : (
+            <div className="p-4 border rounded-lg bg-muted/20 text-sm text-muted-foreground">
+              No settings found. Please refresh the page.
             </div>
+          )}
+        </TabsContent>
 
-            <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 space-y-4">
-              <div>
-                <h4 className="font-medium text-destructive">Delete Organization</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Permanently delete this organization and all its data. 
-                  This action cannot be undone.
-                </p>
-              </div>
-              <Button 
-                variant="destructive" 
-                onClick={() => setDeleteOpen(true)}
-              >
-                Delete Organization
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
+        {isOwner && (
+          <TabsContent value="danger" className="space-y-6 mt-0 outline-none">
+            {/* Transfer Ownership Card */}
+            <Card className="border-primary/20 shadow-sm gap-0 p-0 overflow-hidden">
+              <CardHeader className="border-b border-primary/10 flex flex-row items-start gap-3 bg-primary/5 p-6">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-0.5">
+                  <HugeiconsIcon icon={Shield01Icon} className="size-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-primary">Transfer Ownership</CardTitle>
+                  <CardDescription>
+                    Transfer full control of this organization to another member. You will lose owner privileges.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 flex justify-end">
+                <Button
+                  variant="infoOutline"
+                  onClick={() => setTransferOpen(true)}
+                >
+                  Transfer Ownership
+                </Button>
+              </CardContent>
+            </Card>
 
-      {/* Dialogs */}
-      {isOwner && (
-        <>
-          <TransferOwnershipDialog 
-            open={transferOpen} 
-            onOpenChange={setTransferOpen} 
-          />
-          <DeleteOrganizationDialog 
-            open={deleteOpen} 
-            onOpenChange={setDeleteOpen}
-            organizationName={organization.name}
-            organizationId={organization.id}
-          />
-        </>
-      )}
-    </div>
+            {/* Delete Organization Card */}
+            <Card className="border-destructive/20 shadow-sm gap-0 p-0 overflow-hidden">
+              <CardHeader className="border-b border-destructive/10 flex flex-row items-start gap-3 bg-destructive/5 p-6">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive mt-0.5">
+                  <HugeiconsIcon icon={Alert01Icon} className="size-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-destructive">Delete Organization</CardTitle>
+                  <CardDescription>
+                    Permanently delete this organization and all its data. This action cannot be undone.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 flex justify-end">
+                <Button
+                  variant="destructiveOutline"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  Delete Organization
+                </Button>
+              </CardContent>
+            </Card>
+
+            <TransferOwnershipDialog
+              open={transferOpen}
+              onOpenChange={setTransferOpen}
+            />
+            <DeleteOrganizationDialog
+              open={deleteOpen}
+              onOpenChange={setDeleteOpen}
+              organizationName={organization.name}
+              organizationId={organization.id}
+            />
+          </TabsContent>
+        )}
+      </div>
+    </Tabs>
   )
 }

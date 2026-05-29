@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface DeleteOrganizationDialogProps {
@@ -58,8 +59,21 @@ export function DeleteOrganizationDialog({
         setIsPending(false)
       } else {
         toast.success("Organization deleted successfully")
-        // Redirect to global home/dashboard where they might select/create a new org
-        router.push("/")
+
+        // Fetch remaining organizations to redirect or switch active organization
+        const orgsRes = await authClient.organization.list()
+
+        if (orgsRes.data && orgsRes.data.length > 0) {
+          // If they are part of other organizations, set the first one active
+          const nextOrg = orgsRes.data[0]
+          await authClient.organization.setActive({
+            organizationId: nextOrg.id
+          })
+          router.push("/organisation")
+        } else {
+          // If no organizations remain, take them to the setup flow
+          router.push("/setup/organization")
+        }
         router.refresh()
       }
     } catch (error) {
@@ -72,7 +86,7 @@ export function DeleteOrganizationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-destructive flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <HugeiconsIcon icon={Delete02Icon} className="size-5" />
             Delete Organization
           </DialogTitle>
@@ -84,11 +98,11 @@ export function DeleteOrganizationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
-          <Alert variant="destructive">
+        <div className="space-y-4">
+          <Alert variant="warning">
             <HugeiconsIcon icon={Alert01Icon} className="size-4" />
             <AlertTitle>Warning</AlertTitle>
-            <AlertDescription>
+            <AlertDescription className="!text-wrap">
               All organization data will be permanently wiped.
             </AlertDescription>
           </Alert>
@@ -122,7 +136,13 @@ export function DeleteOrganizationDialog({
             onClick={handleDelete}
             disabled={confirmName !== organizationName || isPending}
           >
-            {isPending ? "Deleting..." : "Delete Organization"}
+            {isPending ? (
+              <>
+                <Spinner className="size-4" /> Deleting...
+              </>
+            ) : (
+              "Delete Organization"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
