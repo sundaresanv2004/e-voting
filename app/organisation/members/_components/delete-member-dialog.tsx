@@ -3,7 +3,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
+import { removeMemberAction } from "@/lib/actions/member"
 
 import {
   AlertDialog,
@@ -15,12 +15,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Spinner } from "@/components/ui/spinner"
 
 interface DeleteMemberDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   target: {
     id: string
+    userId?: string
     name?: string
     email: string
     type: "member"
@@ -41,19 +43,19 @@ export function DeleteMemberDialog({
 
     setIsPending(true)
     try {
-      // Use the Better Auth client to remove from the organization
-      const res = await authClient.organization.removeMember({
-        memberIdOrEmail: target.id, // Better Auth accepts member ID or email
-      })
+      // Use userId if available, fallback to id for backwards compatibility if needed
+      // (Though in our table, we pass the full member row which has userId)
+      const res = await removeMemberAction(target.userId || target.id)
 
-      if (res.error) {
-        toast.error(res.error.message || `Failed to remove member`)
-      } else {
-        toast.success("Member removed successfully")
-        onOpenChange(false)
-        router.refresh()
+      if (!res.success) {
+        toast.error(res.error || "Failed to remove member")
+        return
       }
-    } catch (error) {
+
+      toast.success("Member removed successfully")
+      onOpenChange(false)
+      router.refresh()
+    } catch {
       toast.error("An unexpected error occurred")
     } finally {
       setIsPending(false)
@@ -64,15 +66,13 @@ export function DeleteMemberDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Remove Member
-          </AlertDialogTitle>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to remove{" "}
-            <strong className="text-foreground">{displayName}</strong>?
-            They will lose all access to this organization and its elections.
+            This action cannot be undone. This will permanently remove{" "}
+            <strong className="text-foreground">{displayName}</strong> from your
+            organization and revoke all their election access.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -80,9 +80,10 @@ export function DeleteMemberDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="delete"
           >
-            {isPending ? "Removing..." : "Remove Member"}
+            {isPending && <Spinner />}
+            Remove Member
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

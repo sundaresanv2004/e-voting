@@ -81,7 +81,7 @@ function CopyButton({ text, electionId }: { text: string, electionId: string }) 
     await navigator.clipboard.writeText(text)
     setCopied(true)
     toast.success("Election code copied!")
-    logElectionCodeCopy(electionId).catch(() => {})
+    logElectionCodeCopy(electionId).catch(() => { })
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -159,7 +159,7 @@ export function ElectionDetailsSheet({
       const res = await toggleElectionStatus(localElection.id)
       if (res.success) {
         toast.success("Election status updated")
-        setLocalElection((prev: any) => 
+        setLocalElection((prev: any) =>
           prev ? { ...prev, status: prev.status === "ACTIVE" ? "PAUSED" : "ACTIVE" } : prev
         )
         router.refresh()
@@ -177,9 +177,9 @@ export function ElectionDetailsSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col p-0 sm:max-w-md overflow-hidden">
+      <SheetContent className="flex flex-col p-0 sm:!max-w-md overflow-hidden">
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b">
+        <SheetHeader className="px-4 pt-6 pb-4 border-b">
           <div className="flex items-center gap-2 mb-1">
             <StatusDot status={localElection.status} />
             <StatusBadge status={localElection.status} />
@@ -193,7 +193,7 @@ export function ElectionDetailsSheet({
         </SheetHeader>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
 
           {/* Election Code Card */}
           <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-muted/60 to-muted/30 px-5 py-4">

@@ -16,6 +16,7 @@ import {
   UserGroupIcon,
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons"
+import { useSearchParams, useRouter } from "next/navigation"
 
 import {
   Table,
@@ -35,13 +36,19 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Pagination,
@@ -71,16 +78,27 @@ import { MemberDetailsSheet } from "./member-details-sheet"
 type SortField = "name" | "role" | "createdAt"
 type SortDir = "asc" | "desc"
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 10
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface MembersDataTableProps {
   members: any[]
   currentUserId?: string
+  isAdmin?: boolean
+  ownerId?: string
 }
 
-export function MembersDataTable({ members, currentUserId }: MembersDataTableProps) {
+export function MembersDataTable({
+  members,
+  currentUserId,
+  isAdmin = false,
+  ownerId
+}: MembersDataTableProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isNew = searchParams.get("new") === "true"
+
   // Dialog / sheet state
   const [addOpen, setAddOpen] = React.useState(false)
   const [editTarget, setEditTarget] = React.useState<any | null>(null)
@@ -92,6 +110,16 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
   const [roleFilter, setRoleFilter] = React.useState("ALL")
   const [sort, setSort] = React.useState<{ field: SortField; dir: SortDir }>({ field: "createdAt", dir: "desc" })
   const [page, setPage] = React.useState(1)
+
+  // Open create dialog when ?new=true is in URL
+  React.useEffect(() => {
+    if (isNew) {
+      setAddOpen(true)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("new")
+      router.replace(`?${params.toString()}`, { scroll: false })
+    }
+  }, [isNew, searchParams, router])
 
   // Reset page whenever filters change
   React.useEffect(() => { setPage(1) }, [search, roleFilter])
@@ -198,13 +226,13 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
   const getRoleBadge = (role: string) => {
     switch (role?.toLowerCase()) {
       case "org_admin":
-        return <Badge className="bg-purple-500/15 text-purple-600 border-purple-500/20">Org Admin</Badge>
+        return <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20 shadow-none">Org Admin</Badge>
       case "staff":
-        return <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/20">Staff</Badge>
+        return <Badge className="bg-sky-500/10 text-sky-600 border-sky-500/20 shadow-none">Staff</Badge>
       case "viewer":
-        return <Badge className="bg-slate-500/15 text-slate-600 border-slate-500/20">Viewer</Badge>
+        return <Badge className="bg-slate-500/10 text-slate-600 border-slate-500/20 shadow-none">Viewer</Badge>
       default:
-        return <Badge variant="secondary">{role}</Badge>
+        return <Badge variant="secondary" className="shadow-none">{role}</Badge>
     }
   }
 
@@ -212,35 +240,35 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-          <Input
+        <InputGroup className="flex-1 max-w-lg">
+          <InputGroupAddon align="inline-start">
+            <HugeiconsIcon icon={Search01Icon} />
+          </InputGroupAddon>
+          <InputGroupInput
             placeholder="Search members by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
           />
-        </div>
+        </InputGroup>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger>
             <HugeiconsIcon icon={FilterIcon} className="size-4 text-muted-foreground mr-1" />
             <SelectValue placeholder="All roles" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All roles</SelectItem>
-            <SelectItem value="org_admin">Org Admin</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
-            <SelectItem value="viewer">Viewer</SelectItem>
+            <SelectGroup>
+              <SelectLabel>Member Roles</SelectLabel>
+              <SelectItem value="ALL">All roles</SelectItem>
+              <SelectItem value="org_admin">Org Admin</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="viewer">Viewer</SelectItem>
+            </SelectGroup>
           </SelectContent>
         </Select>
-        <Button onClick={() => setAddOpen(true)} className="gap-2">
-          <HugeiconsIcon icon={UserAdd01Icon} className="size-4" />
-          Add Member
-        </Button>
       </div>
 
       {/* Table */}
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-2xl border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -254,9 +282,13 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
             {pageRows.length > 0 ? (
               pageRows.map((row) => {
                 const fallback = row.displayName.substring(0, 2).toUpperCase()
-                
+
                 return (
-                  <TableRow key={row.id} className="group">
+                  <TableRow
+                    key={row.id}
+                    className="group cursor-pointer"
+                    onClick={() => setDetailsTarget(row)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">
@@ -279,12 +311,13 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                       {format(new Date(row.createdAt), "MMM d, yyyy")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="size-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="size-8 p-0"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <span className="sr-only">Open menu</span>
                             <HugeiconsIcon icon={MoreVerticalCircle01Icon} className="size-4" />
@@ -295,21 +328,25 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
                             <HugeiconsIcon icon={ViewIcon} data-icon="inline-start" />
                             View Details
                           </DropdownMenuItem>
-                          
-                          <DropdownMenuItem onClick={() => setEditTarget(row)}>
-                            <HugeiconsIcon icon={Edit02Icon} data-icon="inline-start" />
-                            Edit Access
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteTarget(row)}
-                            disabled={row.userId === currentUserId}
-                          >
-                            <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
-                            Remove Member
-                          </DropdownMenuItem>
+
+                          {isAdmin && row.userId !== ownerId && (
+                            <>
+                              <DropdownMenuItem onClick={() => setEditTarget(row)}>
+                                <HugeiconsIcon icon={Edit02Icon} data-icon="inline-start" />
+                                Edit Access
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => setDeleteTarget(row)}
+                                disabled={row.userId === currentUserId}
+                              >
+                                <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
+                                Remove Member
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -317,7 +354,7 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
                 )
               })
             ) : (
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="p-0">
                   <Empty className="border-none rounded-none py-16">
                     <EmptyHeader>
@@ -336,7 +373,7 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
                           ? "Try adjusting your search or filter to find what you're looking for."
                           : "Get started by adding your team members to collaborate."}
                       </EmptyDescription>
-                      {!search && roleFilter === "ALL" && (
+                      {isAdmin && !search && roleFilter === "ALL" && (
                         <Button onClick={() => setAddOpen(true)}>
                           Add Member
                         </Button>
@@ -358,7 +395,7 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
             {filtered.length} member{filtered.length !== 1 ? "s" : ""}
           </p>
           {totalPages > 1 && (
-            <Pagination>
+            <Pagination className="mx-0 w-auto">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
@@ -415,6 +452,11 @@ export function MembersDataTable({ members, currentUserId }: MembersDataTablePro
         open={!!detailsTarget}
         onOpenChange={(open) => !open && setDetailsTarget(null)}
         member={detailsTarget}
+        onEdit={(member) => setEditTarget(member)}
+        onDelete={(member) => setDeleteTarget(member)}
+        isAdmin={isAdmin}
+        ownerId={ownerId}
+        currentUserId={currentUserId}
       />
     </div>
   )

@@ -32,10 +32,10 @@ async function requireOrgAdmin() {
 
   const member = await db.member.findFirst({
     where: { userId: session.user.id },
-    include: { organization: true }
+    include: { organization: true, user: true }
   })
 
-  if (!member || (member.role !== "owner" && member.role !== "admin" && session.user.role !== UserRole.org_admin)) {
+  if (!member || (member.organization.ownerId !== session.user.id && member.user.role !== "org_admin")) {
     throw new Error("Forbidden: Requires organization admin access")
   }
 

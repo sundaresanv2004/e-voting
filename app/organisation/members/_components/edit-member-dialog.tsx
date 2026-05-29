@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import { useForm, Controller } from "react-hook-form"
-import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { InformationCircleIcon } from "@hugeicons/core-free-icons"
 
 import {
   Dialog,
@@ -17,37 +17,48 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Field, FieldLabel, FieldError, FieldContent } from "@/components/ui/field"
-import { updateMemberAccess } from "@/lib/actions/member"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+  FieldDescription,
+  FieldError,
+  FieldContent,
+} from "@/components/ui/field"
 
-const EditMemberSchema = z.object({
-  role: z.enum(["org_admin", "staff", "viewer"]),
-  hasAllAccess: z.boolean(),
-  // For MVP, we'll keep electionIds empty if they have all access, 
-  // or a list if we implemented a multi-select component.
-  // We'll skip the multi-select UI here for simplicity unless requested.
-})
-
-type EditMemberFormValues = z.infer<typeof EditMemberSchema>
+import {
+  MemberPermissionsSchema,
+  type MemberPermissionsValues,
+} from "@/lib/schemas/member"
+import { updateMemberAccess, getElectionsForAssignment } from "@/lib/actions/member"
 
 interface EditMemberDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  member: any // The Member object including nested user data
+  member: any
 }
 
 export function EditMemberDialog({ open, onOpenChange, member }: EditMemberDialogProps) {
   const router = useRouter()
-  const [isPending, setIsPending] = React.useState(false)
+  const [availableElections, setAvailableElections] = React.useState<any[]>([])
+  const [isLoadingElections, setIsLoadingElections] = React.useState(false)
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
 
   const {
     handleSubmit,
@@ -55,117 +66,271 @@ export function EditMemberDialog({ open, onOpenChange, member }: EditMemberDialo
     watch,
     reset,
     control,
-    formState: { errors },
-  } = useForm<EditMemberFormValues>({
-    resolver: zodResolver(EditMemberSchema),
+    formState: { errors, isSubmitting },
+  } = useForm<MemberPermissionsValues>({
+    resolver: zodResolver(MemberPermissionsSchema),
     defaultValues: {
       role: "viewer",
       hasAllAccess: false,
+      electionIds: [],
     },
   })
 
   const roleValue = watch("role")
   const hasAllAccess = watch("hasAllAccess")
+  const electionIds = watch("electionIds")
 
+  // Auto full-access for org_admin
+  React.useEffect(() => {
+    if (roleValue === "org_admin" && !hasAllAccess) {
+      setValue("hasAllAccess", true, { shouldValidate: true })
+      setValue("electionIds", [], { shouldValidate: true })
+    }
+  }, [roleValue, hasAllAccess, setValue])
+
+  // Populate from member when dialog opens
   React.useEffect(() => {
     if (open && member) {
+      const currentRole = (member.customRole as MemberPermissionsValues["role"]) || "viewer"
+      const currentAllAccess =
+        member.user?.hasAllElectionsAccess || currentRole === "org_admin"
+      const currentElectionIds: string[] = (member.user?.electionAccess || [])
+        .map((ea: any) => ea.electionId || ea.election?.id)
+        .filter(Boolean)
+
       reset({
-        role: member.customRole as any || "viewer",
-        hasAllAccess: member.user?.hasAllElectionsAccess || false,
+        role: currentRole,
+        hasAllAccess: currentAllAccess,
+        electionIds: currentElectionIds,
       })
+      setSubmitError(null)
+
+      // Load elections
+      setIsLoadingElections(true)
+      getElectionsForAssignment()
+        .then((res) => setAvailableElections(res.elections || []))
+        .catch(() => toast.error("Failed to load elections"))
+        .finally(() => setIsLoadingElections(false))
     }
   }, [open, member, reset])
 
-  const onSubmit = async (data: EditMemberFormValues) => {
-    setIsPending(true)
+  // Toggle an election in/out of electionIds
+  const toggleElection = (electionId: string) => {
+    const current = electionIds
+    const updated = current.includes(electionId)
+      ? current.filter((id) => id !== electionId)
+      : [...current, electionId]
+    setValue("electionIds", updated, { shouldValidate: true })
+  }
+
+  const onSubmit = async (data: MemberPermissionsValues) => {
+    setSubmitError(null)
     try {
-      // Update both custom role/access and Better Auth role via server action
-      const accessRes = await updateMemberAccess(
+      const res = await updateMemberAccess(
         member.userId,
         data.role,
-        data.hasAllAccess, 
-        [] // Pass election IDs if granular UI was implemented
+        data.hasAllAccess,
+        data.hasAllAccess ? [] : data.electionIds
       )
-
-      if (!accessRes.success) {
-        toast.error(accessRes.error || "Failed to update member")
+      if (!res.success) {
+        setSubmitError(res.error || "Failed to update member")
       } else {
         toast.success("Member updated successfully")
         onOpenChange(false)
         router.refresh()
       }
-    } catch (error) {
-      toast.error("An unexpected error occurred")
-    } finally {
-      setIsPending(false)
+    } catch {
+      setSubmitError("An unexpected error occurred")
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Member</DialogTitle>
+      <DialogContent
+        className="sm:max-w-[480px] p-0 overflow-hidden gap-0 flex flex-col max-h-[90vh]"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {/* Header — no bottom border */}
+        <DialogHeader className="px-6 py-5">
+          <DialogTitle className="font-heading text-xl">Edit Member</DialogTitle>
           <DialogDescription>
-            Update role and permissions for {member?.user?.name || member?.user?.email}.
+            Update role and permissions for{" "}
+            <strong>{member?.user?.name || member?.user?.email}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-4">
-          <Field data-invalid={!!errors.role}>
-            <FieldLabel>Organization Role</FieldLabel>
-            <FieldContent>
-              <Select
-                value={roleValue}
-                onValueChange={(val: any) => setValue("role", val, { shouldValidate: true })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="org_admin">Org Admin (Full Access)</SelectItem>
-                  <SelectItem value="staff">Staff (Limited Access)</SelectItem>
-                  <SelectItem value="viewer">Viewer (Read Only)</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && <FieldError>{errors.role.message}</FieldError>}
-            </FieldContent>
-          </Field>
+        {/* Body */}
+        <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">
+          <form
+            id="edit-member-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="px-6 pb-6 flex flex-col gap-6"
+          >
+            {/* Role */}
+            <FieldGroup>
+              <Field data-invalid={!!errors.role}>
+                <FieldLabel>Organization Role</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={control}
+                    name="role"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="w-full rounded-2xl">
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Roles</SelectLabel>
+                            <SelectItem value="org_admin">
+                              Org Admin (Full Access)
+                            </SelectItem>
+                            <SelectItem value="staff">Staff (Limited Access)</SelectItem>
+                            <SelectItem value="viewer">Viewer (Read Only)</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.role && <FieldError>{errors.role.message}</FieldError>}
+                </FieldContent>
+              </Field>
+            </FieldGroup>
 
-          <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
-            <div className="space-y-0.5">
-              <Label className="text-base">Full Election Access</Label>
-              <p className="text-sm text-muted-foreground">
-                Grant access to all current and future elections.
-              </p>
-            </div>
-            <Controller
-              control={control}
-              name="hasAllAccess"
-              render={({ field }) => (
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  disabled={roleValue === "org_admin"}
+            <Separator />
+
+            {/* Full access */}
+            <FieldGroup>
+              <Field orientation="horizontal">
+                <Controller
+                  control={control}
+                  name="hasAllAccess"
+                  render={({ field }) => (
+                    <Checkbox
+                      id="edit-all-access"
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(!!checked)
+                        if (checked) {
+                          setValue("electionIds", [], { shouldValidate: true })
+                        }
+                      }}
+                      disabled={roleValue === "org_admin" || isSubmitting}
+                    />
+                  )}
                 />
-              )}
-            />
-          </div>
+                <FieldContent>
+                  <FieldTitle>
+                    <label
+                      htmlFor="edit-all-access"
+                      className="cursor-pointer font-medium text-sm"
+                    >
+                      Include All Elections
+                    </label>
+                  </FieldTitle>
+                  <FieldDescription>
+                    Grant access to all current and future elections.
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            </FieldGroup>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </form>
+            {/* Per-election selection */}
+            {!hasAllAccess && roleValue !== "org_admin" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    Specific Elections
+                  </p>
+                  <Badge variant="secondary" className="text-[10px] font-semibold">
+                    {electionIds.length} selected
+                  </Badge>
+                </div>
+
+                {isLoadingElections ? (
+                  <div className="flex flex-col gap-2.5">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-[58px] w-full rounded-2xl" />
+                    ))}
+                  </div>
+                ) : availableElections.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center italic py-6">
+                    No elections found to assign.
+                  </p>
+                ) : (
+                  <ScrollArea className="max-h-[180px]">
+                    <FieldGroup className="gap-2 pr-3">
+                      {availableElections.map((election) => {
+                        const isSelected = electionIds.includes(election.id)
+                        return (
+                          <FieldLabel
+                            key={election.id}
+                            htmlFor={`edit-election-${election.id}`}
+                            className="cursor-pointer"
+                            data-checked={isSelected}
+                          >
+                            <Field orientation="horizontal">
+                              <FieldContent>
+                                <FieldTitle className="text-sm">
+                                  {election.name}
+                                </FieldTitle>
+                                <FieldDescription className="text-[10px] uppercase tracking-wider font-semibold">
+                                  {election.status}
+                                </FieldDescription>
+                              </FieldContent>
+                              <Checkbox
+                                id={`edit-election-${election.id}`}
+                                checked={isSelected}
+                                onCheckedChange={() => toggleElection(election.id)}
+                                disabled={isSubmitting}
+                              />
+                            </Field>
+                          </FieldLabel>
+                        )
+                      })}
+                    </FieldGroup>
+                  </ScrollArea>
+                )}
+
+                {errors.electionIds && (
+                  <FieldError>{errors.electionIds.message}</FieldError>
+                )}
+              </div>
+            )}
+
+            {/* Submit error */}
+            {submitError && (
+              <div className="flex items-start gap-2.5 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-destructive text-sm">
+                <HugeiconsIcon icon={InformationCircleIcon} className="mt-0.5 shrink-0" />
+                <span>{submitError}</span>
+              </div>
+            )}
+          </form>
+        </ScrollArea>
+
+        {/* Footer — no top border */}
+        <DialogFooter className="px-6 py-4">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="edit-member-form"
+            disabled={isSubmitting}
+          >
+            {isSubmitting && <Spinner data-icon="inline-start" />}
+            {isSubmitting ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

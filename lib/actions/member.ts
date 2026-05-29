@@ -17,8 +17,12 @@ export async function getOrganizationMembers() {
   })
 
   if (!session?.user) return { success: false, error: "Unauthorized" }
-  const orgId = session.session.activeOrganizationId
-  if (!orgId) return { success: false, error: "No active organization" }
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: session.user.id } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization" }
+  }
 
   try {
     const members = await db.member.findMany({
@@ -62,8 +66,12 @@ export async function searchPotentialMember(query: string) {
   })
 
   if (!session?.user) return { success: false, error: "Unauthorized" }
-  const orgId = session.session.activeOrganizationId
-  if (!orgId) return { success: false, error: "No active organization" }
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: session.user.id } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization" }
+  }
 
   const normalizedQuery = query.trim()
 
@@ -136,8 +144,12 @@ export async function addMemberAction(
 
   if (!session?.user) return { success: false, error: "Unauthorized" }
   const adminId = session.user.id
-  const orgId = session.session.activeOrganizationId
-  if (!orgId) return { success: false, error: "No active organization" }
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: adminId } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization" }
+  }
 
   try {
     // 1. Verify target user
@@ -247,9 +259,13 @@ export async function updateMemberAccess(
   })
 
   if (!session?.user) return { success: false, error: "Unauthorized" }
-  const orgId = session.session.activeOrganizationId
-  if (!orgId) return { success: false, error: "No active organization" }
   const adminId = session.user.id
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: adminId } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization" }
+  }
 
   try {
     const targetMember = await db.member.findFirst({
@@ -265,6 +281,7 @@ export async function updateMemberAccess(
         headers: await headers(),
         body: {
           memberId: targetMember.id,
+          organizationId: orgId,
           role: betterAuthRole
         }
       })
@@ -348,8 +365,12 @@ export async function getElectionsForAssignment() {
   })
 
   if (!session?.user) return { success: false, error: "Unauthorized", elections: [] }
-  const orgId = session.session.activeOrganizationId
-  if (!orgId) return { success: false, error: "No active organization", elections: [] }
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: session.user.id } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization", elections: [] }
+  }
 
   try {
     const elections = await db.election.findMany({
@@ -367,3 +388,85 @@ export async function getElectionsForAssignment() {
     return { success: false, error: "Failed to fetch elections", elections: [] }
   }
 }
+
+/**
+ * Removes a member from the organization and cleans up their custom roles and election access.
+ */
+export async function removeMemberAction(userId: string) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session?.user) return { success: false, error: "Unauthorized" }
+  const adminId = session.user.id
+  let orgId = session.session.activeOrganizationId
+  if (!orgId) {
+    const member = await db.member.findFirst({ where: { userId: adminId } })
+    if (member) orgId = member.organizationId
+    else return { success: false, error: "No active organization" }
+  }
+
+  try {
+    const targetMember = await db.member.findFirst({
+      where: { userId, organizationId: orgId }
+    })
+
+    if (!targetMember) return { success: false, error: "Member not found in organization" }
+
+    // Remove from Better Auth organization
+    await auth.api.removeMember({
+      headers: await headers(),
+      body: {
+        memberIdOrEmail: targetMember.id,
+        organizationId: orgId
+      }
+    })
+
+    // Perform custom updates in a transaction
+    await db.$transaction(async (tx) => {
+      // Clear their custom role and full access flag globally
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          role: "user",
+          hasAllElectionsAccess: false
+        }
+      })
+
+      // Delete all granular election access for this user
+      await tx.userElectionAccess.deleteMany({
+        where: { userId }
+      })
+
+      // Log the removal
+      await logAdminAction({
+        action: "MEMBER_REMOVED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { memberId: targetMember.id }
+      })
+    })
+
+    revalidatePath("/organisation/members")
+    return { success: true }
+  } catch (error: any) {
+    console.error("[REMOVE_MEMBER]", error)
+    try {
+      await logAdminAction({
+        action: "MEMBER_REMOVED",
+        entityType: AuditEntityType.USER,
+        entityId: userId,
+        adminId,
+        organizationId: orgId,
+        status: AuditStatus.FAILURE,
+        metadata: { error: error?.message || "Unknown error" }
+      })
+    } catch(e) {}
+    return { success: false, error: error.message || "Failed to remove member" }
+  }
+}
+

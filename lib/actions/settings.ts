@@ -188,12 +188,7 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
 
     if (!organization) return { success: false, error: "Organization not found." }
 
-    // If the Better Auth org owner isn't the current user
-    const currentMember = await db.member.findFirst({
-      where: { userId: currentUserId, organizationId: orgId }
-    })
-
-    if (!currentMember || currentMember.role !== "owner") {
+    if (organization.ownerId !== currentUserId) {
       return { success: false, error: "Only the organization owner can transfer ownership." }
     }
 
