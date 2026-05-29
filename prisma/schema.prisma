@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -40,14 +39,14 @@ model User {
   createdOrgSettings      OrganizationSettings[] @relation("SettingsCreatedBy")
   updatedOrgSettings      OrganizationSettings[] @relation("UpdatedBy")
   createdElectionRoles    ElectionRole[]         @relation("ElectionRoleCreatedBy")
-  updatedElectionRoles    ElectionRole[]     @relation("ElectionRoleUpdatedBy")
-  createdCandidates       Candidate[]        @relation("CandidateCreatedBy")
-  updatedCandidates       Candidate[]        @relation("CandidateUpdatedBy")
-  createdCategories       ElectionCategory[] @relation("CategoryCreatedBy")
-  updatedCategories       ElectionCategory[] @relation("CategoryUpdatedBy")
+  updatedElectionRoles    ElectionRole[]         @relation("ElectionRoleUpdatedBy")
+  createdCandidates       Candidate[]            @relation("CandidateCreatedBy")
+  updatedCandidates       Candidate[]            @relation("CandidateUpdatedBy")
+  createdCategories       ElectionCategory[]     @relation("CategoryCreatedBy")
+  updatedCategories       ElectionCategory[]     @relation("CategoryUpdatedBy")
   userAuditLogs           UserAuditLog[]
   adminAuditLogs          AdminAuditLog[]
-  generatedResults        ElectionResult[]   @relation("ResultGeneratedBy")
+  generatedResults        ElectionResult[]       @relation("ResultGeneratedBy")
 
   hasAllElectionsAccess Boolean              @default(false)
   electionAccess        UserElectionAccess[] @relation("UserElections")
@@ -56,13 +55,13 @@ model User {
   createdVoters         Voter[]              @relation("VoterCreatedBy")
   updatedVoters         Voter[]              @relation("VoterUpdatedBy")
 
-  twoFactorEnabled      Boolean              @default(false)
-  twoFactors            TwoFactor[]
+  twoFactorEnabled Boolean     @default(false)
+  twoFactors       TwoFactor[]
 
   // Better Auth Admin Plugin Fields
-  banned                Boolean?
-  banReason             String?
-  banExpires            DateTime?
+  banned     Boolean?
+  banReason  String?
+  banExpires DateTime?
 
   @@unique([email])
   @@map("user")
@@ -84,10 +83,10 @@ model Organization {
   isActive        Boolean          @default(true)
   updatedAt       DateTime         @updatedAt
 
-  creator User? @relation("CreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updater User? @relation("OrganizationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  creator User?   @relation("CreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updater User?   @relation("OrganizationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   ownerId String?
-  owner   User? @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  owner   User?   @relation("OrganizationOwner", fields: [ownerId], references: [id])
 
   members        Member[]
   invitations    Invitation[]
@@ -100,13 +99,13 @@ model Organization {
 }
 
 model OrganizationSettings {
-  id              String       @id @default(cuid())
-  organizationId  String       @unique
-  
+  id             String @id @default(cuid())
+  organizationId String @unique
+
   // Organization Configuration Settings
-  maxElections    Int          @default(5)
-  maxMembers      Int          @default(100)
-  allowCustomBranding Boolean  @default(false)
+  maxElections        Int     @default(5)
+  maxMembers          Int     @default(100)
+  allowCustomBranding Boolean @default(false)
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -175,6 +174,7 @@ model Election {
   updatedByUserId String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime? // soft delete — never hard-delete elections
 
   organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy         User?                @relation("ElectionCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
@@ -190,13 +190,13 @@ model Election {
   @@index([organizationId])
   @@index([startTime, endTime])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model ElectionSettings {
   id                    String   @id @default(cuid())
   electionId            String   @unique
-  allowOnlineVoting     Boolean  @default(false)
-  allowOfflineVoting    Boolean  @default(true)
+  allowOnlineVoting     Boolean  @default(true)
   authorizeVoters       Boolean  @default(true)
   showCandidateProfiles Boolean  @default(true)
   showCandidateSymbols  Boolean  @default(true)
@@ -258,13 +258,14 @@ model ElectionRole {
 }
 
 model Candidate {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   electionRoleId  String
   name            String
   profileImage    String?
   symbolImage     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // soft delete — preserves vote integrity
   createdByUserId String?
   updatedByUserId String?
 
@@ -280,19 +281,22 @@ model Candidate {
 }
 
 model Ballot {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   electionId    String
   categoryId    String?
-  submissionKey String   @unique
-  isAnonymous   Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  submissionKey String    @unique
+  isAnonymous   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime? // soft delete — never hard-delete ballots
 
-  election Election          @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  election Election          @relation(fields: [electionId], references: [id], onDelete: Restrict)
   category ElectionCategory? @relation(fields: [categoryId], references: [id])
   voterId  String?
   voter    Voter?            @relation(fields: [voterId], references: [id])
   votes    Vote[]
 
+  // Belt-and-suspenders: one ballot per voter per election at the DB level
+  @@unique([voterId, electionId])
   // Application MUST use atomic UPDATE Voter SET ballotCount = ballotCount + 1... pattern
   @@index([electionId, voterId])
   @@index([electionId])
@@ -301,14 +305,15 @@ model Ballot {
 }
 
 model Vote {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   ballotId       String
   electionRoleId String
   candidateId    String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
+  deletedAt      DateTime? // soft delete — votes must never be destroyed
 
-  ballot    Ballot       @relation(fields: [ballotId], references: [id], onDelete: Cascade)
-  role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Cascade)
+  ballot    Ballot       @relation(fields: [ballotId], references: [id], onDelete: Restrict)
+  role      ElectionRole @relation(fields: [electionRoleId], references: [id], onDelete: Restrict)
   candidate Candidate?   @relation(fields: [candidateId], references: [id], onDelete: SetNull)
 
   @@unique([ballotId, electionRoleId])
@@ -503,10 +508,10 @@ model Member {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Organization-specific role (e.g., owner, admin, member)
-  role           String       @default("member")
-  createdAt      DateTime
+
+  // Organization-specific role — uses the application UserRole enum for consistency
+  role      UserRole @default(viewer)
+  createdAt DateTime
 
   @@index([organizationId])
   @@index([userId])

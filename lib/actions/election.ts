@@ -21,6 +21,34 @@ function generateCode(orgName: string = "EV") {
   return `${prefix}-${result}`
 }
 
+// C2: Defines the only permitted status transitions. Terminal states have no exits.
+const VALID_TRANSITIONS: Record<string, ElectionStatus[]> = {
+  [ElectionStatus.UPCOMING]:  [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
+  [ElectionStatus.ACTIVE]:    [ElectionStatus.PAUSED, ElectionStatus.COMPLETED, ElectionStatus.CANCELLED],
+  [ElectionStatus.PAUSED]:    [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
+  [ElectionStatus.COMPLETED]: [], // terminal
+  [ElectionStatus.CANCELLED]: [], // terminal
+}
+
+function assertValidTransition(current: ElectionStatus, next: ElectionStatus) {
+  const allowed = VALID_TRANSITIONS[current] ?? []
+  if (!allowed.includes(next)) {
+    throw new Error(`Invalid status transition: ${current} → ${next}`)
+  }
+}
+
+// C5: Throws if the election is locked for candidate modification
+async function assertElectionEditable(electionId: string, organizationId: string) {
+  const election = await db.election.findFirst({
+    where: { id: electionId, organizationId, deletedAt: null },
+    select: { status: true },
+  })
+  if (!election) throw new Error("Election not found")
+  if (election.status === ElectionStatus.ACTIVE || election.status === ElectionStatus.COMPLETED) {
+    throw new Error("Cannot modify candidates in an active or completed election")
+  }
+}
+
 async function requireOrgAdmin() {
   const session = await auth.api.getSession({
     headers: await headers()
@@ -256,10 +284,16 @@ export async function deleteElection(id: string) {
     await db.$transaction(async (tx) => {
       const election = await tx.election.findUnique({
         where: { id, organizationId },
-        select: { name: true, code: true }
+        select: { name: true, code: true, status: true }
       })
 
       if (!election) throw new Error("Election not found")
+
+      // C1/C2: Never hard-delete elections — soft-delete only
+      // Also block deletion of COMPLETED elections to preserve election integrity
+      if (election.status === ElectionStatus.COMPLETED) {
+        throw new Error("Completed elections cannot be deleted. Archive them instead.")
+      }
 
       await logAdminAction({
         action: "ELECTION_DELETED",
@@ -272,11 +306,10 @@ export async function deleteElection(id: string) {
         metadata: { name: election.name, code: election.code },
       })
 
-      await tx.election.delete({
-        where: {
-          id,
-          organizationId
-        },
+      // Soft delete — sets deletedAt, does not remove the row
+      await tx.election.update({
+        where: { id, organizationId },
+        data: { deletedAt: new Date(), updatedByUserId: userId },
       })
     })
 
@@ -328,6 +361,9 @@ export async function toggleElectionStatus(id: string) {
       }
 
       const newStatus = election.status === ElectionStatus.ACTIVE ? ElectionStatus.PAUSED : ElectionStatus.ACTIVE
+
+      // C2: Verify the transition is valid before applying it
+      assertValidTransition(election.status, newStatus)
 
       const updated = await tx.election.update({
         where: { id, organizationId },

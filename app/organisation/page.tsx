@@ -14,33 +14,12 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { PageHeader } from "@/components/shared/page-header"
 import { Building06Icon } from "@hugeicons/core-free-icons"
+import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function DashboardPage() {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    })
-
-    if (!session?.user?.id) {
-        redirect("/auth/login")
-    }
-
-    const freshUser = await db.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-            members: {
-                take: 1,
-                include: {
-                    organization: true
-                }
-            }
-        },
-    })
-
-    const org = freshUser?.members?.[0]?.organization
-
-    if (!org) {
-        redirect("/setup/organization")
-    }
+    // Layout already verified org_admin / admin access.
+    const { member } = await requireOrgAdmin()
+    const org = member.organization
 
     return (
         <div className="flex-1 w-full">

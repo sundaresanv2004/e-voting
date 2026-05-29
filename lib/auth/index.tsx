@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { organization, admin, emailOTP } from "better-auth/plugins";
+import { organization, admin, emailOTP, twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import { sendEmail } from "../email";
 import VerificationEmail from "@/emails/VerificationEmail";
@@ -17,11 +17,12 @@ export const auth = betterAuth({
     updateAge: 60 * 15, // Update expiration every 15 min
   },
   rateLimit: {
-    window: 10,
+    window: 15 * 60, // 15 minutes
     max: 100,
     customRules: {
-      '/sign-in/email': { window: 10, max: 5 },
-      '/sign-up/email': { window: 10, max: 5 },
+      '/sign-in/email': { window: 15 * 60, max: 5 }, // 5 attempts per 15 min
+      '/sign-up/email': { window: 15 * 60, max: 5 },
+      '/forget-password': { window: 15 * 60, max: 5 },
     }
   },
   hooks: {
@@ -30,10 +31,15 @@ export const auth = betterAuth({
     })
   },
   advanced: {
+    cookiePrefix: "evote",
     cookies: {
       session_token: {
         attributes: {
-          maxAge: undefined as any, // Removes maxAge so it becomes a browser session cookie
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax" as const,
+          path: "/",
+          // No maxAge — becomes a browser session cookie (expires on close)
         }
       }
     }
@@ -100,6 +106,7 @@ export const auth = betterAuth({
       }
     }),
     admin(),
+    twoFactor(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         if (type === "email-verification") {

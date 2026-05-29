@@ -4,34 +4,17 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { headers } from "next/headers"
-import { redirect } from "next/navigation"
-
 import { ElectionsDataTable } from "./_components/elections-data-table"
+import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function ElectionsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+  // Layout already enforces org_admin / admin — always isAdmin here
+  const { member } = await requireOrgAdmin()
 
-  if (!session?.user) {
-    redirect("/auth/login")
-  }
-
-  // Find user's organization
-  const member = await db.member.findFirst({
-    where: { userId: session.user.id },
-  })
-
-  if (!member) {
-    redirect("/setup/organization")
-  }
-
-  // Fetch elections
+  // Fetch elections — exclude soft-deleted
   const elections = await db.election.findMany({
-    where: { organizationId: member.organizationId },
+    where: { organizationId: member.organizationId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {
@@ -43,7 +26,7 @@ export default async function ElectionsPage() {
     },
   })
 
-  const isAdmin = member.role === "owner" || member.role === "admin" || session.user.role === "org_admin"
+  const isAdmin = true // layout guarantees this
 
   return (
     <div className="flex-1 w-full">

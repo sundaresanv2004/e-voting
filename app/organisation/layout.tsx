@@ -1,51 +1,23 @@
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function DashboardLayout({
-  children
+  children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+  // Only org_admin / admin may enter this layout.
+  // staff and viewer are redirected to /organisation/election.
+  const { member } = await requireOrgAdmin("/organisation/election")
 
-  if (!session?.user?.id) {
-    redirect("/auth/login")
-  }
-
-  const freshUser = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      role: true,
-      isActive: true,
-      members: {
-        take: 1,
-        include: {
-            organization: true
-        }
-      }
-    },
-  })
-
-  if (!freshUser || !freshUser.isActive) {
-    redirect("/auth/error?error=AccessDenied")
-  }
-
-  if (!freshUser.members || freshUser.members.length === 0) {
-    redirect("/setup/organization")
-  }
-
-  const activeOrgId = freshUser.members[0].organizationId;
+  const activeOrgId = member.organizationId
 
   const elections = await db.election.findMany({
-    where: { organizationId: activeOrgId },
+    where: { organizationId: activeOrgId, deletedAt: null },
     orderBy: { createdAt: "desc" },
   })
 
@@ -56,10 +28,8 @@ export default async function DashboardLayout({
     code: election.code,
   }))
 
-  // If the user is an owner/admin of the org, treat them as ORG_ADMIN for sidebar
-  const userRole = freshUser.members[0].role === "owner" || freshUser.members[0].role === "admin" 
-    ? "ORG_ADMIN" 
-    : freshUser.role;
+  // org_admin / admin → show as ORG_ADMIN in sidebar; any other role stays as-is
+  const userRole = "ORG_ADMIN"
 
   return (
     <SidebarProvider>
@@ -67,9 +37,10 @@ export default async function DashboardLayout({
       <SidebarInset>
         <DashboardHeader />
         <div className="flex flex-1 flex-col">
-            {children}
+          {children}
         </div>
       </SidebarInset>
     </SidebarProvider>
   )
 }
+

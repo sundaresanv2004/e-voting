@@ -8,7 +8,7 @@ export const OrganizationSchema = z.object({
     message: "Please select an organization type",
   }),
   logo: z.string().optional(),
-})
+}).strict() // D1: reject unknown fields to prevent mass-assignment
 
 export type OrganizationFormValues = z.infer<typeof OrganizationSchema>
 

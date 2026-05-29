@@ -1,20 +1,14 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
 import { Settings02Icon } from "@hugeicons/core-free-icons"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { SettingsContainer } from "./_components/settings-container"
 import { getOrganizationData } from "@/lib/actions/settings"
+import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function OrganizationSettingsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
-
-  if (!session?.user) {
-    redirect("/auth/login")
-  }
+  // Layout already enforces org_admin / admin
+  const { session } = await requireOrgAdmin()
 
   const organization = await getOrganizationData()
 

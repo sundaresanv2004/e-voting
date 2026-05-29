@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic"
 
 export const GET = async () => {
   try {
+    const headersList = await headers()
     const session = await auth.api.getSession({
-      headers: await headers(),
+      headers: headersList,
     })
 
     if (!session?.user?.id) {
@@ -18,8 +19,15 @@ export const GET = async () => {
       )
     }
 
+    // D2: Scope upload paths per org to prevent cross-org file overwrites
+    const orgId = session.session?.activeOrganizationId ?? "shared"
+    const uploadFolder = `/orgs/${orgId}/`
+
     const authParameters = getImageKit().helper.getAuthenticationParameters()
-    return NextResponse.json(authParameters)
+    return NextResponse.json({
+      ...authParameters,
+      folder: uploadFolder,
+    })
   } catch (error) {
     console.error("ImageKit auth error:", error)
     return NextResponse.json(
@@ -28,3 +36,4 @@ export const GET = async () => {
     )
   }
 }
+

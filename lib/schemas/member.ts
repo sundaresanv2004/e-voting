@@ -2,7 +2,7 @@ import { z } from "zod"
 
 export const AddMemberSearchSchema = z.object({
   query: z.string().min(3, "Enter at least 3 characters to search"),
-})
+}).strict() // D1
 
 export const MemberPermissionsSchema = z.object({
   role: z.enum(["org_admin", "staff", "viewer"], {
@@ -10,7 +10,8 @@ export const MemberPermissionsSchema = z.object({
   }),
   hasAllAccess: z.boolean(),
   electionIds: z.array(z.string()),
-}).refine(
+}).strict() // D1
+.refine(
   (data) =>
     data.hasAllAccess ||
     data.role === "org_admin" ||

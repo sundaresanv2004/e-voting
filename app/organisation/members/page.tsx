@@ -1,41 +1,24 @@
 import { PageHeader } from "@/components/shared/page-header"
 import { UserGroupIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { headers } from "next/headers"
-import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { MembersDataTable } from "./_components/members-data-table"
 import { getOrganizationMembers } from "@/lib/actions/member"
+import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function MembersPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+  // Layout already enforces org_admin / admin
+  const { session, member } = await requireOrgAdmin()
 
-  if (!session?.user) {
-    redirect("/auth/login")
-  }
-
-  // Find user's organization and role
-  const member = await db.member.findFirst({
-    where: { userId: session.user.id },
-    include: { organization: true, user: true }
-  })
-
-  if (!member) {
-    redirect("/setup/organization")
-  }
-
-  // Fetch members server-side
   const membersRes = await getOrganizationMembers()
   const members = membersRes.success ? membersRes.members : []
   const currentUserId = session.user.id
 
-  const isAdmin = member.organization.ownerId === session.user.id || member.user.role === "org_admin"
+  // All users who reach this page are org admins
+  const isAdmin = true
+  const ownerId = member.organization.ownerId || ""
 
   return (
     <div className="flex-1 w-full">
@@ -59,7 +42,7 @@ export default async function MembersPage() {
           members={members || []} 
           currentUserId={currentUserId}
           isAdmin={isAdmin}
-          ownerId={member.organization.ownerId || ""}
+          ownerId={ownerId}
         />
       </div>
     </div>
