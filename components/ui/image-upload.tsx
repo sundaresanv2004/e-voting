@@ -122,7 +122,7 @@ export function ImageUpload({
     circle:    "aspect-square",
     landscape: "aspect-video",
     portrait:  "aspect-[3/4]",
-    rectangle: "aspect-[16/6]",   // wide banner — good for org logos
+    rectangle: "aspect-[16/4]",   // wide banner — good for org logos
   }
   const roundedClass = variant === "circle" ? "rounded-full" : "rounded-3xl"
 
@@ -175,7 +175,7 @@ export function ImageUpload({
                 src={value}
                 alt="Uploaded image"
                 className={cn(
-                  "size-full object-contain p-2 bg-black/5 dark:bg-white/5 transition-opacity duration-300",
+                  "size-full object-cover bg-black/5 dark:bg-white/5 transition-opacity duration-300",
                   isUploading && "opacity-40 grayscale",
                 )}
               />

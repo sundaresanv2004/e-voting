@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteElection } from "@/lib/actions/election"
+import { Spinner } from "@/components/ui/spinner"
 
 interface DeleteElectionDialogProps {
   open: boolean
@@ -56,9 +57,9 @@ export function DeleteElectionDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the
             election <strong className="text-foreground">{election?.name}</strong> and remove
@@ -70,9 +71,10 @@ export function DeleteElectionDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="delete"
           >
-            {isPending ? "Deleting..." : "Delete Election"}
+            {isPending && <Spinner />}
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

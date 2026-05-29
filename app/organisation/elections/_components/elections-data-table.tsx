@@ -40,13 +40,19 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Pagination,
   PaginationContent,
@@ -82,15 +88,15 @@ const PAGE_SIZE = 15
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "ACTIVE":
-      return <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">Active</Badge>
+      return <Badge variant="successOutline">Active</Badge>
     case "UPCOMING":
-      return <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">Upcoming</Badge>
+      return <Badge variant="infoOutline">Upcoming</Badge>
     case "COMPLETED":
       return <Badge variant="secondary">Completed</Badge>
     case "PAUSED":
-      return <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">Paused</Badge>
+      return <Badge variant="warningOutline">Paused</Badge>
     case "CANCELLED":
-      return <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/5">Cancelled</Badge>
+      return <Badge variant="destructiveOutline">Cancelled</Badge>
     default:
       return <Badge variant="outline">{status}</Badge>
   }
@@ -109,9 +115,10 @@ function SortIcon({ field, sort }: { field: SortField; sort: { field: SortField;
 
 interface ElectionsDataTableProps {
   data: any[]
+  isAdmin?: boolean
 }
 
-export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
+export function ElectionsDataTable({ data, isAdmin = false }: ElectionsDataTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isNew = searchParams.get("new") === "true"
@@ -236,27 +243,31 @@ export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-          <Input
+        <InputGroup className="flex-1 max-w-lg">
+          <InputGroupAddon align="inline-start">
+            <HugeiconsIcon icon={Search01Icon} />
+          </InputGroupAddon>
+          <InputGroupInput
             placeholder="Search by name or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
           />
-        </div>
+        </InputGroup>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger>
             <HugeiconsIcon icon={FilterIcon} className="size-4 text-muted-foreground mr-1" />
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All statuses</SelectItem>
-            <SelectItem value="UPCOMING">Upcoming</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="PAUSED">Paused</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            <SelectGroup>
+              <SelectLabel>Election Status</SelectLabel>
+              <SelectItem value="ALL">All statuses</SelectItem>
+              <SelectItem value="UPCOMING">Upcoming</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="PAUSED">Paused</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>
@@ -277,11 +288,16 @@ export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
           <TableBody>
             {pageRows.length > 0 ? (
               pageRows.map((election) => (
-                <TableRow key={election.id} className="group">
+                <TableRow
+                  key={election.id}
+                  className="group cursor-pointer"
+                  onClick={() => setDetailsTarget(election)}
+                >
                   <TableCell className="font-medium">
                     <Link
                       href={`/organisation/election/${election.id}`}
                       className="hover:underline underline-offset-4"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {election.name}
                     </Link>
@@ -300,12 +316,13 @@ export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {format(new Date(election.endTime), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="size-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="size-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <span className="sr-only">Open menu</span>
                           <HugeiconsIcon icon={MoreVerticalCircle01Icon} className="size-4" />
@@ -322,35 +339,42 @@ export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
                             Manage
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setEditElection(election)}>
-                          <HugeiconsIcon icon={Edit02Icon} data-icon="inline-start" />
-                          Edit Schedule
-                        </DropdownMenuItem>
-                        {(election.status === "ACTIVE" || election.status === "PAUSED") && (
-                          <DropdownMenuItem onClick={() => handleToggleStatus(election.id)}>
-                            <HugeiconsIcon
-                              icon={election.status === "ACTIVE" ? PauseIcon : PlayIcon}
-                              data-icon="inline-start"
-                            />
-                            {election.status === "ACTIVE" ? "Pause" : "Resume"}
-                          </DropdownMenuItem>
+                        {isAdmin && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setEditElection(election)}>
+                              <HugeiconsIcon icon={Edit02Icon} data-icon="inline-start" />
+                              Edit Schedule
+                            </DropdownMenuItem>
+                            {(election.status === "ACTIVE" || election.status === "PAUSED") && (
+                              <DropdownMenuItem 
+                                onClick={() => handleToggleStatus(election.id)}
+                                variant={election.status === "ACTIVE" ? "warning" : "success"}
+                              >
+                                <HugeiconsIcon
+                                  icon={election.status === "ACTIVE" ? PauseIcon : PlayIcon}
+                                  data-icon="inline-start"
+                                />
+                                {election.status === "ACTIVE" ? "Pause" : "Resume"}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeleteTarget(election)}
+                              variant="destructive"
+                            >
+                              <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeleteTarget(election)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={6} className="p-0">
                   <Empty className="border-none rounded-none py-16">
                     <EmptyHeader>
@@ -448,6 +472,9 @@ export function ElectionsDataTable({ data }: ElectionsDataTableProps) {
         open={!!detailsTarget}
         onOpenChange={(open) => !open && setDetailsTarget(null)}
         election={detailsTarget}
+        onEdit={(election) => setEditElection(election)}
+        onDelete={(election) => setDeleteTarget(election)}
+        isAdmin={isAdmin}
       />
     </div>
   )

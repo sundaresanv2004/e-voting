@@ -14,7 +14,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Input } from "@/components/ui/input"
 import { Field, FieldLabel, FieldError, FieldContent } from "@/components/ui/field"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
@@ -37,12 +48,15 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
   const router = useRouter()
   const isEditing = !!election
   const [isPending, setIsPending] = React.useState(false)
+  const [limitError, setLimitError] = React.useState<{ show: boolean, message: string }>({ show: false, message: "" })
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ElectionFormValues>({
     resolver: zodResolver(ElectionSchema),
@@ -52,6 +66,8 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
       endTime: new Date(new Date().setHours(new Date().getHours() + 24)),
     },
   })
+
+  const startTime = watch("startTime")
 
   React.useEffect(() => {
     if (open) {
@@ -84,7 +100,12 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
       } else {
         const res = await createElection(data)
         if (!res.success) {
-          toast.error(res.error)
+          if (res.error === "LIMIT_REACHED") {
+            setLimitError({ show: true, message: res.message || "Limit reached" })
+            onOpenChange(false)
+          } else {
+            toast.error(res.error)
+          }
           return
         }
         toast.success("Election created successfully")
@@ -100,9 +121,9 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Election" : "Create Election"}</DialogTitle>
+          <DialogTitle className="font-heading">{isEditing ? "Edit Election" : "Create Election"}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the details of this election."
@@ -131,7 +152,13 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
                   <DateTimePicker
                     label="Start"
                     date={field.value}
-                    onChange={field.onChange}
+                    onChange={(date) => {
+                      field.onChange(date)
+                      if (date) {
+                        const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000)
+                        setValue("endTime", nextDay)
+                      }
+                    }}
                   />
                 )}
               />
@@ -149,7 +176,7 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
                     label="End"
                     date={field.value}
                     onChange={field.onChange}
-                    // minDate={startTime value} - Optional enhancement
+                    minDate={startTime}
                   />
                 )}
               />
@@ -167,11 +194,29 @@ export function ElectionDialog({ open, onOpenChange, election }: ElectionDialogP
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
+              {isPending && <Spinner />}
               {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Election"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={limitError.show} onOpenChange={(open) => setLimitError(prev => ({ ...prev, show: open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Election Limit Reached</AlertDialogTitle>
+            <AlertDialogDescription>
+              {limitError.message} For further details and to manage your organization's limits, please visit the Settings page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={() => router.push("/organisation/settings")}>
+              Go to Settings
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

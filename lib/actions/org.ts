@@ -41,6 +41,25 @@ export async function createOrganization(values: OrganizationFormValues) {
     where: { userId: user.id }
   })
   if (existingMember) {
+    const ip = headerList.get("x-forwarded-for") || "unknown"
+    const userAgent = headerList.get("user-agent") || "unknown"
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "ORGANIZATION_CREATED",
+          entityType: AuditEntityType.ORGANIZATION,
+          adminId: user.id,
+          description: "Attempted to create organization but user is already a member of an organization",
+          status: AuditStatus.FAILURE,
+          ipAddress: ip,
+          userAgent: userAgent,
+          metadata: { error: "Already member of an organization", name: values.name },
+        }
+      })
+    } catch (e) {
+      console.error("Failed to log organization creation failure:", e)
+    }
+
     return {
       success: false,
       error: "Your account is already linked to an organization.",
@@ -161,6 +180,28 @@ export async function createOrganization(values: OrganizationFormValues) {
     return { success: true, data: orgResult }
   } catch (error: unknown) {
     console.error("Failed to create organization:", error)
+    const ip = headerList.get("x-forwarded-for") || "unknown"
+    const userAgent = headerList.get("user-agent") || "unknown"
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "ORGANIZATION_CREATED",
+          entityType: AuditEntityType.ORGANIZATION,
+          adminId: user.id,
+          description: `Failed to create organization: ${values.name}`,
+          status: AuditStatus.FAILURE,
+          ipAddress: ip,
+          userAgent: userAgent,
+          metadata: { 
+            name: values.name, 
+            type: values.type, 
+            error: error instanceof Error ? error.message : String(error) 
+          },
+        }
+      })
+    } catch (e) {
+      console.error("Failed to log organization creation failure:", e)
+    }
     if (typeof error === "object" && error !== null && "code" in error && (error as any).code === "P2002") {
       return { success: false, error: "Organization name/code already exists" }
     }

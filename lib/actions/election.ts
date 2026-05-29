@@ -71,6 +71,23 @@ export async function createElection(formData: {
 
     const { name, startTime, endTime } = validatedFields.data
 
+    const orgSettings = await db.organizationSettings.findUnique({
+      where: { organizationId }
+    })
+    const maxElections = orgSettings?.maxElections ?? 5
+
+    const currentElectionsCount = await db.election.count({
+      where: { organizationId }
+    })
+
+    if (currentElectionsCount >= maxElections) {
+      return {
+        success: false,
+        error: "LIMIT_REACHED",
+        message: `You have reached the limit of ${maxElections} elections for your organization.`
+      }
+    }
+
     const result = await db.$transaction(async (tx) => {
       const election = await tx.election.create({
         data: {
@@ -368,5 +385,27 @@ export async function toggleElectionStatus(id: string) {
       } catch (e) {}
     }
     return { success: false, error: error.message || "Failed to update election status" }
+  }
+}
+
+export async function logElectionCodeCopy(electionId: string) {
+  try {
+    const access = await requireOrgAdmin()
+    const { userId, organizationId } = access
+
+    await db.adminAuditLog.create({
+      data: {
+        action: "ELECTION_CODE_COPIED",
+        entityType: AuditEntityType.ELECTION,
+        entityId: electionId,
+        adminId: userId,
+        organizationId: organizationId,
+        status: AuditStatus.INFO,
+      }
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[LOG_ELECTION_CODE_COPY]", error)
+    return { success: false }
   }
 }

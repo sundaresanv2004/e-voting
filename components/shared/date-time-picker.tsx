@@ -13,141 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-
-interface TimePickerProps {
-  date?: Date
-  onChange?: (date: Date) => void
-  minDate?: Date
-}
-
-function TimePicker({ date, onChange, minDate }: TimePickerProps) {
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1)
-  const minutes = Array.from({ length: 12 }, (_, i) => i * 5)
-  const ampm = ["AM", "PM"]
-
-  const selectedDate = date || new Date()
-
-  const currentHour = selectedDate.getHours()
-  const displayHour = currentHour % 12 || 12
-  const currentMinute = selectedDate.getMinutes()
-  const currentAMPM = currentHour >= 12 ? "PM" : "AM"
-
-  // Find the closest 5-min interval for highlighting
-  const closestMinute = Math.round(currentMinute / 5) * 5
-
-  const handleTimeChange = (type: "hour" | "minute" | "ampm", value: string | number) => {
-    const newDate = new Date(selectedDate)
-
-    if (type === "hour") {
-      const h = value as number
-      const isPM = currentAMPM === "PM"
-      newDate.setHours(isPM ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h))
-    } else if (type === "minute") {
-      newDate.setMinutes(value as number)
-    } else if (type === "ampm") {
-      const isPM = value === "PM"
-      const h = displayHour
-      newDate.setHours(isPM ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h))
-    }
-
-    onChange?.(newDate)
-  }
-
-  // Check if a specific time is before minDate (only if they are on the same day)
-  const isTimeDisabled = (type: "hour" | "minute" | "ampm", value: string | number) => {
-    if (!minDate) return false
-    
-    // Create a candidate date to test
-    const testDate = new Date(selectedDate)
-    if (type === "hour") {
-      const h = value as number
-      const isPM = currentAMPM === "PM"
-      testDate.setHours(isPM ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h))
-    } else if (type === "minute") {
-      testDate.setMinutes(value as number)
-    } else if (type === "ampm") {
-      const isPM = value === "PM"
-      const h = displayHour
-      testDate.setHours(isPM ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h))
-    }
-    
-    return isBefore(testDate, minDate)
-  }
-
-  return (
-    <div className="flex gap-1 p-2">
-      {/* Hours */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] font-medium text-muted-foreground text-center mb-1">Hr</span>
-        <div className="grid grid-cols-3 gap-0.5">
-          {hours.map((h) => {
-             const disabled = isTimeDisabled("hour", h)
-             return (
-              <Button
-                key={h}
-                variant={displayHour === h ? "default" : "ghost"}
-                disabled={disabled}
-                size="sm"
-                className={cn("h-8 w-8 p-0 text-xs", displayHour !== h && "text-muted-foreground")}
-                onClick={() => handleTimeChange("hour", h)}
-              >
-                {h.toString().padStart(2, "0")}
-              </Button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="w-px bg-border mx-1" />
-
-      {/* Minutes */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] font-medium text-muted-foreground text-center mb-1">Min</span>
-        <div className="grid grid-cols-3 gap-0.5">
-          {minutes.map((m) => {
-             const disabled = isTimeDisabled("minute", m)
-             return (
-              <Button
-                key={m}
-                variant={closestMinute === m ? "default" : "ghost"}
-                disabled={disabled}
-                size="sm"
-                className={cn("h-8 w-8 p-0 text-xs", closestMinute !== m && "text-muted-foreground")}
-                onClick={() => handleTimeChange("minute", m)}
-              >
-                {m.toString().padStart(2, "0")}
-              </Button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="w-px bg-border mx-1" />
-
-      {/* AM/PM */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] font-medium text-muted-foreground text-center mb-1">Period</span>
-        <div className="flex flex-col gap-0.5">
-          {ampm.map((a) => {
-             const disabled = isTimeDisabled("ampm", a)
-             return (
-              <Button
-                key={a}
-                variant={currentAMPM === a ? "default" : "ghost"}
-                disabled={disabled}
-                size="sm"
-                className={cn("h-8 w-12 p-0 text-xs", currentAMPM !== a && "text-muted-foreground")}
-                onClick={() => handleTimeChange("ampm", a)}
-              >
-                {a}
-              </Button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
+import { TimePicker } from "@/components/ui/time-picker"
 
 interface DateTimePickerProps {
   date?: Date
@@ -205,7 +71,12 @@ export function DateTimePicker({ date, onChange, label, minDate }: DateTimePicke
               mode="single"
               selected={date}
               onSelect={handleDateChange}
-              disabled={(day) => (minDate ? isBefore(day, new Date(minDate.setHours(0, 0, 0, 0))) : false)}
+              disabled={(day) => {
+                if (!minDate) return false
+                const min = new Date(minDate)
+                min.setHours(0, 0, 0, 0)
+                return isBefore(day, min)
+              }}
             />
           </PopoverContent>
         </Popover>
@@ -220,8 +91,8 @@ export function DateTimePicker({ date, onChange, label, minDate }: DateTimePicke
               <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <TimePicker date={selectedDate} onChange={handleTimeChange} minDate={minDate} />
+          <PopoverContent className="w-auto p-3" align="end">
+            <TimePicker value={selectedDate} onChange={handleTimeChange} minDate={minDate} />
           </PopoverContent>
         </Popover>
       </div>
