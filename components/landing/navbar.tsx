@@ -7,6 +7,7 @@ import { ThemeSwitch } from "@/components/shared/theme-switch";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeftIcon, LayoutBottomIcon, UserIcon, Logout01Icon } from "@hugeicons/core-free-icons";
 import { useSession, signOut } from "@/lib/auth-client";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -78,6 +79,7 @@ export function Navbar() {
                                 onClick={() => signOut({
                                     fetchOptions: {
                                         onSuccess: () => {
+                                            toast.success("Logged out successfully");
                                             router.push("/");
                                         }
                                     }

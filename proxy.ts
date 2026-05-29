@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { betterFetch } from "@better-fetch/fetch";
 
-const protectedRoutes = ["/organisation", "/admin", "/user", "/setup/organization"];
-const authRoutes = ["/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/reset-password"];
+const protectedRoutes = ["/organisation", "/setup", "/user"];
+const authRoutes = ["/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email"];
 
 export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;

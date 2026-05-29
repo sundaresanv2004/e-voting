@@ -70,6 +70,7 @@ function VerifyEmailForm() {
             return
         }
         
+        toast.success("Account verified successfully")
         router.push("/auth/verified")
     }
 

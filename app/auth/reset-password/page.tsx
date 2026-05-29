@@ -40,14 +40,26 @@ function ResetPasswordForm() {
 
     const onSubmit = async (values: ResetPasswordValues) => {
         setIsSubmitting(true)
+
+        const searchParams = new URLSearchParams(window.location.search)
+        const token = searchParams.get("token")
+
+        if (!token) {
+            toast.error("No reset token found in URL. Please request a new link.")
+            setIsSubmitting(false)
+            return
+        }
+
         const { error } = await authClient.resetPassword({
             newPassword: values.password,
+            token: token,
         })
         setIsSubmitting(false)
 
         if (error) {
             toast.error(error.message || "Failed to reset password. Link might be expired.")
         } else {
+            toast.success("Your password has been successfully reset! You can now log in.")
             setIsSuccess(true)
         }
     }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ThemeSwitch } from "@/components/shared/theme-switch"
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
 import { useSession, signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     DropdownMenu,
@@ -61,6 +62,7 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
                                     onClick={() => signOut({
                                         fetchOptions: {
                                             onSuccess: () => {
+                                                toast.success("Logged out successfully")
                                                 router.push("/")
                                             }
                                         }

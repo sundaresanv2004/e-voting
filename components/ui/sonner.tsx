@@ -10,6 +10,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
+      position="top-right"
+      closeButton
+      richColors
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
@@ -40,6 +43,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          closeButton: "!left-auto !right-0 !top-0 !translate-x-1/3 !-translate-y-1/3 !bg-background !border-border",
         },
       }}
       {...props}

@@ -40,6 +40,7 @@ function ForgotPasswordForm() {
         if (error) {
             toast.error(error.message || "Something went wrong")
         } else {
+            toast.success("A password reset link has been sent to your email address.")
             setIsSubmitted(true)
         }
     }

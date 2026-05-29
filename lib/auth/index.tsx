@@ -1,15 +1,35 @@
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization, admin, emailOTP } from "better-auth/plugins";
 import { db } from "../db";
 import { sendEmail } from "../email";
 import VerificationEmail from "@/emails/VerificationEmail";
 import ResetPasswordEmail from "@/emails/ResetPasswordEmail";
+import { logUserAction } from "./audit";
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
+  session: {
+    expiresIn: 60 * 60 * 2, // 2 hours
+    updateAge: 60 * 15, // Update expiration every 15 min
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      await logUserAction(ctx, "SUCCESS");
+    })
+  },
+  advanced: {
+    cookies: {
+      session_token: {
+        attributes: {
+          maxAge: undefined as any, // Removes maxAge so it becomes a browser session cookie
+        }
+      }
+    }
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -26,6 +46,32 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }
+  },
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      updateUserInfoOnLink: true,
+    }
+  },
+  databaseHooks: {
+    user: {
+      update: {
+        before: async (user) => {
+          // If an image is provided in the update, check if we should keep it
+          // Based on user feedback, we prevent overwriting an existing image
+          // until the custom profile upload feature is built.
+          if (user.image && typeof user.id === 'string') {
+            const existingUser = await db.user.findUnique({ where: { id: user.id } });
+            if (existingUser?.image) {
+              // Delete the incoming image so the existing one is preserved
+              delete user.image;
+            }
+          }
+          return { data: user };
+        }
+      }
     }
   },
   plugins: [
@@ -62,6 +108,10 @@ export const auth = betterAuth({
   ],
   onAPIError: {
     errorURL: "/auth/error",
+    onError: async (error, ctx) => {
+      const message = error instanceof Error ? error.message : String(error);
+      await logUserAction(ctx, "FAILURE", message);
+    }
   }
 });
 

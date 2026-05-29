@@ -34,7 +34,7 @@ export function OAuthButtons({ disabled = false, redirectTo }: OAuthButtonsProps
     const handleGoogleLogin = async () => {
         await signIn.social({
             provider: "google",
-            callbackURL: redirectTo || "/",
+            callbackURL: redirectTo || "/organisation",
             errorCallbackURL: "/auth/error",
         })
     }

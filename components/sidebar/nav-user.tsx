@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useSession, signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 import { useTheme } from "next-themes"
 import {
   Avatar,
@@ -153,7 +154,10 @@ export function NavUser({
               variant="destructive"
               className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
               onClick={async () => {
-                await signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/?logged_out=true" } } })
+                await signOut({ fetchOptions: { onSuccess: () => { 
+                  toast.success("Logged out successfully")
+                  window.location.href = "/?logged_out=true" 
+                } } })
               }}
             >
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} className="group-focus:text-destructive-foreground transition-colors" />

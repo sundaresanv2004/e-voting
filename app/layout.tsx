@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Space_Grotesk } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/ui/theme-provider"
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner"
+import { TabSessionManager } from "@/components/auth/tab-session-manager"
 
 const bricolageHeading = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-heading' });
 
@@ -20,7 +22,11 @@ export default function RootLayout({
       className={cn("antialiased", "font-sans", spaceGrotesk.variable, bricolageHeading.variable)}
     >
       <body>
-        <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
+        <ThemeProvider defaultTheme="dark">
+          {children}
+          <Toaster />
+          <TabSessionManager />
+        </ThemeProvider>
       </body>
     </html>
   )
