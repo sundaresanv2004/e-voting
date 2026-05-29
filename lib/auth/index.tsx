@@ -13,8 +13,16 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   session: {
-    expiresIn: 60 * 60 * 2, // 2 hours
+    expiresIn: 60 * 60 * 1, // 1 hours
     updateAge: 60 * 15, // Update expiration every 15 min
+  },
+  rateLimit: {
+    window: 10,
+    max: 100,
+    customRules: {
+      '/sign-in/email': { window: 10, max: 5 },
+      '/sign-up/email': { window: 10, max: 5 },
+    }
   },
   hooks: {
     after: createAuthMiddleware(async (ctx) => {

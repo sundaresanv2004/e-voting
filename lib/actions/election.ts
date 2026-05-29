@@ -52,8 +52,12 @@ export async function createElection(formData: {
   startTime: Date
   endTime: Date
 }) {
+  let adminId = "";
+  let orgId = "";
   try {
     const access = await requireOrgAdmin()
+    adminId = access.userId;
+    orgId = access.organizationId;
     const { userId, organizationId, organization } = access
 
     const validatedFields = ElectionSchema.safeParse(formData)
@@ -120,6 +124,21 @@ export async function createElection(formData: {
     return { success: true, election: result }
   } catch (error: any) {
     console.error("[CREATE_ELECTION_ACTION]", error)
+    if (adminId && orgId) {
+      try {
+        await db.adminAuditLog.create({
+          data: {
+            action: "ELECTION_CREATED",
+            entityType: AuditEntityType.ELECTION,
+            entityId: "UNKNOWN",
+            adminId,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            metadata: { formData, error: error?.message || "Unknown error" }
+          }
+        })
+      } catch (e) {}
+    }
     return { success: false, error: error.message || "Failed to create election. Please try again." }
   }
 }
@@ -132,8 +151,12 @@ export async function updateElection(
     endTime: Date
   }
 ) {
+  let adminId = "";
+  let orgId = "";
   try {
     const access = await requireOrgAdmin()
+    adminId = access.userId;
+    orgId = access.organizationId;
     const { userId, organizationId } = access
 
     const validatedFields = ElectionSchema.safeParse(formData)
@@ -190,13 +213,32 @@ export async function updateElection(
     return { success: true, election: result }
   } catch (error: any) {
     console.error("[UPDATE_ELECTION_ACTION]", error)
+    if (adminId && orgId) {
+      try {
+        await db.adminAuditLog.create({
+          data: {
+            action: "ELECTION_UPDATED",
+            entityType: AuditEntityType.ELECTION,
+            entityId: id,
+            adminId,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            metadata: { formData, error: error?.message || "Unknown error" }
+          }
+        })
+      } catch (e) {}
+    }
     return { success: false, error: error.message || "Failed to update election. Please try again." }
   }
 }
 
 export async function deleteElection(id: string) {
+  let adminId = "";
+  let orgId = "";
   try {
     const access = await requireOrgAdmin()
+    adminId = access.userId;
+    orgId = access.organizationId;
     const { userId, organizationId } = access
 
     await db.$transaction(async (tx) => {
@@ -231,13 +273,32 @@ export async function deleteElection(id: string) {
     return { success: true }
   } catch (error: any) {
     console.error("[DELETE_ELECTION_ACTION]", error)
+    if (adminId && orgId) {
+      try {
+        await db.adminAuditLog.create({
+          data: {
+            action: "ELECTION_DELETED",
+            entityType: AuditEntityType.ELECTION,
+            entityId: id,
+            adminId,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            metadata: { error: error?.message || "Unknown error" }
+          }
+        })
+      } catch (e) {}
+    }
     return { success: false, error: error.message || "Failed to delete election. Please try again." }
   }
 }
 
 export async function toggleElectionStatus(id: string) {
+  let adminId = "";
+  let orgId = "";
   try {
     const access = await requireOrgAdmin()
+    adminId = access.userId;
+    orgId = access.organizationId;
     const { userId, organizationId } = access
 
     const result = await db.$transaction(async (tx) => {
@@ -291,6 +352,21 @@ export async function toggleElectionStatus(id: string) {
     return { success: true, status: result.status }
   } catch (error: any) {
     console.error("[TOGGLE_ELECTION_STATUS_ACTION]", error)
+    if (adminId && orgId) {
+      try {
+        await db.adminAuditLog.create({
+          data: {
+            action: "ELECTION_STATUS_TOGGLED",
+            entityType: AuditEntityType.ELECTION,
+            entityId: id,
+            adminId,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            metadata: { error: error?.message || "Unknown error" }
+          }
+        })
+      } catch (e) {}
+    }
     return { success: false, error: error.message || "Failed to update election status" }
   }
 }

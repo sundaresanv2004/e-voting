@@ -83,6 +83,19 @@ export async function updateOrganizationProfile(
     return { success: true }
   } catch (error: any) {
     console.error("[UPDATE_ORGANIZATION_ACTION]", error)
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "ORGANIZATION_UPDATED",
+          entityType: AuditEntityType.ORGANIZATION,
+          entityId: orgId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { name, type, error: error?.message || "Unknown error" }
+        }
+      })
+    } catch (e) {}
     return { success: false, error: "Failed to update organization profile" }
   }
 }
@@ -215,6 +228,19 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
     return { success: true }
   } catch (error: any) {
     console.error("[TRANSFER_OWNERSHIP_ACTION]", error)
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "OWNERSHIP_TRANSFERRED",
+          entityType: AuditEntityType.ORGANIZATION,
+          entityId: orgId,
+          adminId: currentUserId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { newOwnerUserId, error: error?.message || "Unknown error" }
+        }
+      })
+    } catch (e) {}
     return { success: false, error: error.message || "Failed to transfer ownership" }
   }
 }

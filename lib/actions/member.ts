@@ -218,6 +218,19 @@ export async function addMemberAction(
     return { success: true }
   } catch (error: any) {
     console.error("[ADD_MEMBER]", error)
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "MEMBER_ADDED",
+          entityType: AuditEntityType.USER,
+          entityId: userId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
+        }
+      })
+    } catch(e) {}
     return { success: false, error: error.message || "Failed to add member" }
   }
 }
@@ -312,8 +325,21 @@ export async function updateMemberAccess(
 
     revalidatePath("/organisation/members")
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[UPDATE_MEMBER_ACCESS]", error)
+    try {
+      await db.adminAuditLog.create({
+        data: {
+          action: "MEMBER_ACCESS_UPDATED",
+          entityType: AuditEntityType.USER,
+          entityId: userId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
+        }
+      })
+    } catch(e) {}
     return { success: false, error: "Failed to update member access" }
   }
 }

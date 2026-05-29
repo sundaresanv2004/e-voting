@@ -17,7 +17,7 @@ export default async function middleware(request: NextRequest) {
     }
 
     // Check for the user's session
-    const { data: session } = await betterFetch<any>(
+    const { data: authData } = await betterFetch<any>(
         "/api/auth/get-session",
         {
             baseURL: request.nextUrl.origin,
@@ -29,13 +29,33 @@ export default async function middleware(request: NextRequest) {
     );
 
     // If user is not logged in and tries to access a protected route
-    if (!session && isProtectedRoute) {
+    if (!authData && isProtectedRoute) {
         return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
     // If user is logged in and tries to access an auth route
-    if (session && isAuthRoute) {
+    if (authData && isAuthRoute) {
         return NextResponse.redirect(new URL("/organisation", request.url));
+    }
+
+    // Organization Routing Logic
+    if (authData) {
+        // We can check if they have an active organization via the session object
+        const hasOrg = !!authData.session?.activeOrganizationId;
+
+        if (pathname.startsWith("/setup")) {
+            if (hasOrg) {
+                // If they try to access setup but already have an org, redirect to org dashboard
+                return NextResponse.redirect(new URL("/organisation", request.url));
+            }
+        }
+
+        if (pathname.startsWith("/organisation")) {
+            if (!hasOrg) {
+                // If they try to access org dashboard but don't have an org, redirect to setup
+                return NextResponse.redirect(new URL("/setup/organization", request.url));
+            }
+        }
     }
 
     return NextResponse.next();
