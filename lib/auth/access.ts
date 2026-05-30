@@ -1,8 +1,9 @@
 import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
+import { logAdminAction } from "@/lib/auth/audit"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { UserRole } from "@prisma/client"
+import { AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
 
 /**
  * The roles that have full management access to org-level pages
@@ -32,6 +33,7 @@ export async function requireOrgMember() {
       id: true,
       role: true,
       isActive: true,
+      hasAllElectionsAccess: true,
       members: {
         take: 1,
         include: { organization: true },
@@ -52,7 +54,7 @@ export async function requireOrgMember() {
  * staff / viewer users are redirected to the first election they have
  * access to, or to a 403-style page if they have none.
  */
-export async function requireOrgAdmin(fallbackPath = "/organisation/election") {
+export async function requireOrgAdmin(fallbackPath = "/organisation/election/no-election") {
   const { session, freshUser, member } = await requireOrgMember()
 
   const memberRole = member.role as UserRole
@@ -62,4 +64,122 @@ export async function requireOrgAdmin(fallbackPath = "/organisation/election") {
   }
 
   return { session, freshUser, member }
+}
+
+export class ActionAuthorizationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "ActionAuthorizationError"
+  }
+}
+
+async function auditActionAuthorizationFailure({
+  userId,
+  organizationId,
+  action,
+  entityType = AuditEntityType.SECURITY,
+  entityId,
+  reason,
+  metadata,
+}: {
+  userId?: string | null
+  organizationId?: string | null
+  action: string
+  entityType?: AuditEntityType
+  entityId?: string | null
+  reason: string
+  metadata?: Record<string, unknown>
+}) {
+  await logAdminAction({
+    adminId: userId,
+    organizationId,
+    action,
+    entityType,
+    entityId,
+    status: AuditStatus.FAILURE,
+    description: reason,
+    metadata,
+  })
+}
+
+/**
+ * Server Action guard. Page/layout checks are useful for UX, but every
+ * mutation needs its own authz because Server Actions can be invoked directly.
+ */
+export async function requireOrgActionContext({
+  action,
+  entityType = AuditEntityType.SECURITY,
+  entityId,
+  adminOnly = true,
+}: {
+  action: string
+  entityType?: AuditEntityType
+  entityId?: string | null
+  adminOnly?: boolean
+}) {
+  const session = await auth.api.getSession({ headers: await headers() })
+
+  if (!session?.user?.id) {
+    await auditActionAuthorizationFailure({
+      action,
+      entityType,
+      entityId,
+      reason: "Unauthenticated Server Action call",
+    })
+    throw new ActionAuthorizationError("Unauthorized")
+  }
+
+  const requestedOrgId = session.session.activeOrganizationId
+  const member = await db.member.findFirst({
+    where: {
+      userId: session.user.id,
+      ...(requestedOrgId ? { organizationId: requestedOrgId } : {}),
+    },
+    include: {
+      organization: true,
+      user: true,
+    },
+  })
+
+  if (!member || !member.user.isActive || !member.organization.isActive) {
+    await auditActionAuthorizationFailure({
+      userId: session.user.id,
+      organizationId: requestedOrgId,
+      action,
+      entityType,
+      entityId,
+      reason: "User does not belong to the requested active organization",
+      metadata: { requestedOrgId },
+    })
+    throw new ActionAuthorizationError("Forbidden")
+  }
+
+  const role = member.role as UserRole
+  const isOwner = member.organization.ownerId === session.user.id
+  const isOrgAdmin = isOwner || ORG_ADMIN_ROLES.includes(role)
+
+  if (adminOnly && !isOrgAdmin) {
+    await auditActionAuthorizationFailure({
+      userId: session.user.id,
+      organizationId: member.organizationId,
+      action,
+      entityType,
+      entityId,
+      reason: "User lacks organization admin access",
+      metadata: { role },
+    })
+    throw new ActionAuthorizationError("Forbidden: Requires organization admin access")
+  }
+
+  return {
+    session,
+    userId: session.user.id,
+    userEmail: session.user.email,
+    userName: session.user.name,
+    organizationId: member.organizationId,
+    organization: member.organization,
+    member,
+    isOwner,
+    isOrgAdmin,
+  }
 }

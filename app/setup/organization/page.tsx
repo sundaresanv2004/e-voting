@@ -108,7 +108,7 @@ function CreateOrganizationForm() {
                                         <SelectGroup>
                                             <SelectLabel>Organization Type</SelectLabel>
                                             <SelectItem value="SCHOOL">School</SelectItem>
-                                            <SelectItem value="COLLEGE">College</SelectItem>
+                                            <SelectItem value="COLLEGE">College/University</SelectItem>
                                             <SelectItem value="OTHER">Other</SelectItem>
                                         </SelectGroup>
                                     </SelectContent>
@@ -139,9 +139,9 @@ function CreateOrganizationForm() {
                     </Field>
                 </FieldGroup>
 
-                <Button 
-                    type="submit" 
-                    className="w-full gap-2 mt-6 mb-4" 
+                <Button
+                    type="submit"
+                    className="w-full gap-2 mt-6 mb-4"
                     disabled={isSubmitting || isUploadingLogo}
                 >
                     {isUploadingLogo ? (

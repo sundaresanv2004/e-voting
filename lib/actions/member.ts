@@ -6,25 +6,24 @@ import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { AuditEntityType, AuditStatus } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
+import { requireOrgActionContext } from "@/lib/auth/access"
+import {
+  AddMemberSearchSchema,
+  MemberMutationSchema,
+  RemoveMemberSchema,
+} from "@/lib/schemas/member"
 
 /**
  * Gets all members for the active organization, including their custom user fields
  * like electionAccess and hasAllElectionsAccess.
  */
 export async function getOrganizationMembers() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: session.user.id } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization" }
-  }
-
   try {
+    const { organizationId: orgId } = await requireOrgActionContext({
+      action: "MEMBERS_LISTED",
+      entityType: AuditEntityType.MEMBER,
+    })
+
     const members = await db.member.findMany({
       where: { organizationId: orgId },
       include: {
@@ -61,19 +60,17 @@ export async function getOrganizationMembers() {
  * Identifies if they are available, already in this org, or in another org.
  */
 export async function searchPotentialMember(query: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+  const access = await requireOrgActionContext({
+    action: "MEMBER_SEARCHED",
+    entityType: AuditEntityType.MEMBER,
   })
 
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: session.user.id } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization" }
+  const parsed = AddMemberSearchSchema.safeParse({ query })
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.flatten().fieldErrors.query?.[0] || "Invalid search term" }
   }
 
-  const normalizedQuery = query.trim()
+  const normalizedQuery = parsed.data.query.trim()
 
   if (!normalizedQuery || normalizedQuery.length < 3) {
     return { success: false, error: "Search term must be at least 3 characters" }
@@ -106,7 +103,7 @@ export async function searchPotentialMember(query: string) {
 
     const results = users.map(user => {
       // Check member records
-      const isAlreadyInThisOrg = user.members.some(m => m.organizationId === orgId)
+      const isAlreadyInThisOrg = user.members.some(m => m.organizationId === access.organizationId)
       const isAlreadyInAnotherOrg = user.members.length > 0 && !isAlreadyInThisOrg
       
       return {
@@ -138,23 +135,26 @@ export async function addMemberAction(
   hasAllAccess: boolean,
   electionIds: string[]
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const adminId = session.user.id
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: adminId } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization" }
-  }
-
+  let adminId: string | null = null
+  let orgId: string | null = null
   try {
+    const parsed = MemberMutationSchema.safeParse({ userId, role, hasAllAccess, electionIds })
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors.electionIds?.[0] || "Invalid member access details" }
+    }
+
+    const access = await requireOrgActionContext({
+      action: "MEMBER_ADDED",
+      entityType: AuditEntityType.MEMBER,
+      entityId: userId,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+
+    const values = parsed.data
     // 1. Verify target user
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { id: values.userId },
       include: { members: true }
     })
     
@@ -167,24 +167,21 @@ export async function addMemberAction(
     if (isAlreadyInThisOrg) return { success: false, error: "User is already in this organization" }
     if (isAlreadyInAnotherOrg) return { success: false, error: "This user belongs to a different org. They need to leave it to join yours." }
 
-    // Map custom roles to Better Auth organization roles (admin vs member)
-    const betterAuthRole = role === "org_admin" ? "admin" : "member"
-
     // Add to Better Auth Member table natively
     await auth.api.addMember({
       headers: await headers(), // Ensure we use auth headers
       body: {
-        userId,
+        userId: values.userId,
         organizationId: orgId,
-        role: betterAuthRole,
+        role: values.role as any,
       }
     })
 
     // Prepare valid election IDs
     let validElectionIds: string[] = []
-    if (!hasAllAccess && electionIds.length > 0) {
+    if (!values.hasAllAccess && values.electionIds.length > 0) {
       const validElections = await db.election.findMany({
-        where: { id: { in: electionIds }, organizationId: orgId },
+        where: { id: { in: values.electionIds }, organizationId: orgId, deletedAt: null },
         select: { id: true }
       })
       validElectionIds = validElections.map(e => e.id)
@@ -194,18 +191,18 @@ export async function addMemberAction(
     await db.$transaction(async (tx) => {
       // Update User table with custom role
       await tx.user.update({
-        where: { id: userId },
+        where: { id: values.userId },
         data: {
-          role: role as any, // "org_admin" | "staff" | "viewer" are part of Prisma UserRole enum
-          hasAllElectionsAccess: hasAllAccess
+          role: values.role,
+          hasAllElectionsAccess: values.hasAllAccess
         }
       })
 
       // Add granular election access if not full access
-      if (!hasAllAccess && validElectionIds.length > 0) {
+      if (!values.hasAllAccess && validElectionIds.length > 0) {
         await tx.userElectionAccess.createMany({
           data: validElectionIds.map(id => ({
-            userId,
+            userId: values.userId,
             electionId: id,
             createdByUserId: adminId,
             updatedByUserId: adminId
@@ -217,12 +214,12 @@ export async function addMemberAction(
       await logAdminAction({
         action: "MEMBER_ADDED",
         entityType: AuditEntityType.USER,
-        entityId: userId,
+        entityId: values.userId,
         adminId,
         organizationId: orgId,
         status: AuditStatus.SUCCESS,
         tx,
-        metadata: { role, hasAllAccess, electionIds: validElectionIds }
+        metadata: { role: values.role, hasAllAccess: values.hasAllAccess, electionIds: validElectionIds }
       })
     })
 
@@ -254,44 +251,45 @@ export async function updateMemberAccess(
   hasAllAccess: boolean,
   electionIds: string[]
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const adminId = session.user.id
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: adminId } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization" }
-  }
-
+  let adminId: string | null = null
+  let orgId: string | null = null
   try {
+    const parsed = MemberMutationSchema.safeParse({ userId, role, hasAllAccess, electionIds })
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors.electionIds?.[0] || "Invalid member access details" }
+    }
+
+    const access = await requireOrgActionContext({
+      action: "MEMBER_ACCESS_UPDATED",
+      entityType: AuditEntityType.MEMBER,
+      entityId: userId,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const values = parsed.data
+
     const targetMember = await db.member.findFirst({
-      where: { userId, organizationId: orgId }
+      where: { userId: values.userId, organizationId: orgId }
     })
 
     if (!targetMember) return { success: false, error: "Member not found in organization" }
 
-    // Map to Better Auth role
-    const betterAuthRole = role === "org_admin" ? "admin" : "member"
-    if (targetMember.role !== betterAuthRole) {
+    if (targetMember.role !== values.role) {
       await auth.api.updateMemberRole({
         headers: await headers(),
         body: {
           memberId: targetMember.id,
           organizationId: orgId,
-          role: betterAuthRole
+          role: values.role as any
         }
       })
     }
 
     // Verify electionIds belong to this org
     let validElectionIds: string[] = []
-    if (!hasAllAccess && electionIds.length > 0) {
+    if (!values.hasAllAccess && values.electionIds.length > 0) {
       const validElections = await db.election.findMany({
-        where: { id: { in: electionIds }, organizationId: orgId },
+        where: { id: { in: values.electionIds }, organizationId: orgId, deletedAt: null },
         select: { id: true }
       })
       validElectionIds = validElections.map(e => e.id)
@@ -300,23 +298,23 @@ export async function updateMemberAccess(
     await db.$transaction(async (tx) => {
       // Update custom User role & global access flag
       await tx.user.update({
-        where: { id: userId },
+        where: { id: values.userId },
         data: { 
-          role: role as any,
-          hasAllElectionsAccess: hasAllAccess 
+          role: values.role,
+          hasAllElectionsAccess: values.hasAllAccess 
         }
       })
 
       // Clear existing access
       await tx.userElectionAccess.deleteMany({
-        where: { userId }
+        where: { userId: values.userId }
       })
 
       // Add granular access if not full access
-      if (!hasAllAccess && validElectionIds.length > 0) {
+      if (!values.hasAllAccess && validElectionIds.length > 0) {
         await tx.userElectionAccess.createMany({
           data: validElectionIds.map(electionId => ({
-            userId,
+            userId: values.userId,
             electionId,
             createdByUserId: adminId,
             updatedByUserId: adminId
@@ -328,12 +326,12 @@ export async function updateMemberAccess(
       await logAdminAction({
         action: "MEMBER_ACCESS_UPDATED",
         entityType: AuditEntityType.USER,
-        entityId: userId,
+        entityId: values.userId,
         adminId,
         organizationId: orgId,
         status: AuditStatus.SUCCESS,
         tx,
-        metadata: { role, hasAllAccess, electionIds: validElectionIds }
+        metadata: { role: values.role, hasAllAccess: values.hasAllAccess, electionIds: validElectionIds }
       })
     })
 
@@ -360,21 +358,14 @@ export async function updateMemberAccess(
  * Gets elections for the active organization to populate the multi-select dropdown.
  */
 export async function getElectionsForAssignment() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized", elections: [] }
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: session.user.id } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization", elections: [] }
-  }
-
   try {
+    const { organizationId: orgId } = await requireOrgActionContext({
+      action: "ELECTION_ASSIGNMENT_OPTIONS_LISTED",
+      entityType: AuditEntityType.ELECTION,
+    })
+
     const elections = await db.election.findMany({
-      where: { organizationId: orgId },
+      where: { organizationId: orgId, deletedAt: null },
       select: {
         id: true,
         name: true,
@@ -393,22 +384,22 @@ export async function getElectionsForAssignment() {
  * Removes a member from the organization and cleans up their custom roles and election access.
  */
 export async function removeMemberAction(userId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const adminId = session.user.id
-  let orgId = session.session.activeOrganizationId
-  if (!orgId) {
-    const member = await db.member.findFirst({ where: { userId: adminId } })
-    if (member) orgId = member.organizationId
-    else return { success: false, error: "No active organization" }
-  }
-
+  let adminId: string | null = null
+  let orgId: string | null = null
   try {
+    const parsed = RemoveMemberSchema.safeParse({ userId })
+    if (!parsed.success) return { success: false, error: "Invalid member" }
+
+    const access = await requireOrgActionContext({
+      action: "MEMBER_REMOVED",
+      entityType: AuditEntityType.MEMBER,
+      entityId: userId,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+
     const targetMember = await db.member.findFirst({
-      where: { userId, organizationId: orgId }
+      where: { userId: parsed.data.userId, organizationId: orgId }
     })
 
     if (!targetMember) return { success: false, error: "Member not found in organization" }
@@ -426,7 +417,7 @@ export async function removeMemberAction(userId: string) {
     await db.$transaction(async (tx) => {
       // Clear their custom role and full access flag globally
       await tx.user.update({
-        where: { id: userId },
+        where: { id: parsed.data.userId },
         data: {
           role: "user",
           hasAllElectionsAccess: false
@@ -435,14 +426,14 @@ export async function removeMemberAction(userId: string) {
 
       // Delete all granular election access for this user
       await tx.userElectionAccess.deleteMany({
-        where: { userId }
+        where: { userId: parsed.data.userId }
       })
 
       // Log the removal
       await logAdminAction({
         action: "MEMBER_REMOVED",
         entityType: AuditEntityType.USER,
-        entityId: userId,
+        entityId: parsed.data.userId,
         adminId,
         organizationId: orgId,
         status: AuditStatus.SUCCESS,
@@ -469,4 +460,3 @@ export async function removeMemberAction(userId: string) {
     return { success: false, error: error.message || "Failed to remove member" }
   }
 }
-

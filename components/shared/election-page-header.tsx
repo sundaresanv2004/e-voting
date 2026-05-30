@@ -1,13 +1,12 @@
 import Link from "next/link"
 import { format } from "date-fns"
 import { notFound } from "next/navigation"
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { headers } from "next/headers"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Calendar01Icon, Settings02Icon } from "@hugeicons/core-free-icons"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { requireOrgMember } from "@/lib/auth/access"
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
@@ -32,11 +31,10 @@ export async function ElectionPageHeader({
   icon: Icon,
   actions 
 }: ElectionPageHeaderProps) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  const orgId = session?.session.activeOrganizationId
+  const { member } = await requireOrgMember()
 
-  const election = await db.election.findUnique({
-    where: { id: electionId, organizationId: orgId ?? undefined },
+  const election = await db.election.findFirst({
+    where: { id: electionId, organizationId: member.organizationId, deletedAt: null },
     select: {
       id: true,
       name: true,

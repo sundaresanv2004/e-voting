@@ -6,45 +6,42 @@ import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { AuditEntityType, AuditStatus, OrganizationType } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
-
-async function getActiveOrgId(session: any) {
-  if (session?.session?.activeOrganizationId) return session.session.activeOrganizationId;
-  if (!session?.user?.id) return null;
-  const member = await db.member.findFirst({ where: { userId: session.user.id } });
-  return member?.organizationId || null;
-}
+import { requireOrgActionContext } from "@/lib/auth/access"
+import { OrganizationSchema, OrganizationSettingsSchema } from "@/lib/schemas/org"
 /**
  * Gets the current active organization data
  */
 export async function getOrganizationData() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
+  try {
+    const { userId, organizationId: orgId } = await requireOrgActionContext({
+      action: "ORGANIZATION_DATA_VIEWED",
+      entityType: AuditEntityType.ORGANIZATION,
+    })
 
-  if (!session?.user) return null
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return null
-
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-    include: {
-      settings: true
-    }
-  })
-
-  // If settings don't exist for some reason, create them
-  if (organization && !organization.settings) {
-    const settings = await db.organizationSettings.create({
-      data: {
-        organizationId: orgId,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      include: {
+        settings: true
       }
     })
-    organization.settings = settings
-  }
 
-  return organization
+    // If settings don't exist for some reason, create them
+    if (organization && !organization.settings) {
+      const settings = await db.organizationSettings.create({
+        data: {
+          organizationId: orgId,
+          createdByUserId: userId,
+          updatedByUserId: userId
+        }
+      })
+      organization.settings = settings
+    }
+
+    return organization
+  } catch (error) {
+    console.error("[GET_ORGANIZATION_DATA]", error)
+    return null
+  }
 }
 
 /**
@@ -55,29 +52,36 @@ export async function updateOrganizationProfile(
   type: OrganizationType,
   logo?: string
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false, error: "No active organization" }
-
-  const adminId = session.user.id
+  let adminId: string | null = null
+  let orgId: string | null = null
 
   try {
-    const result = await db.$transaction(async (tx) => {
+    const parsed = OrganizationSchema.safeParse({ name, type, logo: logo ?? "" })
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors.name?.[0] || "Invalid organization profile" }
+    }
+
+    const access = await requireOrgActionContext({
+      action: "ORGANIZATION_UPDATED",
+      entityType: AuditEntityType.ORGANIZATION,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const organizationId = access.organizationId
+    const values = parsed.data
+
+    await db.$transaction(async (tx) => {
       const oldOrg = await tx.organization.findUnique({
-        where: { id: orgId },
+        where: { id: organizationId },
         select: { name: true, type: true, logo: true }
       })
 
       const organization = await tx.organization.update({
-        where: { id: orgId },
+        where: { id: organizationId },
         data: {
-          name,
-          type,
-          logo: logo || null,
+          name: values.name,
+          type: values.type,
+          logo: values.logo || null,
           updatedByUserId: adminId
         }
       })
@@ -86,14 +90,14 @@ export async function updateOrganizationProfile(
       await logAdminAction({
         action: "ORGANIZATION_UPDATED",
         entityType: AuditEntityType.ORGANIZATION,
-        entityId: orgId,
+        entityId: organizationId,
         adminId: adminId,
-        organizationId: orgId,
+        organizationId,
         status: AuditStatus.SUCCESS,
         tx,
         metadata: { 
           before: oldOrg, 
-          after: { name, type, logo } 
+          after: { name: values.name, type: values.type, logo: values.logo || null } 
         }
       })
 
@@ -123,16 +127,12 @@ export async function updateOrganizationProfile(
  * Gets members of the organization to populate the Transfer Ownership dropdown
  */
 export async function getOrganizationMembersAction() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false, error: "No active organization" }
-  const userId = session.user.id
-
   try {
+    const { userId, organizationId: orgId } = await requireOrgActionContext({
+      action: "OWNERSHIP_TRANSFER_MEMBERS_LISTED",
+      entityType: AuditEntityType.MEMBER,
+    })
+
     // Fetch all members of the organization except the current user
     const members = await db.member.findMany({
       where: {
@@ -170,19 +170,21 @@ export async function getOrganizationMembersAction() {
  * Transfers ownership of the organization to a different member.
  */
 export async function transferOwnershipAction(newOwnerMemberId: string, newOwnerUserId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const currentUserId = session.user.id
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false, error: "No active organization" }
+  let currentUserId: string | null = null
+  let orgId: string | null = null
 
   try {
+    const access = await requireOrgActionContext({
+      action: "OWNERSHIP_TRANSFERRED",
+      entityType: AuditEntityType.ORGANIZATION,
+    })
+    currentUserId = access.userId
+    orgId = access.organizationId
+    const organizationId = access.organizationId
+
     // 1. Verify current user is the owner
     const organization = await db.organization.findUnique({
-      where: { id: orgId },
+      where: { id: organizationId },
       select: { ownerId: true, name: true }
     })
 
@@ -190,6 +192,18 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
 
     if (organization.ownerId !== currentUserId) {
       return { success: false, error: "Only the organization owner can transfer ownership." }
+    }
+
+    const newOwnerMember = await db.member.findFirst({
+      where: {
+        id: newOwnerMemberId,
+        userId: newOwnerUserId,
+        organizationId,
+      },
+    })
+
+    if (!newOwnerMember) {
+      return { success: false, error: "New owner must be a member of this organization." }
     }
 
     // 2. Transfer ownership via Better Auth explicitly
@@ -209,7 +223,7 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
     // 3. Update the custom fields via Prisma transaction
     await db.$transaction(async (tx) => {
       await tx.organization.update({
-        where: { id: orgId },
+        where: { id: organizationId },
         data: { ownerId: newOwnerUserId }
       })
 
@@ -225,9 +239,9 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
       await logAdminAction({
         action: "OWNERSHIP_TRANSFERRED",
         entityType: AuditEntityType.ORGANIZATION,
-        entityId: orgId,
+        entityId: organizationId,
         adminId: currentUserId,
-        organizationId: orgId,
+        organizationId,
         status: AuditStatus.SUCCESS,
         tx,
         metadata: { 
@@ -261,27 +275,33 @@ export async function updateOrganizationSettingsAction(data: {
   maxMembers: number
   allowCustomBranding: boolean
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session?.user) return { success: false, error: "Unauthorized" }
-  const adminId = session.user.id
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false, error: "No active organization" }
+  let adminId: string | null = null
+  let orgId: string | null = null
 
   try {
+    const parsed = OrganizationSettingsSchema.safeParse(data)
+    if (!parsed.success) return { success: false, error: "Invalid organization settings" }
+
+    const access = await requireOrgActionContext({
+      action: "ORG_SETTINGS_UPDATED",
+      entityType: AuditEntityType.SETTINGS,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const organizationId = access.organizationId
+    const values = parsed.data
+
     await db.$transaction(async (tx) => {
       const oldSettings = await tx.organizationSettings.findUnique({
-        where: { organizationId: orgId },
+        where: { organizationId },
       })
 
       await tx.organizationSettings.update({
-        where: { organizationId: orgId },
+        where: { organizationId },
         data: {
-          maxElections: data.maxElections,
-          maxMembers: data.maxMembers,
-          allowCustomBranding: data.allowCustomBranding,
+          maxElections: values.maxElections,
+          maxMembers: values.maxMembers,
+          allowCustomBranding: values.allowCustomBranding,
           updatedByUserId: adminId
         }
       })
@@ -289,14 +309,14 @@ export async function updateOrganizationSettingsAction(data: {
       await logAdminAction({
         action: "ORG_SETTINGS_UPDATED",
         entityType: AuditEntityType.ORGANIZATION,
-        entityId: orgId,
+        entityId: organizationId,
         adminId: adminId,
-        organizationId: orgId,
+        organizationId,
         status: AuditStatus.SUCCESS,
         tx,
         metadata: { 
           before: oldSettings, 
-          after: data 
+          after: values 
         }
       })
     })
@@ -321,20 +341,17 @@ export async function updateOrganizationSettingsAction(data: {
 }
 
 export async function logOrgCodeRevealed() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-  if (!session?.user) return { success: false }
-  
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false }
-
   try {
+    const { userId, organizationId: orgId } = await requireOrgActionContext({
+      action: "ORG_CODE_REVEALED",
+      entityType: AuditEntityType.SECURITY,
+    })
+
     await logAdminAction({
       action: "ORG_CODE_REVEALED",
       entityType: AuditEntityType.SECURITY,
       entityId: orgId,
-      adminId: session.user.id,
+      adminId: userId,
       organizationId: orgId,
       status: AuditStatus.SUCCESS,
       metadata: { source: "settings_page" },
@@ -347,20 +364,17 @@ export async function logOrgCodeRevealed() {
 }
 
 export async function logOrgCodeCopied() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-  if (!session?.user) return { success: false }
-  
-  const orgId = await getActiveOrgId(session)
-  if (!orgId) return { success: false }
-
   try {
+    const { userId, organizationId: orgId } = await requireOrgActionContext({
+      action: "ORG_CODE_COPIED",
+      entityType: AuditEntityType.SECURITY,
+    })
+
     await logAdminAction({
       action: "ORG_CODE_COPIED",
       entityType: AuditEntityType.SECURITY,
       entityId: orgId,
-      adminId: session.user.id,
+      adminId: userId,
       organizationId: orgId,
       status: AuditStatus.SUCCESS,
       metadata: { source: "settings_page" },

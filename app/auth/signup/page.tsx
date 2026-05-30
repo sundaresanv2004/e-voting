@@ -20,7 +20,6 @@ import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 import { signUp } from "@/lib/auth-client"
 import { toast } from "sonner"
-import { checkEmailExists } from "./actions"
 
 import { signupSchema } from "@/lib/schemas/auth"
 
@@ -50,22 +49,6 @@ function SignupForm() {
         setIsSubmitting(true)
         setErrorMsg("")
         
-        // Check if email already exists before attempting sign up
-        const emailExists = await checkEmailExists(values.email)
-        
-        if (emailExists) {
-            setIsSubmitting(false)
-            setErrorMsg(
-                <>
-                    An account already exists with this email.{" "}
-                    <Link href="/auth/login" className="font-medium underline hover:text-foreground">
-                        Login
-                    </Link>
-                </>
-            )
-            return
-        }
-        
         const { data, error } = await signUp.email({
             name: values.name,
             email: values.email,
@@ -76,12 +59,12 @@ function SignupForm() {
         if (error) {
             setErrorMsg(error.message === "USER_ALREADY_EXISTS" ? (
                 <>
-                    An account already exists with this email.{" "}
+                    If an account already exists, please continue from login.{" "}
                     <Link href="/auth/login" className="font-medium underline hover:text-foreground">
                         Login
                     </Link>
                 </>
-            ) : (error.message || "An account already exists with this email."))
+            ) : (error.message || "We could not complete signup. Please try again."))
         } else {
             // Manually send verification OTP for both new users and existing unverified users
             const { authClient } = await import("@/lib/auth-client")

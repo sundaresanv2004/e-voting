@@ -1,23 +1,22 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { ElectionStatus, AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
+import { ElectionStatus, AuditEntityType, AuditStatus } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
-import { cookies, headers } from "next/headers"
+import { cookies } from "next/headers"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
+import { randomBytes } from "crypto"
+import { requireOrgActionContext } from "@/lib/auth/access"
 
 function generateCode(orgName: string = "EV") {
   const sanitized = orgName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
   const prefix = sanitized.length >= 3 ? sanitized.substring(0, 4) : "EV"
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let result = ''
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
+  const bytes = randomBytes(6)
+  const result = Array.from(bytes, (byte) => chars[byte % chars.length]).join("")
   return `${prefix}-${result}`
 }
 
@@ -37,45 +36,6 @@ function assertValidTransition(current: ElectionStatus, next: ElectionStatus) {
   }
 }
 
-// C5: Throws if the election is locked for candidate modification
-async function assertElectionEditable(electionId: string, organizationId: string) {
-  const election = await db.election.findFirst({
-    where: { id: electionId, organizationId, deletedAt: null },
-    select: { status: true },
-  })
-  if (!election) throw new Error("Election not found")
-  if (election.status === ElectionStatus.ACTIVE || election.status === ElectionStatus.COMPLETED) {
-    throw new Error("Cannot modify candidates in an active or completed election")
-  }
-}
-
-async function requireOrgAdmin() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
-
-  if (!session?.user) {
-    throw new Error("Unauthorized")
-  }
-
-  const member = await db.member.findFirst({
-    where: { userId: session.user.id },
-    include: { organization: true, user: true }
-  })
-
-  if (!member || (member.organization.ownerId !== session.user.id && member.user.role !== "org_admin")) {
-    throw new Error("Forbidden: Requires organization admin access")
-  }
-
-  return {
-    userId: session.user.id,
-    userEmail: session.user.email,
-    userName: session.user.name,
-    organizationId: member.organizationId,
-    organization: member.organization
-  }
-}
-
 export async function createElection(formData: {
   name: string
   startTime: Date
@@ -84,7 +44,10 @@ export async function createElection(formData: {
   let adminId = "";
   let orgId = "";
   try {
-    const access = await requireOrgAdmin()
+    const access = await requireOrgActionContext({
+      action: "ELECTION_CREATED",
+      entityType: AuditEntityType.ELECTION,
+    })
     adminId = access.userId;
     orgId = access.organizationId;
     const { userId, organizationId, organization } = access
@@ -106,7 +69,7 @@ export async function createElection(formData: {
     const maxElections = orgSettings?.maxElections ?? 5
 
     const currentElectionsCount = await db.election.count({
-      where: { organizationId }
+      where: { organizationId, deletedAt: null }
     })
 
     if (currentElectionsCount >= maxElections) {
@@ -118,10 +81,22 @@ export async function createElection(formData: {
     }
 
     const result = await db.$transaction(async (tx) => {
+      let code = generateCode(organization.name)
+      let codeAvailable = false
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const existing = await tx.election.findUnique({ where: { code } })
+        if (!existing) {
+          codeAvailable = true
+          break
+        }
+        code = generateCode(organization.name)
+      }
+      if (!codeAvailable) throw new Error("Could not generate a unique election code")
+
       const election = await tx.election.create({
         data: {
           name: name,
-          code: generateCode(organization.name),
+          code,
           startTime: startTime,
           endTime: endTime,
           status: getCalculatedElectionStatus(startTime, endTime),
@@ -135,7 +110,6 @@ export async function createElection(formData: {
         data: {
           electionId: election.id,
           allowOnlineVoting: false,
-          allowOfflineVoting: true,
           authorizeVoters: true,
           showCandidateProfiles: true,
           showCandidateSymbols: true,
@@ -197,7 +171,11 @@ export async function updateElection(
   let adminId = "";
   let orgId = "";
   try {
-    const access = await requireOrgAdmin()
+    const access = await requireOrgActionContext({
+      action: "ELECTION_UPDATED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: id,
+    })
     adminId = access.userId;
     orgId = access.organizationId;
     const { userId, organizationId } = access
@@ -215,7 +193,7 @@ export async function updateElection(
 
     const result = await db.$transaction(async (tx) => {
       const oldElection = await tx.election.findUnique({
-        where: { id, organizationId },
+        where: { id, organizationId, deletedAt: null },
         select: { name: true, startTime: true, endTime: true, status: true },
       })
 
@@ -276,14 +254,18 @@ export async function deleteElection(id: string) {
   let adminId = "";
   let orgId = "";
   try {
-    const access = await requireOrgAdmin()
+    const access = await requireOrgActionContext({
+      action: "ELECTION_DELETED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: id,
+    })
     adminId = access.userId;
     orgId = access.organizationId;
     const { userId, organizationId } = access
 
     await db.$transaction(async (tx) => {
       const election = await tx.election.findUnique({
-        where: { id, organizationId },
+        where: { id, organizationId, deletedAt: null },
         select: { name: true, code: true, status: true }
       })
 
@@ -338,14 +320,18 @@ export async function toggleElectionStatus(id: string) {
   let adminId = "";
   let orgId = "";
   try {
-    const access = await requireOrgAdmin()
+    const access = await requireOrgActionContext({
+      action: "ELECTION_STATUS_TOGGLED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: id,
+    })
     adminId = access.userId;
     orgId = access.organizationId;
     const { userId, organizationId } = access
 
     const result = await db.$transaction(async (tx) => {
       const election = await tx.election.findUnique({
-        where: { id, organizationId },
+        where: { id, organizationId, deletedAt: null },
         select: { status: true, name: true, startTime: true, endTime: true }
       })
 
@@ -415,7 +401,11 @@ export async function toggleElectionStatus(id: string) {
 
 export async function logElectionCodeCopy(electionId: string) {
   try {
-    const access = await requireOrgAdmin()
+    const access = await requireOrgActionContext({
+      action: "ELECTION_CODE_COPIED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+    })
     const { userId, organizationId } = access
 
     await logAdminAction({

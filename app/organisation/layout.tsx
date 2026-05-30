@@ -3,16 +3,15 @@ import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { requireOrgAdmin } from "@/lib/auth/access"
+import { requireOrgMember } from "@/lib/auth/access"
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Only org_admin / admin may enter this layout.
-  // staff and viewer are redirected to /organisation/election.
-  const { member } = await requireOrgAdmin("/organisation/election")
+  // All members may enter this layout. Individual pages enforce requireOrgAdmin where needed.
+  const { member } = await requireOrgMember()
 
   const activeOrgId = member.organizationId
 
@@ -29,7 +28,7 @@ export default async function DashboardLayout({
   }))
 
   // org_admin / admin → show as ORG_ADMIN in sidebar; any other role stays as-is
-  const userRole = "ORG_ADMIN"
+  const userRole = member.role === "org_admin" || member.role === "admin" ? "ORG_ADMIN" : member.role.toUpperCase()
 
   return (
     <SidebarProvider>

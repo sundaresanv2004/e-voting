@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { requireOrgMember, ORG_ADMIN_ROLES } from "@/lib/auth/access"
 import { UserRole } from "@prisma/client"
 
@@ -15,6 +15,16 @@ export default async function ElectionLayout({
 
   const memberRole = member.role as UserRole
   const isAdmin = ORG_ADMIN_ROLES.includes(memberRole)
+  const election = await db.election.findFirst({
+    where: {
+      id: electionId,
+      organizationId: member.organizationId,
+      deletedAt: null,
+    },
+    select: { id: true },
+  })
+
+  if (!election) notFound()
 
   if (!isAdmin) {
     // staff / viewer: verify this user has access to this specific election
@@ -32,8 +42,7 @@ export default async function ElectionLayout({
       : null
 
     if (!hasAccess) {
-      // User is not authorised for this election — send back to a safe page
-      redirect("/organisation/election")
+      redirect("/organisation/election/no-election")
     }
   }
 
@@ -45,4 +54,3 @@ export default async function ElectionLayout({
     </div>
   )
 }
-

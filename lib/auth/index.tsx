@@ -90,6 +90,7 @@ export const auth = betterAuth({
   },
   plugins: [
     organization({
+      creatorRole: "org_admin",
       schema: {
         organization: {
           additionalFields: {

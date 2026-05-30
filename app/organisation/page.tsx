@@ -17,7 +17,7 @@ import { Building06Icon } from "@hugeicons/core-free-icons"
 import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function DashboardPage() {
-    // Layout already verified org_admin / admin access.
+    // Enforce org_admin / admin for the main dashboard page
     const { member } = await requireOrgAdmin()
     const org = member.organization
 

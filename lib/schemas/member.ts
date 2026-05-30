@@ -22,5 +22,14 @@ export const MemberPermissionsSchema = z.object({
   }
 )
 
+export const MemberMutationSchema = MemberPermissionsSchema.extend({
+  userId: z.string().min(1),
+})
+
+export const RemoveMemberSchema = z.object({
+  userId: z.string().min(1),
+}).strict()
+
 export type AddMemberSearchValues = z.infer<typeof AddMemberSearchSchema>
 export type MemberPermissionsValues = z.infer<typeof MemberPermissionsSchema>
+export type MemberMutationValues = z.infer<typeof MemberMutationSchema>

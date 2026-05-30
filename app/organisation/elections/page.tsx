@@ -9,7 +9,7 @@ import { ElectionsDataTable } from "./_components/elections-data-table"
 import { requireOrgAdmin } from "@/lib/auth/access"
 
 export default async function ElectionsPage() {
-  // Layout already enforces org_admin / admin — always isAdmin here
+  // Enforce org_admin / admin for this specific page
   const { member } = await requireOrgAdmin()
 
   // Fetch elections — exclude soft-deleted
