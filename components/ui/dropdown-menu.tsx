@@ -69,6 +69,7 @@ const dropdownMenuItemVariants = cva(
         destructive: "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 *:[svg]:text-destructive",
         warning: "text-amber-600 focus:bg-amber-500/10 focus:text-amber-700 dark:focus:bg-amber-500/20 dark:focus:text-amber-500 *:[svg]:text-amber-600",
         success: "text-emerald-600 focus:bg-emerald-500/10 focus:text-emerald-700 dark:focus:bg-emerald-500/20 dark:focus:text-emerald-500 *:[svg]:text-emerald-600",
+        info: "text-blue-600 focus:bg-blue-500/10 focus:text-blue-700 dark:focus:bg-blue-500/20 dark:focus:text-blue-400 *:[svg]:text-blue-600",
       },
     },
     defaultVariants: {

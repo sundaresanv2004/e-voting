@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation"
 import { requireOrgMember, ORG_ADMIN_ROLES } from "@/lib/auth/access"
 import { UserRole } from "@prisma/client"
 
+import { ElectionTracker } from "@/components/shared/election-tracker"
+
 export default async function ElectionLayout({
   children,
   params,
@@ -42,12 +44,13 @@ export default async function ElectionLayout({
       : null
 
     if (!hasAccess) {
-      redirect("/organisation/election/no-election")
+      redirect("/organisation/election")
     }
   }
 
   return (
     <div className="flex flex-col w-full flex-1">
+      <ElectionTracker electionId={electionId} />
       <main className="flex-1 w-full flex flex-col">
         {children}
       </main>

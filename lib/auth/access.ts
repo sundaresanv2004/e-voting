@@ -54,7 +54,7 @@ export async function requireOrgMember() {
  * staff / viewer users are redirected to the first election they have
  * access to, or to a 403-style page if they have none.
  */
-export async function requireOrgAdmin(fallbackPath = "/organisation/election/no-election") {
+export async function requireOrgAdmin(fallbackPath = "/organisation/election") {
   const { session, freshUser, member } = await requireOrgMember()
 
   const memberRole = member.role as UserRole

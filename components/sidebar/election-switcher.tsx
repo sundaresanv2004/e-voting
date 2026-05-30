@@ -26,13 +26,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { UnfoldMoreIcon, PlusSignIcon, Archive01Icon } from "@hugeicons/core-free-icons"
+import { UnfoldMoreIcon, PlusSignIcon, Archive01Icon, CheckmarkBadge01Icon } from "@hugeicons/core-free-icons"
 
 const ELECTION_COOKIE_KEY = "last_election_id"
 
 export function ElectionSwitcher({
   elections,
   userRole,
+  activeElectionId,
 }: {
   elections: {
     id: string
@@ -41,25 +42,13 @@ export function ElectionSwitcher({
     plan: string
   }[]
   userRole?: string
+  activeElectionId?: string
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const params = useParams()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Find the active election based on URL, then Cookie, then latest
-  const urlElectionId = params.electionId as string
-  const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
-
-  const isValidId = (id: string | undefined) => id && id !== "undefined" && id !== ""
 
   const activeElection =
-    (isValidId(urlElectionId) ? elections.find(e => e.id === urlElectionId) : null) ??
-    (isValidId(cookieElectionId) ? elections.find(e => e.id === cookieElectionId) : null) ??
+    (activeElectionId ? elections.find(e => e.id === activeElectionId) : null) ??
     elections[0]
 
   // Persist discovery
@@ -124,52 +113,48 @@ export function ElectionSwitcher({
               side={isMobile ? "bottom" : "right"}
               sideOffset={4}
             >
-              <DropdownMenuLabel className="text-xs text-muted-foreground tracking-wider px-2 py-1.5">
-                Available Elections
+              <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
+                Elections
               </DropdownMenuLabel>
               {elections.length === 0 && (
-                <div className="px-2 py-4 text-center text-sm text-muted-foreground italic">
+                <div className="px-3 py-4 text-center text-sm text-muted-foreground italic">
                   No elections found
                 </div>
               )}
-              {elections.map((election, index) => (
-                <DropdownMenuItem
-                  key={election.id}
-                  onClick={() => onSelect(election.id)}
-                  className="gap-2 p-2 focus:bg-sidebar-accent transition-colors"
-                >
-                  <div className="flex size-6 items-center justify-center rounded border bg-background group-hover:border-primary/50">
-                    {election.logo}
-                  </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="flex-1 truncate font-medium">
+              {elections.map((election) => {
+                const isActive = activeElection?.id === election.id
+                return (
+                  <DropdownMenuItem
+                    key={election.id}
+                    onClick={() => onSelect(election.id)}
+                    className={isActive ? "text-primary" : ""}
+                  >
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-lg border bg-background">
+                      {election.logo}
+                    </div>
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                      <span className="truncate font-medium">
                         {election.name}
                       </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-[10px] font-bold uppercase tracking-widest z-50">
-                      {election.name}
-                    </TooltipContent>
-                  </Tooltip>
-                </DropdownMenuItem>
-              ))}
+                      <span className="truncate text-xs text-muted-foreground font-normal capitalize">
+                        {election.plan?.toLowerCase() || "active"}
+                      </span>
+                    </div>
+                    {isActive && (
+                      <HugeiconsIcon icon={CheckmarkBadge01Icon} className="ml-auto size-4 text-primary shrink-0" strokeWidth={2} />
+                    )}
+                  </DropdownMenuItem>
+                )
+              })}
               {userRole === "ORG_ADMIN" && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="w-full justify-start gap-2 text-primary hover:cursor-pointer focus:text-primary transition-colors data-[state=collapsed]:justify-center"
-                    onClick={() =>
-                      router.push("/organisation/elections?new=true")
-                    }
+                    variant="info"
+                    onClick={() => router.push("/organisation/elections?new=true")}
                   >
-                    <div className="flex size-6 items-center justify-center rounded-md border border-primary/20 bg-primary/5 shadow-xs">
-                      <HugeiconsIcon
-                        icon={PlusSignIcon}
-                        strokeWidth={2.5}
-                        className="size-3.5"
-                      />
-                    </div>
-                    <div className="flex-1">Create Election</div>
+                    <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2.5} className="size-3.5" />
+                    Create Election
                   </DropdownMenuItem>
                 </>
               )}

@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { requireOrgMember } from "@/lib/auth/access"
+import { cookies } from "next/headers"
 
 export default async function DashboardLayout({
   children,
@@ -27,12 +28,15 @@ export default async function DashboardLayout({
     code: election.code,
   }))
 
+  const cookieStore = await cookies()
+  const defaultElectionId = cookieStore.get("last_election_id")?.value
+
   // org_admin / admin → show as ORG_ADMIN in sidebar; any other role stays as-is
   const userRole = member.role === "org_admin" || member.role === "admin" ? "ORG_ADMIN" : member.role.toUpperCase()
 
   return (
     <SidebarProvider>
-      <AppSidebar elections={formattedElections} userRole={userRole} />
+      <AppSidebar elections={formattedElections} userRole={userRole} defaultElectionId={defaultElectionId} />
       <SidebarInset>
         <DashboardHeader />
         <div className="flex flex-1 flex-col">

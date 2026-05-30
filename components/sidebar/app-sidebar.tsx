@@ -32,6 +32,7 @@ const ELECTION_COOKIE_KEY = "last_election_id"
 export function AppSidebar({
   elections: _elections,
   userRole,
+  defaultElectionId,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   elections: {
@@ -41,6 +42,7 @@ export function AppSidebar({
     code: string
   }[]
   userRole: string
+  defaultElectionId?: string
 }) {
   const params = useParams()
   const router = useRouter()
@@ -50,7 +52,7 @@ export function AppSidebar({
     setMounted(true)
   }, [])
 
-  // 1. Determine active election ID from URL, then Cookie, then latest fetch
+  // 1. Determine active election ID from URL, then Client Cookie, then Server Cookie, then latest fetch
   const urlElectionId = params.electionId as string
   const cookieElectionId = mounted ? Cookies.get(ELECTION_COOKIE_KEY) : undefined
 
@@ -60,7 +62,8 @@ export function AppSidebar({
   const activeElectionId =
     isValidId(urlElectionId) ? urlElectionId :
       isValidId(cookieElectionId) ? cookieElectionId :
-        _elections[0]?.id
+        isValidId(defaultElectionId) ? defaultElectionId :
+          _elections[0]?.id
 
   // 2. Format elections for switcher
   const elections = _elections.map((election) => ({
@@ -156,7 +159,7 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
-        <ElectionSwitcher elections={elections} userRole={userRole} />
+        <ElectionSwitcher elections={elections} userRole={userRole} activeElectionId={activeElectionId} />
       </SidebarHeader>
       <SidebarContent>
         <NavElection
