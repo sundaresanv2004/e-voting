@@ -86,6 +86,25 @@ export const auth = betterAuth({
           return { data: user };
         }
       }
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          // Automatically restore activeOrganizationId if the user belongs to an org
+          // This fixes issues where active org is lost after logout/login
+          if (!session.activeOrganizationId && session.userId) {
+            const member = await db.member.findFirst({
+              where: { userId: session.userId }
+            });
+            if (member) {
+              await db.session.update({
+                where: { id: session.id },
+                data: { activeOrganizationId: member.organizationId }
+              });
+            }
+          }
+        }
+      }
     }
   },
   plugins: [

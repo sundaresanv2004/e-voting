@@ -21,9 +21,10 @@ interface DateTimePickerProps {
   label?: string
   id?: string
   minDate?: Date
+  disabled?: boolean
 }
 
-export function DateTimePicker({ date, onChange, label, minDate }: DateTimePickerProps) {
+export function DateTimePicker({ date, onChange, label, minDate, disabled }: DateTimePickerProps) {
   const selectedDate = date || new Date()
 
   const handleDateChange = (newDate: Date | undefined) => {
@@ -61,6 +62,7 @@ export function DateTimePicker({ date, onChange, label, minDate }: DateTimePicke
                 "flex-1 justify-start text-left font-normal",
                 !date && "text-muted-foreground"
               )}
+              disabled={disabled}
             >
               <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2} className="mr-1 h-4 w-4" />
               {date ? format(date, "MMMM do, yyyy") : "Select date"}
@@ -86,6 +88,7 @@ export function DateTimePicker({ date, onChange, label, minDate }: DateTimePicke
             <Button
               variant="outline"
               className="w-[120px] justify-between font-normal px-3"
+              disabled={disabled}
             >
               {format(selectedDate, "hh:mm a")}
               <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="h-4 w-4 opacity-50" />

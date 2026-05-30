@@ -202,8 +202,11 @@ model ElectionSettings {
   showCandidateSymbols  Boolean  @default(true)
   shuffleCandidates     Boolean  @default(true)
   allowMultipleVotes    Boolean  @default(false)
-  allowAnonymousVoting  Boolean  @default(false)
   allowNota             Boolean  @default(false)
+  showSummary           Boolean  @default(true)
+  inOrgElection         Boolean  @default(false)
+  lockResult            Boolean  @default(false)
+  assignVoterToSystem   Boolean  @default(false)
   maxVotesPerUser       Int      @default(1)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

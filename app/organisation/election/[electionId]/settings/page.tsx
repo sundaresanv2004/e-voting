@@ -1,6 +1,10 @@
-import { Suspense } from "react"
 import { ElectionPageHeader } from "@/components/shared/election-page-header"
 import { Settings02Icon } from "@hugeicons/core-free-icons"
+import { db } from "@/lib/db"
+import { notFound } from "next/navigation"
+import { requireOrgMember } from "@/lib/auth/access"
+import { ElectionSettingsContainer } from "./_components/election-settings-container"
+import { UserRole } from "@prisma/client"
 
 export default async function ElectionSettingsPage({
   params,
@@ -8,19 +12,31 @@ export default async function ElectionSettingsPage({
   params: Promise<{ electionId: string }>
 }) {
   const { electionId } = await params
-  
+  const { member } = await requireOrgMember()
+
+  const election = await db.election.findFirst({
+    where: {
+      id: electionId,
+      organizationId: member.organizationId,
+      deletedAt: null,
+    },
+    include: {
+      settings: true,
+    }
+  })
+
+  if (!election) notFound()
+
   return (
     <div className="flex flex-col flex-1 w-full">
-      <Suspense fallback={<div className="h-40 border-b bg-background/50 animate-pulse" />}>
-        <ElectionPageHeader 
-          electionId={electionId} 
-          title="Settings" 
-          description="Configure election settings"
-          icon={Settings02Icon} 
-        />
-      </Suspense>
+      <ElectionPageHeader 
+        electionId={electionId} 
+        title="Settings" 
+        description="Configure election settings"
+        icon={Settings02Icon} 
+      />
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
-        <p className="text-muted-foreground">Election settings coming soon&hellip;</p>
+        <ElectionSettingsContainer election={election} role={member.role as UserRole} />
       </div>
     </div>
   )
