@@ -231,6 +231,7 @@ model ElectionCategory {
   election  Election       @relation(fields: [electionId], references: [id], onDelete: Cascade)
   roles     ElectionRole[] @relation("CategoryRoles")
   ballots   Ballot[]
+  voters    Voter[]
   createdBy User?          @relation("CategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   updatedBy User?          @relation("CategoryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
@@ -349,6 +350,7 @@ model UserElectionAccess {
 model Voter {
   id                String    @id @default(cuid())
   electionId        String
+  categoryId        String?
   uniqueId          String
   name              String
   image             String?
@@ -356,7 +358,8 @@ model Voter {
   ballotCount       Int       @default(0)
   lastVotedAt       DateTime?
 
-  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  election Election          @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  category ElectionCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   ballots  Ballot[]
 
   createdAt       DateTime @default(now())
@@ -369,6 +372,7 @@ model Voter {
 
   @@unique([electionId, uniqueId])
   @@index([electionId])
+  @@index([categoryId])
   @@index([createdByUserId])
   @@index([updatedByUserId])
 }
