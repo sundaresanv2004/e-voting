@@ -83,6 +83,12 @@ export function ElectionSettingsContainer({ election, role }: ElectionSettingsCo
             Preferences
           </TabsTrigger>
         )}
+        {!isStaff && (
+          <TabsTrigger value="security">
+            <HugeiconsIcon icon={Settings02Icon} className="size-4 shrink-0" />
+            Security & Access
+          </TabsTrigger>
+        )}
         {isDangerAllowed && (
           <TabsTrigger
             value="danger"
@@ -101,7 +107,13 @@ export function ElectionSettingsContainer({ election, role }: ElectionSettingsCo
 
         {!isStaff && (
           <TabsContent value="preferences" className="space-y-6 mt-0 outline-none">
-            <ElectionPreferencesForm settings={election.settings} canManage={canManage} />
+            <ElectionPreferencesForm settings={election.settings} canManage={canManage} tab="preferences" />
+          </TabsContent>
+        )}
+
+        {!isStaff && (
+          <TabsContent value="security" className="space-y-6 mt-0 outline-none">
+            <ElectionPreferencesForm settings={election.settings} canManage={canManage} tab="security" />
           </TabsContent>
         )}
 

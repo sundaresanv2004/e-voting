@@ -195,8 +195,8 @@ export function RoleDialog({
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="h-[220px] pr-1">
-                  <div className="space-y-2 pb-2">
+                <ScrollArea className="h-[160px]">
+                  <div className="space-y-2 pb-2 mr-3">
                     {allCategories.map((cat) => {
                       const isDefault = cat.code === electionCode
                       const isSelected = selectedCategoryIds?.includes(cat.id) || isDefault
@@ -210,8 +210,8 @@ export function RoleDialog({
                             <label
                               htmlFor={`cat-${cat.id}`}
                               className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
-                                isSelected ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 cursor-pointer"
-                              } ${isDefault ? "opacity-70 cursor-not-allowed" : ""}`}
+                                isDefault ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-muted/50"
+                              } ${isSelected ? "bg-primary/5 border-primary/20" : ""}`}
                             >
                               <Checkbox
                                 id={`cat-${cat.id}`}

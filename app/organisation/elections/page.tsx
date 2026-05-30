@@ -18,10 +18,10 @@ export default async function ElectionsPage() {
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, image: true },
       },
       updatedBy: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, image: true },
       },
     },
   })

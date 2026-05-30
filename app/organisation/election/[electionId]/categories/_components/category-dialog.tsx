@@ -162,8 +162,8 @@ export function CategoryDialog({
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="h-[220px] pr-1">
-                  <div className="space-y-2 pb-2">
+                <ScrollArea className="h-[160px]">
+                  <div className="space-y-2 pb-2 mr-3">
                     {sortedRoles.map((role) => {
                       const isSelected = selectedRoleIds.includes(role.id)
                       return (
@@ -174,9 +174,8 @@ export function CategoryDialog({
                           render={({ field }) => (
                             <label
                               htmlFor={`role-${role.id}`}
-                              className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 ${
-                                isSelected ? "bg-primary/5 border-primary/20" : ""
-                              }`}
+                              className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 ${isSelected ? "bg-primary/5 border-primary/20" : ""
+                                }`}
                             >
                               <Checkbox
                                 id={`role-${role.id}`}
@@ -192,7 +191,7 @@ export function CategoryDialog({
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium leading-tight">{role.name}</p>
                               </div>
-                              <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded shrink-0">
+                              <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded-md shrink-0">
                                 #{role.order}
                               </code>
                             </label>

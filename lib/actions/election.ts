@@ -434,3 +434,49 @@ export async function logElectionCodeCopy(electionId: string) {
     return { success: false }
   }
 }
+
+export async function updateElectionSettings(electionId: string, data: any) {
+  try {
+    const access = await requireOrgActionContext({
+      action: "ELECTION_SETTINGS_UPDATED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+    })
+    
+    const result = await db.electionSettings.update({
+      where: { electionId },
+      data: {
+        allowOnlineVoting: data.allowOnlineVoting,
+        authorizeVoters: data.authorizeVoters,
+        showCandidateProfiles: data.showCandidateProfiles,
+        showCandidateSymbols: data.showCandidateSymbols,
+        shuffleCandidates: data.shuffleCandidates,
+        allowMultipleVotes: data.allowMultipleVotes,
+        allowNota: data.allowNota,
+        showSummary: data.showSummary,
+        inOrgElection: data.inOrgElection,
+        lockResult: data.lockResult,
+        assignVoterToSystem: data.assignVoterToSystem,
+        maxVotesPerUser: data.maxVotesPerUser,
+        updatedByUserId: access.userId
+      }
+    })
+    
+    await logAdminAction({
+      action: "ELECTION_SETTINGS_UPDATED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+      adminId: access.userId,
+      organizationId: access.organizationId,
+      status: AuditStatus.INFO,
+      description: "Updated election settings",
+      metadata: data
+    })
+
+    revalidatePath(`/organisation/election/${electionId}`)
+    return { success: true, settings: result }
+  } catch (error: any) {
+    console.error("[UPDATE_ELECTION_SETTINGS]", error)
+    return { success: false, error: error.message || "Failed to update settings" }
+  }
+}

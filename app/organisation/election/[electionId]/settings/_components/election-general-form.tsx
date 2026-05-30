@@ -35,7 +35,7 @@ import { Field, FieldLabel, FieldError, FieldContent } from "@/components/ui/fie
 import { Badge } from "@/components/ui/badge"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 
-import { updateElection } from "@/lib/actions/election"
+import { updateElection, logElectionCodeCopy } from "@/lib/actions/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { ElectionStatus } from "@prisma/client"
 import { cn } from "@/lib/utils"
@@ -120,6 +120,15 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
     }
   }, [election.startTime, election.endTime, scheduleForm])
 
+  React.useEffect(() => {
+    const subscription = scheduleForm.watch((value, { name, type }) => {
+      if ((type === 'change' || name) && scheduleForm.formState.isDirty) {
+        scheduleForm.handleSubmit(onScheduleSubmit)()
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [scheduleForm.watch, scheduleForm.formState.isDirty])
+
   const onIdentitySubmit = async (data: IdentityFormValues) => {
     setIsIdentityPending(true)
     try {
@@ -131,7 +140,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
       if (!res.success) {
         toast.error(res.error)
       } else {
-        toast.success("Election identity updated successfully")
+        toast.success("Settings updated")
         identityForm.reset(data)
         router.refresh()
       }
@@ -153,7 +162,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
       if (!res.success) {
         toast.error(res.error)
       } else {
-        toast.success("Election schedule updated successfully")
+        toast.success("Settings updated")
         scheduleForm.reset(data)
         router.refresh()
       }
@@ -171,6 +180,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
   const handleCopy = () => {
     navigator.clipboard.writeText(election.code)
     setCopied(true)
+    logElectionCodeCopy(election.id).catch(() => {})
     toast.success("Election code copied to clipboard!")
     setTimeout(() => setCopied(false), 2000)
   }
@@ -210,6 +220,12 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
                       className="w-full"
                       disabled={!canManage || isIdentityPending}
                       {...field}
+                      onBlur={() => {
+                        field.onBlur()
+                        if (identityForm.formState.isDirty) {
+                          identityForm.handleSubmit(onIdentitySubmit)()
+                        }
+                      }}
                     />
                   )}
                 />
@@ -219,14 +235,6 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
               </FieldContent>
             </Field>
           </CardContent>
-
-          {canManage && (
-            <CardFooter className="justify-end">
-              <Button type="submit" disabled={isIdentityPending || !identityForm.formState.isDirty}>
-                {isIdentityPending ? "Saving…" : "Save Changes"}
-              </Button>
-            </CardFooter>
-          )}
         </form>
       </Card>
 
@@ -293,14 +301,6 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
               </FieldContent>
             </Field>
           </CardContent>
-
-          {canManage && (
-            <CardFooter className="justify-end">
-              <Button type="submit" disabled={isSchedulePending || !scheduleForm.formState.isDirty}>
-                {isSchedulePending ? "Saving…" : "Save Changes"}
-              </Button>
-            </CardFooter>
-          )}
         </form>
       </Card>
 

@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { toggleElectionStatus, logElectionCodeCopy } from "@/lib/actions/election"
 import { useRouter } from "next/navigation"
@@ -94,7 +94,7 @@ function CopyButton({ text, electionId }: { text: string, electionId: string }) 
 
 function UserCard({ label, user, date, roleLabel }: {
   label: string
-  user: { name?: string | null; email?: string | null } | null
+  user: { name?: string | null; email?: string | null; image?: string | null } | null
   date: Date
   roleLabel: string
 }) {
@@ -102,6 +102,7 @@ function UserCard({ label, user, date, roleLabel }: {
   return (
     <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 overflow-hidden">
       <Avatar className="size-9 shrink-0 border">
+        <AvatarImage src={user?.image || ""} alt={user?.name || "User Avatar"} />
         <AvatarFallback className="text-xs font-semibold">
           {initials}
         </AvatarFallback>
