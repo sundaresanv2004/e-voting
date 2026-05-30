@@ -5,12 +5,11 @@ import Image from "next/image"
 import { format } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Shield02Icon,
+  UserMultipleIcon,
   Edit02Icon,
   Delete02Icon,
-  Tag01Icon,
-  UserGroupIcon,
-  GridIcon,
+  Shield02Icon,
+  Image01Icon,
 } from "@hugeicons/core-free-icons"
 
 import {
@@ -26,7 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// ─── UserCard (reuse pattern from election-details-sheet) ─────────────────────
+// ─── UserCard ─────────────────────────────────────────────────────────────────
 
 function UserCard({
   label,
@@ -77,40 +76,39 @@ function UserCard({
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-type RoleDetails = {
+type CandidateDetails = {
   id: string
   name: string
-  order: number
-  electionId: string
-  categories: { id: string; name: string; code: string }[]
-  _count: { candidates: number }
-  candidates: { id: string; name: string; profileImage: string | null }[]
+  profileImage: string | null
+  symbolImage: string | null
+  role: { id: string; name: string; order: number }
+  _count: { votes: number }
   createdAt: Date
   updatedAt: Date
   createdBy: { id: string; name: string | null; email: string; image: string | null } | null
   updatedBy: { id: string; name: string | null; email: string; image: string | null } | null
 }
 
-interface RoleDetailsSheetProps {
+interface CandidateDetailsSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  role: RoleDetails | null
+  candidate: CandidateDetails | null
   canManage: boolean
-  onEdit: (role: RoleDetails) => void
-  onDelete: (role: RoleDetails) => void
+  onEdit: (candidate: CandidateDetails) => void
+  onDelete: (candidate: CandidateDetails) => void
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function RoleDetailsSheet({
+export function CandidateDetailsSheet({
   open,
   onOpenChange,
-  role,
+  candidate,
   canManage,
   onEdit,
   onDelete,
-}: RoleDetailsSheetProps) {
-  if (!role) return null
+}: CandidateDetailsSheetProps) {
+  if (!candidate) return null
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -119,106 +117,78 @@ export function RoleDetailsSheet({
         <SheetHeader className="px-4 pt-6 pb-4 border-b">
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="gap-1.5 text-xs">
-              <HugeiconsIcon icon={Shield02Icon} className="size-3" />
-              Election Role
+              <HugeiconsIcon icon={UserMultipleIcon} className="size-3" />
+              Election Candidate
             </Badge>
           </div>
           <SheetTitle className="font-heading text-xl leading-snug break-words">
-            {role.name}
+            {candidate.name}
           </SheetTitle>
           <SheetDescription className="sr-only">
-            Details for the {role.name} election role.
+            Details for candidate {candidate.name}.
           </SheetDescription>
         </SheetHeader>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-          {/* Order card */}
-          <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-muted/60 to-muted/30 px-5 py-4">
-            <div className="relative z-10 flex items-center gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background border shadow-sm text-primary">
-                <HugeiconsIcon icon={Tag01Icon} className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  Priority Order
-                </p>
-                <p className="text-2xl font-bold text-foreground">#{role.order}</p>
-              </div>
-            </div>
-            <HugeiconsIcon
-              icon={Shield02Icon}
-              className="absolute -right-5 -bottom-5 size-28 opacity-[0.04] rotate-12 pointer-events-none"
-            />
-          </div>
-
-          {/* Categories */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-0.5">
-              <HugeiconsIcon icon={GridIcon} className="size-4 text-muted-foreground" />
-              <h4 className="text-sm font-medium">Categories</h4>
-            </div>
-            {role.categories.length === 0 ? (
-              <div className="flex items-center justify-center rounded-xl border border-dashed py-8 px-4">
-                <p className="text-xs text-muted-foreground">Not assigned to any category yet.</p>
+          
+          {/* Profile & Symbol Visuals */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {candidate.profileImage ? (
+              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-square flex flex-col items-center justify-center relative group">
+                <div className="relative w-full h-full">
+                  <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover rounded-xl" />
+                </div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-[10px] font-medium text-white uppercase tracking-wider">Profile Photo</p>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2 px-0.5">
-                {role.categories.map((cat) => (
-                  <Badge key={cat.id} variant="secondary" className="gap-1.5 shadow-none">
-                    <HugeiconsIcon icon={GridIcon} className="size-3" />
-                    {cat.name}
-                  </Badge>
-                ))}
+              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2">
+                <HugeiconsIcon icon={Image01Icon} className="size-8 opacity-40" />
+                <p className="text-[10px] uppercase font-semibold tracking-wider opacity-60">No Profile Image</p>
+              </div>
+            )}
+            
+            {candidate.symbolImage ? (
+              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-square flex flex-col items-center justify-center relative group">
+                <div className="w-full h-full bg-white rounded-xl p-4 flex items-center justify-center">
+                  <div className="relative w-full h-full">
+                    <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
+                  </div>
+                </div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-[10px] font-medium text-white uppercase tracking-wider">Election Symbol</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2">
+                <HugeiconsIcon icon={Image01Icon} className="size-8 opacity-40" />
+                <p className="text-[10px] uppercase font-semibold tracking-wider opacity-60">No Symbol</p>
               </div>
             )}
           </div>
 
           <Separator />
 
-          {/* Candidates */}
+          {/* Role assignment */}
           <div className="space-y-3">
             <div className="flex items-center justify-between px-0.5">
               <div className="flex items-center gap-2">
-                <HugeiconsIcon icon={UserGroupIcon} className="size-4 text-muted-foreground" />
-                <h4 className="text-sm font-medium">Candidates</h4>
+                <HugeiconsIcon icon={Shield02Icon} className="size-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium">Contesting Role</h4>
               </div>
-              <Badge variant="secondary" className="shadow-none">
-                {role._count.candidates}
-              </Badge>
             </div>
-            {role.candidates.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-8 px-4 text-center">
-                <HugeiconsIcon icon={UserGroupIcon} className="size-8 mb-2 text-muted-foreground/30" />
-                <p className="text-xs text-muted-foreground">
-                  No candidates registered for this role yet.
+            <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted border shadow-sm text-primary">
+                <code className="text-xs font-mono font-bold">#{candidate.role.order}</code>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate leading-tight">
+                  {candidate.role.name}
                 </p>
               </div>
-            ) : (
-              <div className="grid gap-2">
-                {role.candidates.map((candidate) => (
-                  <div
-                    key={candidate.id}
-                    className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3"
-                  >
-                    <Avatar className="size-9 border shrink-0 relative overflow-hidden">
-                      {candidate.profileImage && (
-                        <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" />
-                      )}
-                      <AvatarFallback className="text-xs font-semibold">
-                        {candidate.name.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">Candidate</p>
-                      <p className="text-sm font-medium truncate leading-tight mt-0.5">
-                        {candidate.name}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
 
           <Separator />
@@ -227,19 +197,19 @@ export function RoleDetailsSheet({
           <div className="space-y-3">
             <h4 className="text-sm font-medium px-0.5">Audit Log</h4>
             <div className="grid gap-2.5">
-              {role.createdBy && (
+              {candidate.createdBy && (
                 <UserCard
-                  label="Created by"
-                  user={role.createdBy}
-                  date={role.createdAt}
+                  label="Registered by"
+                  user={candidate.createdBy}
+                  date={candidate.createdAt}
                   roleLabel="Creator"
                 />
               )}
-              {role.updatedBy && (
+              {candidate.updatedBy && (
                 <UserCard
                   label="Last modified by"
-                  user={role.updatedBy}
-                  date={role.updatedAt}
+                  user={candidate.updatedBy}
+                  date={candidate.updatedAt}
                   roleLabel="Editor"
                 />
               )}
@@ -256,7 +226,7 @@ export function RoleDetailsSheet({
                 className="flex-1"
                 onClick={() => {
                   onOpenChange(false)
-                  setTimeout(() => onDelete(role), 200)
+                  setTimeout(() => onDelete(candidate), 200)
                 }}
               >
                 <HugeiconsIcon icon={Delete02Icon} className="size-4" />
@@ -267,11 +237,11 @@ export function RoleDetailsSheet({
                 className="flex-1"
                 onClick={() => {
                   onOpenChange(false)
-                  setTimeout(() => onEdit(role), 200)
+                  setTimeout(() => onEdit(candidate), 200)
                 }}
               >
                 <HugeiconsIcon icon={Edit02Icon} className="size-4" />
-                Edit Role
+                Edit Candidate
               </Button>
             </div>
           </SheetFooter>

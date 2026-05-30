@@ -115,7 +115,7 @@ export function CategoryDialog({
         className="sm:max-w-md p-0 overflow-hidden gap-0 max-h-[90vh] flex flex-col"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <DialogHeader className="px-6 py-5 border-b">
+        <DialogHeader className="px-6 py-5">
           <DialogTitle className="font-heading">
             {isEditing ? "Edit Category" : "Create Category"}
           </DialogTitle>
@@ -206,7 +206,7 @@ export function CategoryDialog({
             </div>
           </div>
 
-          <DialogFooter className="border-t px-6 py-4">
+          <DialogFooter className="px-6 py-4">
             <Button
               type="button"
               variant="outline"

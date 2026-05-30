@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useRef, useState } from "react"
-import { ImageKitProvider, upload } from "@imagekit/next"
+import Image from "next/image"
+// No ImageKitProvider needed since we proxy upload to server
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CloudUploadIcon, Delete02Icon, ImageAdd01Icon } from "@hugeicons/core-free-icons"
 import { Button } from "./button"
@@ -52,32 +53,34 @@ export function ImageUpload({
   const hasConfig = Boolean(urlEndpoint && publicKey)
 
   const handleUpload = async (file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be less than 10 MB")
-      return
-    }
-    if (!hasConfig) {
-      toast.error("Image upload is not configured.")
-      return
-    }
+    if (!file) return
 
     setIsUploading(true)
     onUploadingChange?.(true)
 
     try {
-      const authData = await authenticator()
-      const res = await upload({
-        file,
-        fileName: `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`,
-        publicKey: publicKey!,
-        urlEndpoint: urlEndpoint!,
-        folder,
-        ...authData,
+      const formData = new FormData()
+      formData.append("file", file)
+      if (folder) {
+        formData.append("folder", folder)
+      }
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
       })
+
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => null)
+        throw new Error(errData?.error || "Upload failed")
+      }
+
+      const res = await uploadRes.json()
       onChange(res.url ?? "")
       toast.success("Image uploaded!")
-    } catch {
-      toast.error("Upload failed — please try again.")
+    } catch (err: any) {
+      console.error("Upload error:", err)
+      toast.error(`Upload failed: ${err.message || "please try again."}`)
     } finally {
       setIsUploading(false)
       onUploadingChange?.(false)
@@ -127,14 +130,12 @@ export function ImageUpload({
   const roundedClass = variant === "circle" ? "rounded-full" : "rounded-3xl"
 
   return (
-    <ImageKitProvider urlEndpoint={urlEndpoint ?? ""}>
-      {/* outer wrapper always fills its parent's width */}
-      <div className={cn("w-full", className)}>
-        <div
-          role={!value ? "button" : undefined}
-          tabIndex={!value && !disabled ? 0 : -1}
-          aria-label={!value ? "Upload image" : undefined}
-          onDragEnter={handleDrag}
+    <div className={cn("w-full relative group", className)}>
+      <div
+        role={!value ? "button" : undefined}
+        tabIndex={!value && !disabled ? 0 : -1}
+        aria-label={!value ? "Upload image" : undefined}
+        onDragEnter={handleDrag}
           onDragOver={handleDrag}
           onDragLeave={handleDrag}
           onDrop={handleDrop}
@@ -171,11 +172,12 @@ export function ImageUpload({
           {value ? (
             /* ── PREVIEW STATE ─────────────────────────────────────────── */
             <>
-              <img
+              <Image
                 src={value}
                 alt="Uploaded image"
+                fill
                 className={cn(
-                  "size-full object-cover bg-black/5 dark:bg-white/5 transition-opacity duration-300",
+                  "object-cover bg-black/5 dark:bg-white/5 transition-opacity duration-300",
                   isUploading && "opacity-40 grayscale",
                 )}
               />
@@ -199,7 +201,7 @@ export function ImageUpload({
                   </div>
                 ) : (
                   /* Two action buttons, hidden until hover */
-                  <div className="flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <div className="flex flex-col items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                     <Button
                       type="button"
                       variant="secondary"
@@ -282,6 +284,5 @@ export function ImageUpload({
           />
         </div>
       </div>
-    </ImageKitProvider>
   )
 }
