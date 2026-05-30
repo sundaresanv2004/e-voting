@@ -16,6 +16,7 @@ import {
   PlusSignIcon,
 } from "@hugeicons/core-free-icons"
 import { useSearchParams, useRouter } from "next/navigation"
+import { format } from "date-fns"
 
 import {
   Table,
@@ -213,7 +214,7 @@ export function CandidatesDataTable({ data, electionId, canManage, allRoles }: C
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <SortHead field="name">Candidate</SortHead>
               <SortHead field="role">Role</SortHead>
-              <TableHead>Symbol</TableHead>
+              <TableHead>Added On</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -227,33 +228,30 @@ export function CandidatesDataTable({ data, electionId, canManage, allRoles }: C
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="size-9 border shrink-0">
-                        {candidate.profileImage && (
-                          <AvatarImage src={candidate.profileImage} alt={candidate.name} className="object-cover" />
+                      <Avatar className="size-9 border shrink-0 relative overflow-hidden">
+                        {candidate.profileImage ? (
+                          <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover" sizes="36px" />
+                        ) : (
+                          <AvatarFallback className="text-xs font-semibold">
+                            {candidate.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
                         )}
-                        <AvatarFallback className="text-xs font-semibold">
-                          {candidate.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{candidate.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                      <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded-md text-muted-foreground">
                         #{candidate.role.order}
                       </code>
                       <span className="text-sm">{candidate.role.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {candidate.symbolImage ? (
-                      <div className="relative size-8 rounded border flex items-center justify-center bg-muted/30 overflow-hidden">
-                        <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">None</span>
-                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {format(new Date(candidate.createdAt), "MMM d, yyyy")}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>

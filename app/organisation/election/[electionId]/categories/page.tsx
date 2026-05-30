@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -60,29 +59,23 @@ export default async function CategoriesPage({
 
   return (
     <div className="flex flex-col flex-1 w-full">
-      <Suspense
-        fallback={<div className="h-40 border-b bg-background/50 animate-pulse" />}
-      >
-        <ElectionPageHeader
-          electionId={electionId}
-          title="Categories"
-          description="Manage election categories and their associated roles"
-          icon={GridIcon}
-          showSettings={false}
-          showDate={false}
-          showStatus={false}
-          actions={
-            canManage ? (
-              <Button asChild>
-                <Link href={`/organisation/election/${electionId}/categories?new=true`} className="gap-2">
-                  <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="h-4 w-4" />
-                  Create Category
-                </Link>
-              </Button>
-            ) : undefined
-          }
-        />
-      </Suspense>
+      <ElectionPageHeader
+        electionId={electionId}
+        title="Categories"
+        description="Manage election categories and their associated roles"
+        icon={GridIcon}
+        showSettings={false}
+        actions={
+          canManage ? (
+            <Button asChild>
+              <Link href={`/organisation/election/${electionId}/categories?new=true`} className="gap-2">
+                <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="h-4 w-4" />
+                Add Category
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <CategoriesDataTable
           data={categories as any}

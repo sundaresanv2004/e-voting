@@ -23,8 +23,7 @@ interface ElectionPageHeaderProps {
   icon: any // Hugeicons icon reference
   actions?: React.ReactNode
   showSettings?: boolean
-  showDate?: boolean
-  showStatus?: boolean
+  isDashboard?: boolean
 }
 
 export async function ElectionPageHeader({ 
@@ -34,8 +33,7 @@ export async function ElectionPageHeader({
   icon: Icon,
   actions,
   showSettings = true,
-  showDate = true,
-  showStatus = true,
+  isDashboard = false,
 }: ElectionPageHeaderProps) {
   const { member } = await requireOrgMember()
 
@@ -60,37 +58,42 @@ export async function ElectionPageHeader({
             <HugeiconsIcon icon={Icon} className="h-7 w-7 relative z-10" color="currentColor" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-3xl lg:text-3xl">
-              {title}
+            <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground md:text-3xl lg:text-3xl">
+              {isDashboard ? election.name : title}
             </h1>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm font-medium text-muted-foreground/80 tracking-wide">
-              {description ? (
-                <p>{description} for <span className="font-semibold text-foreground/80">{election.name}</span></p>
-              ) : (
-                <p>Election: <span className="font-semibold text-foreground/80">{election.name}</span></p>
-              )}
-              
-              <div className="hidden sm:block w-1 h-1 rounded-full bg-border" />
-              
-              <div className="flex items-center gap-3">
-                {showDate && (
+            
+            {isDashboard ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm font-medium text-muted-foreground/80 tracking-wide">
+                {description && <p>{description}</p>}
+                
+                {description && <div className="hidden sm:block w-1 h-1 rounded-full bg-border" />}
+                
+                <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
                     <HugeiconsIcon icon={Calendar01Icon} className="h-4 w-4 text-primary/70" />
                     <span>
                       {format(election.startTime, "MMM d")} — {format(election.endTime, "MMM d, yyyy")}
                     </span>
                   </div>
-                )}
-                {showStatus && (
                   <Badge
                     variant="outline"
                     className={`text-[10px] font-semibold uppercase tracking-widest ${STATUS_STYLES[election.status] ?? ""}`}
                   >
                     {election.status}
                   </Badge>
-                )}
+                </div>
               </div>
-            </div>
+            ) : (
+              description ? (
+                <p className="text-sm font-medium text-muted-foreground/80 tracking-wide">
+                  {description} of <span className="font-semibold text-foreground/80">{election.name}</span>
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground/80 tracking-wide">
+                  Election: <span className="font-semibold text-foreground/80">{election.name}</span>
+                </p>
+              )
+            )}
           </div>
         </div>
 

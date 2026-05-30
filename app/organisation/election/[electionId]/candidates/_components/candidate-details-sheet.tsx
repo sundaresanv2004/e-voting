@@ -113,15 +113,14 @@ export function CandidateDetailsSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col p-0 sm:!max-w-md overflow-hidden">
-        {/* Header */}
         <SheetHeader className="px-4 pt-6 pb-4 border-b">
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="gap-1.5 text-xs">
-              <HugeiconsIcon icon={UserMultipleIcon} className="size-3" />
-              Election Candidate
+              <HugeiconsIcon icon={Shield02Icon} className="size-3" />
+              {candidate.role.name}
             </Badge>
           </div>
-          <SheetTitle className="font-heading text-xl leading-snug break-words">
+          <SheetTitle className="font-heading text-3xl leading-snug break-words">
             {candidate.name}
           </SheetTitle>
           <SheetDescription className="sr-only">
@@ -135,7 +134,7 @@ export function CandidateDetailsSheet({
           {/* Profile & Symbol Visuals */}
           <div className="flex flex-col sm:flex-row gap-4">
             {candidate.profileImage ? (
-              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-square flex flex-col items-center justify-center relative group">
+              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-[3/4] flex flex-col items-center justify-center relative group">
                 <div className="relative w-full h-full">
                   <Image src={candidate.profileImage} alt={candidate.name} fill className="object-cover rounded-xl" />
                 </div>
@@ -144,14 +143,14 @@ export function CandidateDetailsSheet({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2">
+              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-[3/4] flex flex-col items-center justify-center text-muted-foreground gap-2">
                 <HugeiconsIcon icon={Image01Icon} className="size-8 opacity-40" />
                 <p className="text-[10px] uppercase font-semibold tracking-wider opacity-60">No Profile Image</p>
               </div>
             )}
             
             {candidate.symbolImage ? (
-              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-square flex flex-col items-center justify-center relative group">
+              <div className="flex-1 rounded-2xl border bg-muted/20 p-2 overflow-hidden aspect-[3/4] flex flex-col items-center justify-center relative group">
                 <div className="w-full h-full bg-white rounded-xl p-4 flex items-center justify-center">
                   <div className="relative w-full h-full">
                     <Image src={candidate.symbolImage} alt="Symbol" fill className="object-contain" />
@@ -162,7 +161,7 @@ export function CandidateDetailsSheet({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-square flex flex-col items-center justify-center text-muted-foreground gap-2">
+              <div className="flex-1 rounded-2xl border border-dashed bg-muted/10 p-6 aspect-[3/4] flex flex-col items-center justify-center text-muted-foreground gap-2">
                 <HugeiconsIcon icon={Image01Icon} className="size-8 opacity-40" />
                 <p className="text-[10px] uppercase font-semibold tracking-wider opacity-60">No Symbol</p>
               </div>

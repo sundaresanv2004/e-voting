@@ -117,13 +117,7 @@ export function RoleDetailsSheet({
       <SheetContent className="flex flex-col p-0 sm:!max-w-md overflow-hidden">
         {/* Header */}
         <SheetHeader className="px-4 pt-6 pb-4 border-b">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="gap-1.5 text-xs">
-              <HugeiconsIcon icon={Shield02Icon} className="size-3" />
-              Election Role
-            </Badge>
-          </div>
-          <SheetTitle className="font-heading text-xl leading-snug break-words">
+          <SheetTitle className="font-heading text-2xl leading-snug break-words">
             {role.name}
           </SheetTitle>
           <SheetDescription className="sr-only">

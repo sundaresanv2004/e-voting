@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -69,29 +68,23 @@ export default async function RolesPage({
 
   return (
     <div className="flex flex-col flex-1 w-full">
-      <Suspense
-        fallback={<div className="h-40 border-b bg-background/50 animate-pulse" />}
-      >
-        <ElectionPageHeader
-          electionId={electionId}
-          title="Roles"
-          description="Manage election roles"
-          icon={Shield02Icon}
-          showSettings={false}
-          showDate={false}
-          showStatus={false}
-          actions={
-            canManage ? (
-              <Button asChild>
-                <Link href={`/organisation/election/${electionId}/roles?new=true`} className="gap-2">
-                  <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="h-4 w-4" />
-                  Create Role
-                </Link>
-              </Button>
-            ) : undefined
-          }
-        />
-      </Suspense>
+      <ElectionPageHeader
+        electionId={electionId}
+        title="Roles"
+        description="Manage election roles"
+        icon={Shield02Icon}
+        showSettings={false}
+        actions={
+          canManage ? (
+            <Button asChild>
+              <Link href={`/organisation/election/${electionId}/roles?new=true`} className="gap-2">
+                <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="h-4 w-4" />
+                Add Role
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <RolesDataTable
           data={roles as any}

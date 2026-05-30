@@ -38,7 +38,7 @@ function CopyButton({ text, electionId }: { text: string; electionId: string }) 
     await navigator.clipboard.writeText(text)
     setCopied(true)
     toast.success("Category code copied!")
-    logElectionCodeCopy(electionId).catch(() => {})
+    logElectionCodeCopy(electionId).catch(() => { })
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -141,22 +141,18 @@ export function CategoryDetailsSheet({
         {/* Header */}
         <SheetHeader className="px-4 pt-6 pb-4 border-b">
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="gap-1.5 text-xs">
-              <HugeiconsIcon icon={GridIcon} className="size-3" />
-              Category
-            </Badge>
             {isDefault ? (
               <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-none gap-1.5">
                 <HugeiconsIcon icon={LockIcon} className="size-3" />
                 Default
               </Badge>
             ) : (
-              <Badge variant="secondary" className="shadow-none">
+              <Badge variant="infoOutline" className="shadow-none">
                 Custom
               </Badge>
             )}
           </div>
-          <SheetTitle className="font-heading text-xl leading-snug break-words">
+          <SheetTitle className="font-heading text-2xl leading-snug break-words">
             {category.name}
           </SheetTitle>
           <SheetDescription className="sr-only">
@@ -222,7 +218,7 @@ export function CategoryDetailsSheet({
                           {role.name}
                         </p>
                       </div>
-                      <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded shrink-0">
+                      <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded-md shrink-0">
                         #{role.order}
                       </code>
                     </div>

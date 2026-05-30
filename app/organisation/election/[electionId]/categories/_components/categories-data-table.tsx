@@ -249,7 +249,7 @@ export function CategoriesDataTable({
                           Default
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="shadow-none">Custom</Badge>
+                        <Badge variant="infoOutline" className="shadow-none">Custom</Badge>
                       )}
                     </TableCell>
                     <TableCell>

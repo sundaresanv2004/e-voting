@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -53,15 +52,12 @@ export default async function CandidatesPage({
   
   return (
     <div className="flex flex-col flex-1 w-full">
-      <Suspense fallback={<div className="h-40 border-b bg-background/50 animate-pulse" />}>
         <ElectionPageHeader 
           electionId={electionId} 
           title="Candidates" 
           description="Manage candidates"
           icon={UserMultipleIcon} 
           showSettings={false}
-          showDate={false}
-          showStatus={false}
           actions={
             canManage ? (
               <Button asChild>
@@ -73,7 +69,6 @@ export default async function CandidatesPage({
             ) : undefined
           }
         />
-      </Suspense>
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <CandidatesDataTable
           data={candidates as any}
