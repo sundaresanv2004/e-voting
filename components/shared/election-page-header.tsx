@@ -22,6 +22,9 @@ interface ElectionPageHeaderProps {
   description?: string
   icon: any // Hugeicons icon reference
   actions?: React.ReactNode
+  showSettings?: boolean
+  showDate?: boolean
+  showStatus?: boolean
 }
 
 export async function ElectionPageHeader({ 
@@ -29,7 +32,10 @@ export async function ElectionPageHeader({
   title, 
   description, 
   icon: Icon,
-  actions 
+  actions,
+  showSettings = true,
+  showDate = true,
+  showStatus = true,
 }: ElectionPageHeaderProps) {
   const { member } = await requireOrgMember()
 
@@ -67,18 +73,22 @@ export async function ElectionPageHeader({
               <div className="hidden sm:block w-1 h-1 rounded-full bg-border" />
               
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <HugeiconsIcon icon={Calendar01Icon} className="h-4 w-4 text-primary/70" />
-                  <span>
-                    {format(election.startTime, "MMM d")} — {format(election.endTime, "MMM d, yyyy")}
-                  </span>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] font-semibold uppercase tracking-widest ${STATUS_STYLES[election.status] ?? ""}`}
-                >
-                  {election.status}
-                </Badge>
+                {showDate && (
+                  <div className="flex items-center gap-1.5">
+                    <HugeiconsIcon icon={Calendar01Icon} className="h-4 w-4 text-primary/70" />
+                    <span>
+                      {format(election.startTime, "MMM d")} — {format(election.endTime, "MMM d, yyyy")}
+                    </span>
+                  </div>
+                )}
+                {showStatus && (
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] font-semibold uppercase tracking-widest ${STATUS_STYLES[election.status] ?? ""}`}
+                  >
+                    {election.status}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -86,12 +96,14 @@ export async function ElectionPageHeader({
 
         <div className="flex items-center gap-3">
           {actions}
-          <Link href={`/organisation/election/${election.id}/settings`}>
-            <Button variant="outline" className="gap-2">
-              <HugeiconsIcon icon={Settings02Icon} className="h-4 w-4" />
-              Settings
-            </Button>
-          </Link>
+          {showSettings && (
+            <Link href={`/organisation/election/${election.id}/settings`}>
+              <Button variant="outline" className="gap-2">
+                <HugeiconsIcon icon={Settings02Icon} className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

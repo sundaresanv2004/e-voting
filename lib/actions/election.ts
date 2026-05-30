@@ -119,6 +119,18 @@ export async function createElection(formData: {
         },
       })
 
+      // Auto-create the default "General" category using the election code.
+      // This category includes all roles and cannot be edited or deleted.
+      await tx.electionCategory.create({
+        data: {
+          electionId: election.id,
+          name: "General",
+          code: election.code, // default category code === election code
+          createdByUserId: userId,
+          updatedByUserId: userId,
+        },
+      })
+
       await logAdminAction({
         action: "ELECTION_CREATED",
         entityType: AuditEntityType.ELECTION,

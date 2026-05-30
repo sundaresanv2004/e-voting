@@ -25,6 +25,8 @@ import {
   ShieldKeyIcon,
   UserCircleIcon,
   MapsIcon,
+  GridIcon,
+  Shield02Icon,
 } from "@hugeicons/core-free-icons"
 
 const ELECTION_COOKIE_KEY = "last_election_id"
@@ -92,14 +94,14 @@ export function AppSidebar({
       title: "Roles",
       url: `/organisation/election/${activeElectionId}/roles`,
       icon: (
-        <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={Shield02Icon} strokeWidth={2} />
       ),
     },
     {
       title: "Categories",
       url: `/organisation/election/${activeElectionId}/categories`,
       icon: (
-        <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
+        <HugeiconsIcon icon={GridIcon} strokeWidth={2} />
       ),
     },
     {
