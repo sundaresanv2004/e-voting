@@ -276,6 +276,7 @@ export function VotersDataTable({
               "Category Code": v.category?.code || "—",
               "Voting Status": v.ballots.length > 0 ? "Voted" : "Pending",
               "Voted At": v.ballots[0]?.createdAt ? new Date(v.ballots[0].createdAt).toLocaleString() : "—",
+              "Added By": v.createdBy?.name || v.createdBy?.email || "Unknown",
               "Registered At": new Date(v.createdAt).toLocaleString(),
             }))
           }}

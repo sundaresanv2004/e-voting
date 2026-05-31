@@ -214,9 +214,10 @@ export function CandidatesDataTable({ data, electionId, canManage, allRoles }: C
           transformData={(data) => {
             return data.map((c) => ({
               "Name": c.name,
-              "Role Name": c.role.name,
-              "Role Order": c.role.order,
-              "Vote Count": c._count?.votes || 0,
+              "Role": c.role.name,
+              "Image Link": c.profileImage || "No Image",
+              "Symbol Link": c.symbolImage || "No Symbol",
+              "Added By": c.createdBy?.name || c.createdBy?.email || "Unknown",
               "Registered At": new Date(c.createdAt).toLocaleString(),
             }))
           }}

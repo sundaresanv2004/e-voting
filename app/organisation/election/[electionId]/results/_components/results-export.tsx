@@ -53,24 +53,6 @@ export interface ResultsExportData {
   }
 }
 
-// ─── Helper: fetch a remote URL and return a base64 data-URL ─────────────────
-
-async function loadImageAsBase64(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, { cache: "force-cache" })
-    if (!res.ok) return null
-    const blob = await res.blob()
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror  = () => resolve(null)
-      reader.readAsDataURL(blob)
-    })
-  } catch {
-    return null
-  }
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface ResultsExportProps {
@@ -90,25 +72,19 @@ export function ResultsExport({ data }: ResultsExportProps) {
     try {
       await new Promise((r) => setTimeout(r, 500))
 
-      // Sheet 1 — flat candidate rows
       const detailRows: Record<string, string | number>[] = []
       data.roleResults.forEach((role) => {
         role.candidates.forEach((c) => {
           detailRows.push({
             "Position":              role.name,
-            "Position Order":        role.order,
             "Candidate":             c.name,
-            "Profile Photo":         c.profileImage ? "Provided" : "No image",
-            "Symbol / Party":        c.symbolImage  ? "Provided" : "No symbol",
             "Votes":                 c.voteCount,
             "Vote Share (%)":        parseFloat(c.percentage.toFixed(1)),
             "Status":                c.isLeading ? "Leading / Winner" : "Runner-up",
-            "Total Votes in Position": role.totalVotes,
           })
         })
       })
 
-      // Sheet 2 — summary
       const summaryMeta = [{
         "Election Name": data.electionName,
         "Organization":  data.organizationName,
@@ -151,13 +127,53 @@ export function ResultsExport({ data }: ResultsExportProps) {
       const { default: jsPDF }    = await import("jspdf")
       const { default: autoTable } = await import("jspdf-autotable")
 
-      // ── 1. Pre-load ALL images as base64 BEFORE drawing anything ──────────
-      // One cache pass so each URL is fetched once regardless of how many
-      // candidates share the same asset URL.
-      const imgCache = new Map<string, string | null>()
+      // ── 1. Helper: load an image robustly via Canvas ───────────────────────
+      // We fetch as a blob first to bypass cross-origin cache issues, 
+      // convert to ObjectURL, and draw to canvas to force it into a JPEG.
+      // This ensures jsPDF never chokes on unsupported WEBP images.
+      const loadNativeImage = async (url: string | null): Promise<string | null> => {
+        if (!url) return null
+        
+        // Proxy through our internal API to avoid cross-origin issues during canvas rendering
+        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`
+
+        return new Promise((resolve) => {
+          const img = new Image()
+          img.crossOrigin = "anonymous"
+          img.onload = () => {
+            try {
+              const canvas = document.createElement("canvas")
+              canvas.width = img.naturalWidth
+              canvas.height = img.naturalHeight
+              const ctx = canvas.getContext("2d")
+              if (ctx) {
+                ctx.fillStyle = "#ffffff"
+                ctx.fillRect(0, 0, canvas.width, canvas.height)
+                ctx.drawImage(img, 0, 0)
+                resolve(canvas.toDataURL("image/jpeg", 0.95))
+              } else {
+                resolve(proxyUrl) // Fallback to raw proxy URL
+              }
+            } catch (e) {
+              console.warn("Canvas rendering error:", e)
+              resolve(proxyUrl) // Fallback to raw proxy URL on taint
+            }
+          }
+          img.onerror = () => {
+            console.warn("Image load error, falling back to proxy URL:", proxyUrl)
+            resolve(proxyUrl) // Fallback to raw proxy URL
+          }
+          // Avoid browser caching the non-cors version
+          img.src = proxyUrl + "&t=" + Date.now()
+        })
+      }
+
+      // Pre-load all required images
+      const imgCache = new Map<string, string>()
       const cacheImg = async (url: string | null) => {
         if (!url || imgCache.has(url)) return
-        imgCache.set(url, await loadImageAsBase64(url))
+        const img = await loadNativeImage(url)
+        if (img) imgCache.set(url, img)
       }
 
       if (data.allowCustomBranding && data.orgLogo) {
@@ -165,26 +181,27 @@ export function ResultsExport({ data }: ResultsExportProps) {
       }
       for (const role of data.roleResults) {
         for (const c of role.candidates) {
-          await cacheImg(c.profileImage)
-          await cacheImg(c.symbolImage)
+          if (c.isLeading) { // We only need images for winners now
+            await cacheImg(c.profileImage)
+            await cacheImg(c.symbolImage)
+          }
         }
       }
 
-      // ── 2. Helper: draw one image from cache into the PDF ─────────────────
+      // ── 2. Helper: draw cached image into the PDF ─────────────────────────
       const drawImg = (
         d: InstanceType<typeof jsPDF>,
         url: string | null,
         x: number,
         y: number,
-        size: number
+        size: number,
+        customHeight?: number
       ) => {
         if (!url) return
         const b64 = imgCache.get(url)
         if (!b64) return
         try {
-          // Derive image format from the data-URL prefix
-          const fmt = b64.split(";")[0].split("/")[1]?.toUpperCase() ?? "JPEG"
-          d.addImage(b64, fmt as any, x, y, size, size)
+          d.addImage(b64, "JPEG", x, y, size, customHeight || size)
         } catch { /* skip gracefully */ }
       }
 
@@ -204,9 +221,11 @@ export function ResultsExport({ data }: ResultsExportProps) {
         const b64 = imgCache.get(data.orgLogo)
         if (b64) {
           try {
-            const fmt = b64.split(";")[0].split("/")[1]?.toUpperCase() ?? "JPEG"
-            doc.addImage(b64, fmt as any, (pageW - 32) / 2, y, 32, 16)
-            y += 20
+            // Organization logos use a 16:4 aspect ratio (variant="rectangle")
+            const logoW = 96
+            const logoH = 24
+            drawImg(doc, data.orgLogo, (pageW - logoW) / 2, y, logoW, logoH)
+            y += logoH + 8
           } catch {}
         }
       }
@@ -223,12 +242,22 @@ export function ResultsExport({ data }: ResultsExportProps) {
       doc.text(data.electionName, pageW / 2, y, { align: "center" })
       y += 6
 
+      // Draw title text
       doc.setFontSize(8.5)
+      const titleText = "Official Election Results  "
+      const titleW = doc.getTextWidth(titleText)
+      const startX = (pageW - titleW) / 2
+      
       doc.setTextColor(130, 130, 130)
-      doc.text(
-        `Official Election Results  ·  Generated ${new Date().toLocaleString()}`,
-        pageW / 2, y, { align: "center" }
-      )
+      doc.text(titleText, startX, y)
+      
+      // Draw manual green checkmark
+      doc.setDrawColor(22, 163, 74) // green-600
+      doc.setLineWidth(0.8)
+      const tickX = startX + titleW - 1
+      const tickY = y - 1
+      doc.line(tickX, tickY - 1, tickX + 1.5, tickY + 0.5) // short leg
+      doc.line(tickX + 1.5, tickY + 0.5, tickX + 4, tickY - 2.5) // long leg
       y += 8
 
       doc.setDrawColor(180, 180, 180)
@@ -236,98 +265,102 @@ export function ResultsExport({ data }: ResultsExportProps) {
       doc.line(mx, y, pageW - mx, y)
       y += 10
 
-      // ── 5. SECTION A: Results by Position (comes FIRST) ───────────────────
+      // ── 5. ELECTION SUMMARY ───────────────────────────────────────────────
       doc.setFont("helvetica", "bold")
       doc.setFontSize(11)
       doc.setTextColor(15, 15, 15)
-      doc.text("ELECTION RESULTS BY POSITION", mx, y)
+      doc.text("ELECTION SUMMARY", mx, y)
+      y += 6
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Total Voters", "Ballots Cast", "Voter Turnout", "Positions", "Candidates"]],
+        body: [[
+          data.stats.totalVoters.toLocaleString(),
+          data.stats.ballotsCast.toLocaleString(),
+          `${data.stats.turnoutPercentage.toFixed(1)}%`,
+          data.stats.totalRoles.toString(),
+          data.stats.totalCandidates.toString(),
+        ]],
+        theme: "grid",
+        headStyles: {
+          fillColor: [40, 40, 40],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8.5,
+          halign: "center",
+        },
+        bodyStyles: { fontSize: 10, fontStyle: "bold", halign: "center", textColor: [30, 30, 30] },
+        margin: { left: mx, right: mx },
+      })
+      y = (doc as any).lastAutoTable.finalY + 12
+
+      // ── 6. SECTION A: Results by Position (NO IMAGES) ───────────────────
+      doc.setFont("helvetica", "bold")
+      doc.setFontSize(11)
+      doc.setTextColor(15, 15, 15)
+      doc.text("RESULTS BY POSITION", mx, y)
       y += 8
 
       data.roleResults.forEach((role, rIdx) => {
-        // Page-break guard
-        if (y > pageH - 55) { doc.addPage(); y = 16 }
+        if (y > pageH - 45) { doc.addPage(); y = 16 }
 
-        // Dark heading bar
-        doc.setFillColor(30, 30, 30)
-        doc.roundedRect(mx, y - 5, uw, 11, 2, 2, "F")
+        doc.setFillColor(245, 245, 245)
+        doc.roundedRect(mx, y - 5, uw, 10, 2, 2, "F")
         doc.setFont("helvetica", "bold")
         doc.setFontSize(9)
-        doc.setTextColor(255, 255, 255)
+        doc.setTextColor(30, 30, 30)
         doc.text(
           `${String(rIdx + 1).padStart(2, "0")}  ${role.name.toUpperCase()}`,
-          mx + 4, y + 2
+          mx + 4, y + 1.5
         )
         doc.setFont("helvetica", "normal")
-        doc.setFontSize(7.5)
-        doc.setTextColor(210, 210, 210)
+        doc.setFontSize(8)
+        doc.setTextColor(120, 120, 120)
         doc.text(
-          `${role.candidates.length} candidate${role.candidates.length !== 1 ? "s" : ""}  ·  ${role.totalVotes.toLocaleString()} total votes`,
-          pageW - mx - 4, y + 2, { align: "right" }
+          `${role.candidates.length} candidates  ·  ${role.totalVotes.toLocaleString()} total votes`,
+          pageW - mx - 4, y + 1.5, { align: "right" }
         )
-        y += 13
+        y += 9
 
-        // Columns: # | Photo | Name | Symbol | Votes | Status
-        // widths:  9 +  22  +  63  +  22    +  24   +  27  = 167 mm  (fits ≤ 182 mm)
-        const candidates = role.candidates  // already sorted desc by votes
-
+        const candidates = role.candidates
         const rows = candidates.map((c, i) => [
           String(i + 1),
-          c.profileImage ? "" : "No\nPhoto",    // drawn via hook if image exists
           c.name,
-          c.symbolImage  ? "" : "No\nSymbol",
           c.voteCount.toLocaleString(),
+          `${c.percentage.toFixed(1)}%`,
           c.isLeading ? "WINNER" : "",
         ])
 
         autoTable(doc, {
           startY: y,
-          head: [["#", "Photo", "Candidate Name", "Symbol", "Votes", "Status"]],
+          head: [["#", "Candidate Name", "Votes", "Share %", "Status"]],
           body: rows,
           theme: "striped",
-          styles: {
-            minCellHeight: ROW_H,
-            valign: "middle",
-            fontSize: 9,
-            lineColor: [220, 220, 220],
-            lineWidth: 0.2,
-          },
+          styles: { fontSize: 9, lineColor: [230, 230, 230] },
           headStyles: {
-            fillColor: [55, 55, 55],
+            fillColor: [70, 70, 70],
             textColor: [255, 255, 255],
             fontStyle: "bold",
             fontSize: 8,
             halign: "center",
-            minCellHeight: 9,
           },
           columnStyles: {
-            0: { halign: "center", cellWidth: 9  },
-            1: { halign: "center", cellWidth: 22, fontSize: 6.5, textColor: [150, 150, 150] as any },
-            2: {                   cellWidth: 63, fontStyle: "bold" },
-            3: { halign: "center", cellWidth: 22, fontSize: 6.5, textColor: [150, 150, 150] as any },
-            4: { halign: "center", cellWidth: 24 },
-            5: { halign: "center", cellWidth: 27 },
+            0: { halign: "center", cellWidth: 12 },
+            1: { cellWidth: 80, fontStyle: "bold" },
+            2: { halign: "center", cellWidth: 25 },
+            3: { halign: "center", cellWidth: 25 },
+            4: { halign: "center", cellWidth: 30 },
           },
           didParseCell: (hd) => {
             if (hd.section !== "body") return
             const c = candidates[hd.row.index]
             if (!c || !c.isLeading) return
-            // Green tint on the entire winner row
-            hd.cell.styles.fillColor = [236, 253, 245] as any
-            if (hd.column.index === 5) {
-              hd.cell.styles.textColor = [22, 163, 74] as any
+            hd.cell.styles.fillColor = [240, 253, 244] as any // very light green
+            if (hd.column.index === 4) {
+              hd.cell.styles.textColor = [22, 163, 74] as any // emerald-600
               hd.cell.styles.fontStyle = "bold"
             }
-          },
-          didDrawCell: (hd) => {
-            if (hd.section !== "body") return
-            const c = candidates[hd.row.index]
-            if (!c) return
-            const { x, y: cy, width: cw, height: ch } = hd.cell
-            const sz = Math.min(IMG_SIZE, cw - 4, ch - 4)
-            const ix = x  + (cw - sz) / 2
-            const iy = cy + (ch - sz) / 2
-            if (hd.column.index === 1) drawImg(doc, c.profileImage, ix, iy, sz)
-            if (hd.column.index === 3) drawImg(doc, c.symbolImage,  ix, iy, sz)
           },
           margin: { left: mx, right: mx },
         })
@@ -335,7 +368,7 @@ export function ResultsExport({ data }: ResultsExportProps) {
         y = (doc as any).lastAutoTable.finalY + 10
       })
 
-      // ── 6. SECTION B: Winners Summary (with images, NO share %) ───────────
+      // ── 7. SECTION B: Winners Summary (WITH IMAGES) ───────────────────────
       if (y > pageH - 60) { doc.addPage(); y = 16 }
 
       doc.setDrawColor(180, 180, 180)
@@ -363,7 +396,6 @@ export function ResultsExport({ data }: ResultsExportProps) {
         y += 6
 
         // Columns: Photo | Winner Name | Symbol | Votes  (no share)
-        // widths:    26  +     96      +   26   +  32   = 180 mm ≈ usable
         const winnerRows = winners.map((w) => [
           w.profileImage ? "" : "No Photo",
           w.name,
@@ -406,11 +438,14 @@ export function ResultsExport({ data }: ResultsExportProps) {
             const w = winners[hd.row.index]
             if (!w) return
             const { x, y: cy, width: cw, height: ch } = hd.cell
-            const sz = Math.min(IMG_SIZE + 4, cw - 5, ch - 5)
-            const ix = x  + (cw - sz) / 2
-            const iy = cy + (ch - sz) / 2
-            if (hd.column.index === 0) drawImg(doc, w.profileImage, ix, iy, sz)
-            if (hd.column.index === 2) drawImg(doc, w.symbolImage,  ix, iy, sz)
+            const maxH = Math.min(IMG_SIZE + 4, ch - 4)
+            // Candidate images use a 3:4 aspect ratio
+            const imgH = maxH
+            const imgW = maxH * 0.75
+            const ix = x  + (cw - imgW) / 2
+            const iy = cy + (ch - imgH) / 2
+            if (hd.column.index === 0) drawImg(doc, w.profileImage, ix, iy, imgW, imgH)
+            if (hd.column.index === 2) drawImg(doc, w.symbolImage,  ix, iy, imgW, imgH)
           },
           margin: { left: mx, right: mx },
         })
@@ -418,15 +453,28 @@ export function ResultsExport({ data }: ResultsExportProps) {
         y = (doc as any).lastAutoTable.finalY + 10
       })
 
-      // ── 7. Page footer on every page ───────────────────────────────────────
+      // ── 8. Fetch IP for footer ────────────────────────────────────────────
+      let ip = "0.0.0.0"
+      try {
+        const ipRes = await fetch("https://api.ipify.org?format=json")
+        if (ipRes.ok) {
+          const ipData = await ipRes.json()
+          ip = ipData.ip || "0.0.0.0"
+        }
+      } catch (e) {}
+      
+      const appUrl = typeof window !== "undefined" ? window.location.host : "e-voting-platform.com"
+
+      // ── 9. Page footer on every page ───────────────────────────────────────
       const totalPages = (doc as any).internal.pages.length - 1
       for (let pg = 1; pg <= totalPages; pg++) {
         doc.setPage(pg)
+        
         doc.setFont("helvetica", "normal")
         doc.setFontSize(7)
         doc.setTextColor(160, 160, 160)
         doc.text(
-          `Page ${pg} of ${totalPages}  ·  ${data.organizationName}  ·  ${data.electionName}  ·  ${new Date().toLocaleDateString()}`,
+          `Page ${pg} of ${totalPages}  |  ${data.electionName}  |  ${new Date().toLocaleString()}  |  IP: ${ip}  |  Source: ${appUrl}`,
           pageW / 2, pageH - 6, { align: "center" }
         )
       }

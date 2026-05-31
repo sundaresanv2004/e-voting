@@ -223,7 +223,9 @@ export function CategoriesDataTable({
               "Name": c.name,
               "Code": c.code,
               "Type": isDefault(c) ? "Default" : "Custom",
+              "Roles": c.roles.map((r) => r.name).join(", ") || "None",
               "Role Count": c.roles.length,
+              "Created By": c.createdBy?.name || c.createdBy?.email || "Unknown",
               "Registered At": new Date(c.createdAt).toLocaleString(),
             }))
           }}
