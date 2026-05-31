@@ -18,6 +18,7 @@ export default async function DashboardLayout({
 
   const elections = await db.election.findMany({
     where: { organizationId: activeOrgId, deletedAt: null },
+    include: { settings: { select: { lockResult: true } } },
     orderBy: { createdAt: "desc" },
   })
 
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
     name: election.name,
     status: election.status,
     code: election.code,
+    lockResult: election.settings?.lockResult ?? false,
   }))
 
   const cookieStore = await cookies()

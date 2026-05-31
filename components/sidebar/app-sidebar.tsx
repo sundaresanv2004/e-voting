@@ -42,6 +42,7 @@ export function AppSidebar({
     name: string
     status: string
     code: string
+    lockResult?: boolean
   }[]
   userRole: string
   defaultElectionId?: string
@@ -74,6 +75,9 @@ export function AppSidebar({
     logo: <HugeiconsIcon icon={Building06Icon} strokeWidth={2} />,
     plan: election.status,
   }))
+
+  const activeElection = _elections.find(e => e.id === activeElectionId)
+  const isResultsLocked = activeElection?.lockResult ?? false
 
   const navMain = [
     {

@@ -5,6 +5,9 @@ import { ChartHistogramIcon } from "@hugeicons/core-free-icons"
 import { db } from "@/lib/db"
 import { requireOrgMember } from "@/lib/auth/access"
 import { ElectionPageHeader } from "@/components/shared/election-page-header"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { LockPasswordIcon } from "@hugeicons/core-free-icons"
 
 import { ResultsDashboard, ResultsDashboardSkeleton } from "./_components/results-dashboard"
 import { ResultsActions } from "./_components/results-actions"
@@ -48,11 +51,38 @@ export default async function ResultsPage({
       result: {
         select: { isFinalized: true, finalizedAt: true },
       },
+      settings: {
+        select: { lockResult: true },
+      },
       _count: { select: { ballots: true, voters: true } },
     },
   })
 
   if (!election) notFound()
+
+  if (election.settings?.lockResult) {
+    return (
+      <div className="flex flex-col flex-1 w-full">
+        <ElectionPageHeader 
+          electionId={electionId} 
+          title="Results" 
+          description="Election results and analytics"
+          icon={ChartHistogramIcon} 
+        />
+        <div className="px-4 md:px-8 py-16 max-w-[800px] mx-auto w-full flex flex-col mt-8">
+          <Alert variant="default" className="bg-muted/30 border-muted">
+            <HugeiconsIcon icon={LockPasswordIcon} className="size-5 !text-current mt-0.5" />
+            <AlertTitle className="font-semibold text-lg ml-2">Results are Locked</AlertTitle>
+            <AlertDescription className="text-muted-foreground text-sm mt-1 ml-2 leading-relaxed">
+              The results for this election are currently locked for security and secrecy. No one can view the results or generate reports until they are unlocked.
+              <br /><br />
+              To view the results, please go to the <strong>Election Settings</strong> and disable the "Lock Results Page" option.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    )
+  }
 
   const allowCustomBranding = election.organization.settings?.allowCustomBranding ?? false
 

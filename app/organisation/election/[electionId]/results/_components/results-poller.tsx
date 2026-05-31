@@ -3,7 +3,7 @@
 import { useEffect, useRef, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-const POLL_INTERVAL_MS = 30_000 // 30 seconds
+const POLL_INTERVAL_MS = 20_000 // 20 seconds
 
 interface ResultsPollerProps {
   enabled: boolean
