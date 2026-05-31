@@ -57,6 +57,8 @@ import {
   EmptyContent,
 } from "@/components/ui/empty"
 
+import { DataExport } from "@/components/ui/data-export"
+
 import { CategoryDialog } from "./category-dialog"
 import { CategoryDetailsSheet } from "./category-details-sheet"
 import { DeleteCategoryDialog } from "./delete-category-dialog"
@@ -201,7 +203,7 @@ export function CategoriesDataTable({
   return (
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <InputGroup className="flex-1 max-w-lg">
           <InputGroupAddon align="inline-start">
             <HugeiconsIcon icon={Search01Icon} />
@@ -212,6 +214,20 @@ export function CategoriesDataTable({
             onChange={(e) => setSearch(e.target.value)}
           />
         </InputGroup>
+        
+        <DataExport
+          data={filtered}
+          filename="categories"
+          transformData={(data) => {
+            return data.map((c) => ({
+              "Name": c.name,
+              "Code": c.code,
+              "Type": isDefault(c) ? "Default" : "Custom",
+              "Role Count": c.roles.length,
+              "Registered At": new Date(c.createdAt).toLocaleString(),
+            }))
+          }}
+        />
       </div>
 
       {/* Table */}

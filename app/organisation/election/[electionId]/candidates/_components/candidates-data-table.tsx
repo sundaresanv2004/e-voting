@@ -59,6 +59,8 @@ import {
   EmptyContent,
 } from "@/components/ui/empty"
 
+import { DataExport } from "@/components/ui/data-export"
+
 import { CandidateDialog } from "./candidate-dialog"
 import { CandidateDetailsSheet } from "./candidate-details-sheet"
 import { DeleteCandidateDialog } from "./delete-candidate-dialog"
@@ -194,7 +196,7 @@ export function CandidatesDataTable({ data, electionId, canManage, allRoles }: C
   return (
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <InputGroup className="flex-1 max-w-lg">
           <InputGroupAddon align="inline-start">
             <HugeiconsIcon icon={Search01Icon} />
@@ -205,6 +207,20 @@ export function CandidatesDataTable({ data, electionId, canManage, allRoles }: C
             onChange={(e) => setSearch(e.target.value)}
           />
         </InputGroup>
+
+        <DataExport
+          data={filtered}
+          filename="candidates"
+          transformData={(data) => {
+            return data.map((c) => ({
+              "Name": c.name,
+              "Role Name": c.role.name,
+              "Role Order": c.role.order,
+              "Vote Count": c._count?.votes || 0,
+              "Registered At": new Date(c.createdAt).toLocaleString(),
+            }))
+          }}
+        />
       </div>
 
       {/* Table */}

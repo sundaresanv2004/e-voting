@@ -70,6 +70,7 @@ import {
   EmptyDescription,
   EmptyContent,
 } from "@/components/ui/empty"
+import { DataExport } from "@/components/ui/data-export"
 
 import { VoterDialog, type CategoryOption } from "./voter-dialog"
 import { VoterDetailsSheet, type VoterDetails } from "./voter-details-sheet"
@@ -236,31 +237,49 @@ export function VotersDataTable({
     <div className="flex flex-col gap-4">
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <InputGroup className="flex-1 max-w-lg">
-          <InputGroupAddon align="inline-start">
-            <HugeiconsIcon icon={Search01Icon} />
-          </InputGroupAddon>
-          <InputGroupInput
-            placeholder="Search by name, ID or category..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </InputGroup>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger>
-            <HugeiconsIcon icon={FilterIcon} className="size-4 text-muted-foreground mr-1" />
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Voting Status</SelectLabel>
-              <SelectItem value="ALL">All voters</SelectItem>
-              <SelectItem value="VOTED">Completed</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <InputGroup className="max-w-lg w-full">
+            <InputGroupAddon align="inline-start">
+              <HugeiconsIcon icon={Search01Icon} />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search by name, ID or category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </InputGroup>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <HugeiconsIcon icon={FilterIcon} className="size-4 text-muted-foreground mr-1" />
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Voting Status</SelectLabel>
+                <SelectItem value="ALL">All voters</SelectItem>
+                <SelectItem value="VOTED">Completed</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <DataExport
+          data={filtered}
+          filename="voters"
+          transformData={(data) => {
+            return data.map((v) => ({
+              "Unique ID": v.uniqueId,
+              "Full Name": v.name,
+              "Category": v.category?.name || "Global (All Categories)",
+              "Category Code": v.category?.code || "—",
+              "Voting Status": v.ballots.length > 0 ? "Voted" : "Pending",
+              "Voted At": v.ballots[0]?.createdAt ? new Date(v.ballots[0].createdAt).toLocaleString() : "—",
+              "Registered At": new Date(v.createdAt).toLocaleString(),
+            }))
+          }}
+        />
       </div>
 
       {/* Table */}
