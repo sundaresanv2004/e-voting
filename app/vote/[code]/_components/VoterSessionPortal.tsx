@@ -24,7 +24,7 @@ import { VoterConfirmDialog } from "./VoterConfirmDialog"
 import { VoterPausedDialog } from "./VoterPausedDialog"
 import { VoterExitDialog } from "./VoterExitDialog"
 import { BallotInterface } from "./BallotInterface"
-import { verifyVoterUniqueIdAction, submitBallotAction } from "@/lib/actions/vote-actions"
+import { verifyVoterUniqueIdAction, submitBallotAction, checkElectionStatusAction } from "@/lib/actions/vote-actions"
 import { voterIdSchema } from "@/lib/schemas/auth"
 import type { BallotElection, VoterData } from "./BallotInterface"
 
@@ -56,12 +56,14 @@ interface VoterSessionPortalProps {
     election: ElectionInfo
     category: CategoryInfo | null
     accessCode: string
+    isPaused: boolean
 }
 
 export function VoterSessionPortal({
     election,
     category,
     accessCode,
+    isPaused,
 }: VoterSessionPortalProps) {
     const router = useRouter()
 
@@ -88,17 +90,21 @@ export function VoterSessionPortal({
         defaultValues: { uniqueId: "" },
     })
 
-    // Welcome toast (once on mount)
+    // Welcome toast (once on mount) — or immediately show paused dialog
     const toastShown = useRef(false)
     useEffect(() => {
         if (!toastShown.current) {
-            toast.info("Secure Session Started", {
-                description: "Your Voter ID will be required to open the ballot.",
-                duration: 4000,
-            })
+            if (isPaused) {
+                setIsPausedDialogOpen(true)
+            } else {
+                toast.info("Secure Session Started", {
+                    description: "Your Voter ID will be required to open the ballot.",
+                    duration: 4000,
+                })
+            }
             toastShown.current = true
         }
-    }, [])
+    }, [isPaused])
 
     // Fullscreen guard — if voter exits fullscreen during an active session, reset
     useEffect(() => {
@@ -181,6 +187,31 @@ export function VoterSessionPortal({
         if (lastUsedId) verifyVoter(lastUsedId)
     }
 
+    // Retry from the paused dialog — checks live status before letting the voter proceed
+    const handlePausedRetry = () => {
+        startTransition(async () => {
+            const result = await checkElectionStatusAction(election.id)
+            if ("error" in result) {
+                toast.error("Could not check election status. Please try again.")
+                return
+            }
+            if (result.status === "PAUSED") {
+                toast.warning("Election is still paused. Please wait and try again.")
+                return
+            }
+            if (result.status !== "ACTIVE") {
+                toast.error("This election is no longer available.")
+                return
+            }
+            // Election is now active — dismiss the dialog and let them vote
+            setIsPausedDialogOpen(false)
+            toast.info("Secure Session Started", {
+                description: "Your Voter ID will be required to open the ballot.",
+                duration: 4000,
+            })
+        })
+    }
+
     const handleStartVoting = () => {
         if (!hasConfirmedIdentity || !ballotElection) return
         toast.success("Identity Verified", {
@@ -208,11 +239,23 @@ export function VoterSessionPortal({
         if (!voterData) return
         setIsSubmittingBallot(true)
         try {
+            // Pre-submit paused check (Step 1.5 in vote_logic.md):
+            // Re-check live election status before submitting to catch mid-ballot pauses.
+            const statusResult = await checkElectionStatusAction(election.id)
+            if ("success" in statusResult && statusResult.status === "PAUSED") {
+                setIsSubmittingBallot(false)
+                setIsVoting(false)
+                resetVoterSession()
+                setIsPausedDialogOpen(true)
+                return
+            }
+
             const result = await submitBallotAction(election.id, voterData.id, votes, category?.id)
             if ("error" in result) {
                 if (result.status === "PAUSED") {
                     setIsSubmittingBallot(false)
                     setIsVoting(false)
+                    resetVoterSession()
                     setIsPausedDialogOpen(true)
                 } else {
                     toast.error(result.error)
@@ -426,7 +469,7 @@ export function VoterSessionPortal({
             <VoterPausedDialog
                 open={isPausedDialogOpen}
                 onOpenChange={setIsPausedDialogOpen}
-                onRetry={handleRetryVerification}
+                onRetry={handlePausedRetry}
                 onExit={handleConfirmExit}
                 isPending={isPending}
             />

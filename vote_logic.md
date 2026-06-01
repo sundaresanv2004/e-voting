@@ -34,6 +34,17 @@ The system must prevent logged-in administrators (or any authenticated org users
   - Return Error/Toast: "Administrators cannot vote while logged in. Please log out first."
   - Disable the code input.
 
+### Step 1.5: Paused Election — Allow Entry, Show In-Portal Dialog
+A **PAUSED** election is a special state: the admin may be making last-minute changes. The voter should NOT be blocked at the code-entry step (`/auth/vote`). They are allowed in, but immediately informed once they reach the portal.
+- **Action**: Do NOT check for `PAUSED` status in `validateElectionCodeAction`. Allow the voter through to `/vote/[code]`.
+- **Server Page (`/vote/[code]/page.tsx`)**: Resolve the election normally. If the election status is `PAUSED`, render the portal with an `isPaused={true}` flag — do **not** return `notFound()`.
+- **Portal Entry (Lobby screen)**: On mount, if `isPaused` is `true`, immediately open the **Paused Dialog** instead of the normal welcome flow.
+- **Paused Dialog UI**: Display two action buttons:
+  - **"Exit Election"**: Exit fullscreen, clear all local voter session data, and navigate to `/auth/vote`.
+  - **"Retry"**: Re-check the election status via a server action. If still paused, keep the dialog open with a toast notification. If now active, dismiss the dialog and allow the voter to proceed normally.
+- **Pre-Submit Paused Check**: Immediately before `submitBallotAction` is called (when the voter clicks "Cast Ballot"), the portal must re-check the election status. If it is `PAUSED`, abort the submission, exit the ballot interface, reset all local vote data (votes, voter state, ballot data), and open the Paused Dialog. This ensures the voter must re-start from scratch after the pause is lifted, accounting for any changes the admin may have made.
+- **Refresh/Back Navigation while Paused**: Because the page is a server component, a hard refresh will re-fetch the server data. If the election is still `PAUSED`, the `isPaused` flag will be true again and the Paused Dialog will re-open. All local state is lost on refresh, so the voter automatically returns to the clean entry state — no additional logic is required.
+
 ## 2. Portal Configuration
 
 Once the code is validated and the portal loads, we configure the UI based on settings.
@@ -72,12 +83,19 @@ A Voter may or may not be assigned to a specific Category (`Voter.categoryId`).
 - **Rule**: If `allowMultipleVotes` is `true`, the voter may cast up to `maxVotesPerUser` ballots.
 - **Failure**: If `voter.ballotCount >= effectiveMaxVotes`, return Error: "You have already cast your ballot for this election."
 
-### Step 3.4: Load Ballot Roles (Role Visibility Rules)
-All roles for the election are always shown to the voter, regardless of which code (general election code or category-specific code) was used to enter. Categories **do not filter roles**.
+### Step 3.4: Load Ballot Roles (Category-Scoped Role Filtering)
+Role visibility on the ballot is determined by how the voter entered the portal (general code vs. category code).
 
-- **Role Query**: Fetch ALL `ElectionRole` records for the election, ordered by `order` ascending.
+- **General Election Code Entry** (`category` context is `null`):
+  - Fetch **ALL** `ElectionRole` records for the election, ordered by `order` ascending.
+  - The voter sees every role in the election.
+
+- **Category Code Entry** (`category` context is NOT `null`, e.g., "House-1"):
+  - Fetch only the `ElectionRole` records that are **linked to that specific `ElectionCategory`** via the many-to-many `categories` relation on `ElectionRole`.
+  - The voter sees only the roles assigned to their category. This allows the admin to create roles that are common to the whole election AND roles that are exclusive to specific categories.
+  - **Implementation**: In the Prisma query, filter `roles` with `where: { categories: { some: { id: categoryId } } }`.
+
 - **Candidate Query**: Only include candidates where `deletedAt` is null (soft-delete aware).
-- The `categoryId` is only used for **voter identity validation** (Step 3.2), not for controlling which roles are displayed on the ballot.
 
 - **UI Role Filtering (after fetch)**:
   - Any role that has **zero active candidates** is silently skipped in the ballot UI.

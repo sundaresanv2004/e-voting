@@ -97,7 +97,11 @@ export function VoterIdDialog({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isPending}>
+                        <Button
+                            variant={"infoOutline"}
+                            type="submit"
+                            disabled={isPending}
+                        >
                             {isPending ? (
                                 <>
                                     <Spinner />

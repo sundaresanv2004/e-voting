@@ -133,11 +133,10 @@ export function VoterConfirmDialog({
 
                     {/* Confirmation checkbox */}
                     <div
-                        className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all duration-200 group ${
-                            hasConfirmed
+                        className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all duration-200 group ${hasConfirmed
                                 ? "bg-primary/10 border-primary/30"
                                 : "bg-muted/30 border-border hover:bg-muted/50 hover:border-muted-foreground/20"
-                        }`}
+                            }`}
                         onClick={() => onConfirmChange(!hasConfirmed)}
                     >
                         <div className="pt-0.5">
@@ -149,11 +148,10 @@ export function VoterConfirmDialog({
                             />
                         </div>
                         <p
-                            className={`text-sm font-medium leading-snug cursor-pointer transition-colors ${
-                                hasConfirmed
+                            className={`text-sm font-medium leading-snug cursor-pointer transition-colors ${hasConfirmed
                                     ? "text-primary"
                                     : "text-muted-foreground group-hover:text-foreground"
-                            }`}
+                                }`}
                         >
                             I confirm this is my correct identity and I am authorized to cast this ballot.
                         </p>
@@ -165,9 +163,9 @@ export function VoterConfirmDialog({
                         Change ID
                     </Button>
                     <Button
+                        variant={"successOutline"}
                         disabled={!hasConfirmed}
                         onClick={onStartVoting}
-                        className="bg-emerald-600 hover:bg-emerald-500"
                     >
                         <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4" />
                         Start Voting

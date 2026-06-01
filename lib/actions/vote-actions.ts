@@ -49,8 +49,15 @@ export type VerifyVoterResult =
 
 export type SubmitBallotResult = { success: true } | { error: string; status?: string }
 
-// ─── Step 1: Validate Election Code (stub — full logic in vote_logic.md) ──────
+export type CheckStatusResult =
+    | { success: true; status: string }
+    | { error: string }
 
+// ─── Step 1: Validate Election Code ──────────────────────────────────────────
+
+// NOTE: We intentionally do NOT check for PAUSED status here.
+// A PAUSED election lets the voter enter the portal, where the client
+// will show an in-portal dialog. (See Step 1.5 in vote_logic.md)
 export async function validateElectionCodeAction(code: string): Promise<ValidateCodeResult> {
     if (!code?.trim()) {
         return { error: "Election code is required." }
@@ -69,6 +76,16 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
             // Step 1.2 – allowOnlineVoting
             if (!election.settings?.allowOnlineVoting) {
                 return { error: "Voting is disabled. Please contact your organization or election administrator." }
+            }
+
+            // Paused — let through, portal handles it
+            if (election.status === "PAUSED") {
+                return {
+                    success: true,
+                    electionId: election.id,
+                    name: election.name,
+                    code: normalizedCode,
+                }
             }
 
             // Step 1.3 – Timeframe
@@ -108,6 +125,18 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 return { error: "Voting is disabled. Please contact your organization or election administrator." }
             }
 
+            // Paused — let through, portal handles it
+            if (catElection.status === "PAUSED") {
+                return {
+                    success: true,
+                    electionId: catElection.id,
+                    name: catElection.name,
+                    code: normalizedCode,
+                    categoryId: category.id,
+                    categoryName: category.name,
+                }
+            }
+
             // Step 1.3 – Timeframe
             const now = new Date()
             if (now < catElection.startTime) {
@@ -134,6 +163,22 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
     } catch (error) {
         console.error("[VALIDATE_ELECTION_CODE]", error)
         return { error: "Something went wrong. Please try again." }
+    }
+}
+
+// ─── Live Status Check (for Paused Dialog retry) ─────────────────────────────
+
+export async function checkElectionStatusAction(electionId: string): Promise<CheckStatusResult> {
+    try {
+        const election = await db.election.findUnique({
+            where: { id: electionId },
+            select: { status: true },
+        })
+        if (!election) return { error: "Election not found." }
+        return { success: true, status: election.status }
+    } catch (error) {
+        console.error("[CHECK_ELECTION_STATUS]", error)
+        return { error: "Failed to check election status." }
     }
 }
 
@@ -186,7 +231,8 @@ export async function verifyVoterUniqueIdAction(
             return { error: "You have already cast your ballot for this election." }
         }
 
-        // Fetch the ballot structure
+        // Fetch the ballot structure — filter roles by category if a categoryId is provided.
+        // Step 3.4: Category-scoped role filtering (see vote_logic.md)
         const ballotElection = await db.election.findUnique({
             where: { id: electionId },
             select: {
@@ -203,8 +249,11 @@ export async function verifyVoterUniqueIdAction(
                     },
                 },
                 roles: {
-                    // Always fetch all roles for the election — categories don't filter roles.
-                    // The categoryId is only used for voter identity validation, not role visibility.
+                    // If categoryId is provided, only return roles linked to that category.
+                    // If no categoryId (general election code), return all roles.
+                    ...(categoryId
+                        ? { where: { categories: { some: { id: categoryId } } } }
+                        : {}),
                     orderBy: { order: "asc" },
                     select: {
                         id: true,

@@ -59,20 +59,19 @@ export function VoterPausedDialog({
                     </div>
                 </div>
 
-                <DialogFooter className="bg-muted/30 px-4 pb-4 pt-2">
+                <DialogFooter className="px-4 pb-4">
                     <Button
-                        variant="outline"
+                        variant="destructiveOutline"
                         onClick={onExit}
                         disabled={isPending}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                         <HugeiconsIcon icon={Logout01Icon} className="w-4 h-4" />
                         Exit Session
                     </Button>
                     <Button
+                        variant={"warningOutline"}
                         onClick={onRetry}
                         disabled={isPending}
-                        className="bg-amber-500 hover:bg-amber-400 text-white"
                     >
                         {isPending ? (
                             <Spinner />

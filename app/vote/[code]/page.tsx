@@ -99,20 +99,24 @@ export default async function VotePage({
         if (cat) resolvedCategory = cat
     }
 
-    // Guard: election must exist, have online voting enabled, and be ACTIVE
+    // Guard: election must exist and have online voting enabled.
+    // NOTE: PAUSED elections are allowed through — the client portal handles the paused state.
     if (
         !resolvedElection ||
         !resolvedElection.settings?.allowOnlineVoting ||
-        resolvedElection.status !== "ACTIVE"
+        (resolvedElection.status !== "ACTIVE" && resolvedElection.status !== "PAUSED")
     ) {
         return notFound()
     }
+
+    const isPaused = resolvedElection.status === "PAUSED"
 
     return (
         <VoterSessionPortal
             election={resolvedElection}
             category={resolvedCategory}
             accessCode={normalizedCode}
+            isPaused={isPaused}
         />
     )
 }
