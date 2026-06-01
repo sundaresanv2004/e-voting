@@ -16,13 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import type { VoterData } from "./BallotInterface"
 
-// Keys from additionalDetails that are useful to show to the voter
-const VISIBLE_DETAIL_KEYS = new Set([
-    "studentId", "student_id", "rollNo", "roll_no",
-    "admissionNo", "admission_no", "employeeId", "employee_id",
-    "class", "grade", "section", "department", "designation", "house",
-])
-
 function formatDetailLabel(key: string) {
     return key
         .replace(/_/g, " ")
@@ -33,7 +26,7 @@ function formatDetailLabel(key: string) {
 function getVisibleDetails(details: unknown): [string, string][] {
     if (!details || typeof details !== "object" || Array.isArray(details)) return []
     return Object.entries(details as Record<string, unknown>)
-        .filter(([key, val]) => VISIBLE_DETAIL_KEYS.has(key) && val !== null && val !== undefined && val !== "")
+        .filter(([, val]) => val !== null && val !== undefined && val !== "")
         .map(([key, val]) => [formatDetailLabel(key), String(val)])
 }
 

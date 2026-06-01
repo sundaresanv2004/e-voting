@@ -568,11 +568,22 @@ export async function importVotersBulk(
         ? (categoryByCode.get(rawCode) ?? null)
         : null
 
+      // Extract extra details into a JSON object
+      const standardKeys = ["name", "unique_id", "category", "image"]
+      const additionalDetails: Record<string, any> = {}
+      for (const [key, value] of Object.entries(v)) {
+        if (!standardKeys.includes(key.toLowerCase().trim())) {
+          additionalDetails[key] = value
+        }
+      }
+
       data.push({
         electionId,
         uniqueId: finalUniqueId as string,
         name: String(v.name),
+        image: v.image ? String(v.image) : null,
         categoryId: resolvedCategoryId,
+        additionalDetails: Object.keys(additionalDetails).length > 0 ? additionalDetails : Prisma.DbNull,
         createdByUserId: userId,
         updatedByUserId: userId,
       })

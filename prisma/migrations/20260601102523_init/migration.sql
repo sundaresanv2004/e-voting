@@ -85,6 +85,7 @@ CREATE TABLE "Election" (
     "updatedByUserId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Election_pkey" PRIMARY KEY ("id")
 );
@@ -93,15 +94,16 @@ CREATE TABLE "Election" (
 CREATE TABLE "ElectionSettings" (
     "id" TEXT NOT NULL,
     "electionId" TEXT NOT NULL,
-    "allowOnlineVoting" BOOLEAN NOT NULL DEFAULT false,
-    "allowOfflineVoting" BOOLEAN NOT NULL DEFAULT true,
+    "allowOnlineVoting" BOOLEAN NOT NULL DEFAULT true,
     "authorizeVoters" BOOLEAN NOT NULL DEFAULT true,
     "showCandidateProfiles" BOOLEAN NOT NULL DEFAULT true,
     "showCandidateSymbols" BOOLEAN NOT NULL DEFAULT true,
     "shuffleCandidates" BOOLEAN NOT NULL DEFAULT true,
     "allowMultipleVotes" BOOLEAN NOT NULL DEFAULT false,
-    "allowAnonymousVoting" BOOLEAN NOT NULL DEFAULT false,
     "allowNota" BOOLEAN NOT NULL DEFAULT false,
+    "showSummary" BOOLEAN NOT NULL DEFAULT true,
+    "quickElection" BOOLEAN NOT NULL DEFAULT false,
+    "lockResult" BOOLEAN NOT NULL DEFAULT false,
     "maxVotesPerUser" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -148,6 +150,7 @@ CREATE TABLE "Candidate" (
     "symbolImage" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
     "createdByUserId" TEXT,
     "updatedByUserId" TEXT,
 
@@ -161,7 +164,10 @@ CREATE TABLE "Ballot" (
     "categoryId" TEXT,
     "submissionKey" TEXT NOT NULL,
     "isAnonymous" BOOLEAN NOT NULL DEFAULT false,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" TIMESTAMP(3),
     "voterId" TEXT,
 
     CONSTRAINT "Ballot_pkey" PRIMARY KEY ("id")
@@ -174,6 +180,7 @@ CREATE TABLE "Vote" (
     "electionRoleId" TEXT NOT NULL,
     "candidateId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Vote_pkey" PRIMARY KEY ("id")
 );
@@ -195,6 +202,7 @@ CREATE TABLE "UserElectionAccess" (
 CREATE TABLE "Voter" (
     "id" TEXT NOT NULL,
     "electionId" TEXT NOT NULL,
+    "categoryId" TEXT,
     "uniqueId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
@@ -324,7 +332,7 @@ CREATE TABLE "member" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'member',
+    "role" "UserRole" NOT NULL DEFAULT 'viewer',
     "createdAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "member_pkey" PRIMARY KEY ("id")
@@ -397,6 +405,9 @@ CREATE INDEX "Election_startTime_endTime_idx" ON "Election"("startTime", "endTim
 CREATE INDEX "Election_status_idx" ON "Election"("status");
 
 -- CreateIndex
+CREATE INDEX "Election_deletedAt_idx" ON "Election"("deletedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ElectionSettings_electionId_key" ON "ElectionSettings"("electionId");
 
 -- CreateIndex
@@ -461,6 +472,9 @@ CREATE UNIQUE INDEX "UserElectionAccess_userId_electionId_key" ON "UserElectionA
 
 -- CreateIndex
 CREATE INDEX "Voter_electionId_idx" ON "Voter"("electionId");
+
+-- CreateIndex
+CREATE INDEX "Voter_categoryId_idx" ON "Voter"("categoryId");
 
 -- CreateIndex
 CREATE INDEX "Voter_createdByUserId_idx" ON "Voter"("createdByUserId");
@@ -613,7 +627,7 @@ ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_createdByUserId_fkey" FOREIGN 
 ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_updatedByUserId_fkey" FOREIGN KEY ("updatedByUserId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Ballot" ADD CONSTRAINT "Ballot_electionId_fkey" FOREIGN KEY ("electionId") REFERENCES "Election"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Ballot" ADD CONSTRAINT "Ballot_electionId_fkey" FOREIGN KEY ("electionId") REFERENCES "Election"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Ballot" ADD CONSTRAINT "Ballot_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ElectionCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -622,10 +636,10 @@ ALTER TABLE "Ballot" ADD CONSTRAINT "Ballot_categoryId_fkey" FOREIGN KEY ("categ
 ALTER TABLE "Ballot" ADD CONSTRAINT "Ballot_voterId_fkey" FOREIGN KEY ("voterId") REFERENCES "Voter"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Vote" ADD CONSTRAINT "Vote_ballotId_fkey" FOREIGN KEY ("ballotId") REFERENCES "Ballot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Vote" ADD CONSTRAINT "Vote_ballotId_fkey" FOREIGN KEY ("ballotId") REFERENCES "Ballot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Vote" ADD CONSTRAINT "Vote_electionRoleId_fkey" FOREIGN KEY ("electionRoleId") REFERENCES "ElectionRole"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Vote" ADD CONSTRAINT "Vote_electionRoleId_fkey" FOREIGN KEY ("electionRoleId") REFERENCES "ElectionRole"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Vote" ADD CONSTRAINT "Vote_candidateId_fkey" FOREIGN KEY ("candidateId") REFERENCES "Candidate"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -644,6 +658,9 @@ ALTER TABLE "UserElectionAccess" ADD CONSTRAINT "UserElectionAccess_updatedByUse
 
 -- AddForeignKey
 ALTER TABLE "Voter" ADD CONSTRAINT "Voter_electionId_fkey" FOREIGN KEY ("electionId") REFERENCES "Election"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Voter" ADD CONSTRAINT "Voter_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ElectionCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Voter" ADD CONSTRAINT "Voter_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -701,6 +718,7 @@ ALTER TABLE "_CategoryRoles" ADD CONSTRAINT "_CategoryRoles_A_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "_CategoryRoles" ADD CONSTRAINT "_CategoryRoles_B_fkey" FOREIGN KEY ("B") REFERENCES "ElectionRole"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 
 -- ============================================
 -- CHECK constraints (Prisma cannot define these)

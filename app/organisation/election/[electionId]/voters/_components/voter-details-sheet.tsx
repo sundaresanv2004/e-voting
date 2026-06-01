@@ -14,6 +14,10 @@ import {
   Copy01Icon,
   Tick02Icon,
   RefreshIcon,
+  InformationCircleIcon,
+  Globe02Icon,
+  ComputerIcon,
+  Location01Icon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { logVoterIdAccess } from "@/lib/actions/voter"
@@ -92,6 +96,22 @@ function UserCard({
   )
 }
 
+// ─── Additional data row ──────────────────────────────────────────────────────
+
+function DataRow({ label, value }: { label: string; value: string }) {
+  const displayLabel = label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl border bg-card">
+      <p className="text-xs font-medium text-muted-foreground shrink-0">{displayLabel}</p>
+      <p className="text-sm font-medium text-right truncate">{value}</p>
+    </div>
+  )
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type VoterDetails = {
@@ -100,8 +120,16 @@ export type VoterDetails = {
   uniqueId: string
   categoryId: string | null
   electionId: string
+  additionalDetails: Record<string, unknown> | null
   category: { id: string; name: string; code: string } | null
-  ballots: { id: string; createdAt: Date }[]
+  ballots: {
+    id: string
+    createdAt: Date
+    ipAddress: string | null
+    userAgent: string | null
+    categoryId: string | null
+    category: { id: string; name: string; code: string } | null
+  }[]
   createdAt: Date
   updatedAt: Date
   createdBy: { id: string; name: string | null; email: string; image: string | null } | null
@@ -118,6 +146,29 @@ interface VoterDetailsSheetProps {
   onReset: (voter: VoterDetails) => void
 }
 
+// ─── Browser parser ───────────────────────────────────────────────────────────
+
+function parseBrowser(ua: string | null): string {
+  if (!ua) return "Unknown"
+  if (/Edg\//i.test(ua)) return "Microsoft Edge"
+  if (/OPR\//i.test(ua) || /Opera/i.test(ua)) return "Opera"
+  if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) return "Google Chrome"
+  if (/Firefox\//i.test(ua)) return "Mozilla Firefox"
+  if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) return "Safari"
+  if (/MSIE|Trident\//i.test(ua)) return "Internet Explorer"
+  return "Unknown Browser"
+}
+
+function parseOS(ua: string | null): string {
+  if (!ua) return "Unknown"
+  if (/Windows NT/i.test(ua)) return "Windows"
+  if (/Mac OS X/i.test(ua)) return "macOS"
+  if (/Android/i.test(ua)) return "Android"
+  if (/iPhone|iPad/i.test(ua)) return "iOS"
+  if (/Linux/i.test(ua)) return "Linux"
+  return "Unknown OS"
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function VoterDetailsSheet({
@@ -132,6 +183,14 @@ export function VoterDetailsSheet({
   if (!voter) return null
 
   const hasVoted = voter.ballots.length > 0
+  const latestBallot = voter.ballots[0] ?? null
+
+  // Parse additionalDetails into displayable entries
+  const extraEntries = voter.additionalDetails
+    ? Object.entries(voter.additionalDetails).filter(
+        ([, v]) => v !== null && v !== undefined && v !== ""
+      )
+    : []
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -194,6 +253,21 @@ export function VoterDetailsSheet({
             />
           </div>
 
+          {/* Additional Data Section */}
+          {extraEntries.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-0.5">
+                <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium">Additional Information</h4>
+              </div>
+              <div className="grid gap-2">
+                {extraEntries.map(([key, value]) => (
+                  <DataRow key={key} label={key} value={String(value)} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Category Section */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-0.5">
@@ -247,18 +321,91 @@ export function VoterDetailsSheet({
                     : "This voter is registered but has not participated yet."}
                 </p>
               </div>
-              {hasVoted && voter.ballots[0]?.createdAt && (
+              {hasVoted && latestBallot?.createdAt && (
                 <div className="text-right shrink-0">
                   <Badge variant="secondary" className="text-[10px] shadow-none bg-emerald-500/10 text-emerald-600 border-none">
                     Cast
                   </Badge>
                   <p className="text-[10px] text-muted-foreground whitespace-nowrap mt-1">
-                    {format(new Date(voter.ballots[0].createdAt), "MMM d, h:mm a")}
+                    {format(new Date(latestBallot.createdAt), "MMM d, h:mm a")}
                   </p>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Vote Details — shown only when voted */}
+          {hasVoted && latestBallot && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-0.5">
+                <HugeiconsIcon icon={Globe02Icon} className="size-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium">Vote Details</h4>
+              </div>
+              <div className="rounded-2xl border bg-card overflow-hidden divide-y">
+
+                {/* Category voted under */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <HugeiconsIcon icon={GridIcon} className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                      Voted Under Category
+                    </p>
+                    {latestBallot.category ? (
+                      <p className="text-sm font-medium leading-tight mt-0.5">
+                        {latestBallot.category.name}
+                        <code className="ml-2 text-[10px] font-mono text-muted-foreground">{latestBallot.category.code}</code>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground leading-tight mt-0.5">Global</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* IP Address */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <HugeiconsIcon icon={Location01Icon} className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                      IP Address
+                    </p>
+                    <code className="text-sm font-mono leading-tight mt-0.5 block truncate">
+                      {latestBallot.ipAddress ?? "Not recorded"}
+                    </code>
+                  </div>
+                </div>
+
+                {/* Browser / OS */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <HugeiconsIcon icon={ComputerIcon} className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                      Browser / OS
+                    </p>
+                    <p className="text-sm font-medium leading-tight mt-0.5">
+                      {parseBrowser(latestBallot.userAgent)}
+                      <span className="text-muted-foreground font-normal"> on </span>
+                      {parseOS(latestBallot.userAgent)}
+                    </p>
+                    {latestBallot.userAgent && (
+                      <p
+                        className="text-[10px] text-muted-foreground mt-0.5 truncate"
+                        title={latestBallot.userAgent}
+                      >
+                        {latestBallot.userAgent}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           <Separator />
 

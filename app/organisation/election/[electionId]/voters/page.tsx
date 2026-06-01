@@ -50,7 +50,14 @@ export default async function VotersPage({
         select: { id: true, name: true, code: true },
       },
       ballots: {
-        select: { id: true, createdAt: true },
+        select: {
+          id: true,
+          createdAt: true,
+          ipAddress: true,
+          userAgent: true,
+          categoryId: true,
+          category: { select: { id: true, name: true, code: true } },
+        },
       },
       createdBy: {
         select: { id: true, name: true, email: true, image: true },

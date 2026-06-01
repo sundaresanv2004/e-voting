@@ -140,8 +140,8 @@ export function BallotInterface({
     const progress = roles.length === 0
         ? 0
         : isReviewing
-        ? 100
-        : ((activeRoleIndex + 1) / roles.length) * 100
+            ? 100
+            : ((activeRoleIndex + 1) / roles.length) * 100
 
     const handleVoteChange = (roleId: string, candidateId: string) => {
         setVotes((prev) => ({ ...prev, [roleId]: candidateId }))
@@ -231,8 +231,8 @@ export function BallotInterface({
                                 i < activeRoleIndex || isReviewing
                                     ? "w-4 bg-primary"
                                     : i === activeRoleIndex && !isReviewing
-                                    ? "w-6 bg-primary"
-                                    : "w-2 bg-muted-foreground/20"
+                                        ? "w-6 bg-primary"
+                                        : "w-2 bg-muted-foreground/20"
                             )}
                         />
                     ))}
@@ -243,7 +243,7 @@ export function BallotInterface({
             <main className="flex-1 flex items-start justify-center overflow-y-auto pb-32 pt-8 sm:pt-12 px-4">
                 {!isReviewing ? (
                     <div
-                        className="w-full max-w-2xl animate-in fade-in slide-in-from-right-4 duration-300"
+                        className="w-full max-w-7xl animate-in fade-in slide-in-from-right-4 duration-300"
                         key={currentRole.id}
                     >
                         {/* Role title */}
@@ -260,13 +260,13 @@ export function BallotInterface({
                         <RadioGroup
                             value={votes[currentRole.id] ?? ""}
                             onValueChange={(val) => handleVoteChange(currentRole.id, val)}
-                            className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+                            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
                         >
                             {candidates.map((candidate) => {
                                 const isSelected = votes[currentRole.id] === candidate.id
 
                                 return (
-                                    <div key={candidate.id} className="relative group h-full">
+                                    <div key={candidate.id} className="relative group">
                                         <RadioGroupItem
                                             value={candidate.id}
                                             id={`candidate-${candidate.id}`}
@@ -275,20 +275,20 @@ export function BallotInterface({
                                         <Label
                                             htmlFor={`candidate-${candidate.id}`}
                                             className={cn(
-                                                "relative flex h-[200px] sm:h-[220px] flex-col justify-between rounded-2xl border-2 p-4 cursor-pointer transition-all duration-300 overflow-hidden",
+                                                "relative flex flex-col gap-2.5 rounded-2xl border-2 p-3 cursor-pointer transition-all duration-300 overflow-hidden",
                                                 isSelected
                                                     ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                                                    : "border-border/50 bg-card/80 hover:border-primary/30 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5"
+                                                    : "border-border/50 bg-muted/50 hover:border-primary/30 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5"
                                             )}
                                         >
-                                            <div className="flex w-full items-start justify-between gap-2 mb-2">
-                                                {/* Profile image / NOTA / Initials */}
+                                            {/* Profile / NOTA area — full width, overlays on top */}
+                                            <div className="relative w-full">
                                                 {!candidate.isNota ? (
-                                                    <div className="relative shrink-0">
+                                                    <>
                                                         {settings.showCandidateProfiles ? (
                                                             <div
                                                                 className={cn(
-                                                                    "relative w-20 h-24 sm:w-22 sm:h-28 rounded-xl border-2 bg-muted flex items-center justify-center overflow-hidden transition-all",
+                                                                    "relative w-full aspect-[3/4] rounded-xl border-2 bg-muted overflow-hidden transition-all",
                                                                     isSelected
                                                                         ? "border-primary/40 shadow-md shadow-primary/10"
                                                                         : "border-border/50"
@@ -300,117 +300,114 @@ export function BallotInterface({
                                                                         alt={candidate.name}
                                                                         fill
                                                                         className="object-cover"
-                                                                        sizes="88px"
+                                                                        sizes="(max-width: 640px) 45vw, 200px"
                                                                     />
                                                                 ) : (
                                                                     <HugeiconsIcon
                                                                         icon={UserIcon}
-                                                                        className="w-8 h-8 text-muted-foreground/30"
+                                                                        className="absolute inset-0 m-auto w-10 h-10 text-muted-foreground/30"
                                                                     />
                                                                 )}
                                                             </div>
                                                         ) : (
                                                             <div
                                                                 className={cn(
-                                                                    "w-20 h-24 sm:w-22 sm:h-28 rounded-xl border-2 bg-primary/5 flex items-center justify-center",
+                                                                    "w-full aspect-[3/4] rounded-xl border-2 bg-primary/5 flex items-center justify-center",
                                                                     isSelected ? "border-primary/30" : "border-border/50"
                                                                 )}
                                                             >
-                                                                <span className="text-2xl font-black text-primary/50">
+                                                                <span className="text-4xl font-black text-primary/50">
                                                                     {candidate.name?.charAt(0)?.toUpperCase()}
                                                                 </span>
                                                             </div>
                                                         )}
-                                                    </div>
+
+                                                        {/* Symbol — overlaid at bottom-right of the profile */}
+                                                        {settings.showCandidateSymbols && (
+                                                            <div className="absolute bottom-2 right-2">
+                                                                {candidate.symbolImage ? (
+                                                                    <div className="relative w-16 h-16 rounded-lg border border-background bg-background overflow-hidden shadow-md">
+                                                                        <Image
+                                                                            src={candidate.symbolImage}
+                                                                            alt="Symbol"
+                                                                            fill
+                                                                            className="object-cover"
+                                                                            sizes="64px"
+                                                                        />
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="w-16 h-16 rounded-lg border border-background bg-muted/80 shadow-md flex items-center justify-center">
+                                                                        <HugeiconsIcon
+                                                                            icon={Image01Icon}
+                                                                            className="w-6 h-6 text-muted-foreground/30"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 ) : (
-                                                    <div className="relative shrink-0">
-                                                        <div
+                                                    /* NOTA */
+                                                    <div
+                                                        className={cn(
+                                                            "w-full aspect-[3/4] rounded-xl border-2 border-dashed bg-muted/50 flex items-center justify-center transition-all",
+                                                            isSelected ? "border-primary/40 bg-primary/5" : "border-border/60"
+                                                        )}
+                                                    >
+                                                        <svg
+                                                            width="36"
+                                                            height="36"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
                                                             className={cn(
-                                                                "w-20 h-24 sm:w-22 sm:h-28 rounded-xl border-2 border-dashed bg-muted/50 flex items-center justify-center transition-all",
-                                                                isSelected ? "border-primary/40 bg-primary/5" : "border-border/60"
+                                                                "transition-colors",
+                                                                isSelected ? "text-primary" : "text-muted-foreground/40"
                                                             )}
                                                         >
-                                                            <svg
-                                                                width="28"
-                                                                height="28"
-                                                                viewBox="0 0 24 24"
-                                                                fill="none"
-                                                                className={cn(
-                                                                    "transition-colors",
-                                                                    isSelected ? "text-primary" : "text-muted-foreground/40"
-                                                                )}
-                                                            >
-                                                                <path
-                                                                    d="M18 6L6 18M6 6l12 12"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="2.5"
-                                                                    strokeLinecap="round"
-                                                                />
-                                                            </svg>
-                                                        </div>
+                                                            <path
+                                                                d="M18 6L6 18M6 6l12 12"
+                                                                stroke="currentColor"
+                                                                strokeWidth="2.5"
+                                                                strokeLinecap="round"
+                                                            />
+                                                        </svg>
                                                     </div>
                                                 )}
 
-                                                {/* Right side: checkmark + symbol */}
-                                                <div className="flex flex-col items-end justify-between h-24 sm:h-28">
-                                                    {/* Checkmark */}
-                                                    <div
-                                                        className={cn(
-                                                            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 shrink-0",
-                                                            isSelected
-                                                                ? "bg-primary border-primary text-primary-foreground scale-100"
-                                                                : "border-muted-foreground/20 scale-90 opacity-50 group-hover:opacity-100 group-hover:scale-100"
-                                                        )}
-                                                    >
-                                                        {isSelected && (
-                                                            <svg
-                                                                width="10"
-                                                                height="10"
-                                                                viewBox="0 0 12 12"
-                                                                fill="none"
-                                                                className="animate-in zoom-in-50 duration-150"
-                                                            >
-                                                                <path
-                                                                    d="M2.5 6L5 8.5L9.5 3.5"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="2"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                />
-                                                            </svg>
-                                                        )}
-                                                    </div>
-                                                    {/* Symbol image */}
-                                                    {settings.showCandidateSymbols && !candidate.isNota && (
-                                                        <div className="mt-auto">
-                                                            {candidate.symbolImage ? (
-                                                                <div className="relative w-10 h-12 rounded-lg border border-border/40 bg-background/80 overflow-hidden">
-                                                                    <Image
-                                                                        src={candidate.symbolImage}
-                                                                        alt="Symbol"
-                                                                        fill
-                                                                        className="object-cover"
-                                                                        sizes="40px"
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-10 h-12 rounded-lg border border-dashed border-border/30 bg-background/70 flex items-center justify-center">
-                                                                    <HugeiconsIcon
-                                                                        icon={Image01Icon}
-                                                                        className="w-4 h-4 text-muted-foreground/25"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                {/* Checkmark — overlaid at top-right of the profile */}
+                                                <div
+                                                    className={cn(
+                                                        "absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200",
+                                                        isSelected
+                                                            ? "bg-primary border-primary text-primary-foreground scale-100"
+                                                            : "border-background bg-background/70 backdrop-blur-sm scale-90 opacity-60 group-hover:opacity-100 group-hover:scale-100"
+                                                    )}
+                                                >
+                                                    {isSelected && (
+                                                        <svg
+                                                            width="12"
+                                                            height="12"
+                                                            viewBox="0 0 12 12"
+                                                            fill="none"
+                                                            className="animate-in zoom-in-50 duration-150"
+                                                        >
+                                                            <path
+                                                                d="M2.5 6L5 8.5L9.5 3.5"
+                                                                stroke="currentColor"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                        </svg>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* Candidate name */}
-                                            <div className="mt-auto">
+                                            {/* Candidate name — always below the profile */}
+                                            <div className="text-center pb-0.5 w-full overflow-hidden">
                                                 <p
                                                     className={cn(
-                                                        "text-sm font-bold leading-tight break-words transition-colors",
+                                                        "text-sm font-bold leading-snug break-words hyphens-auto overflow-wrap-anywhere transition-colors w-full",
                                                         isSelected ? "text-foreground" : "text-foreground/80"
                                                     )}
                                                 >

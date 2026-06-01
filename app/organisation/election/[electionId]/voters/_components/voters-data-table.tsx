@@ -91,8 +91,16 @@ export type VoterRow = {
   uniqueId: string
   categoryId: string | null
   electionId: string
+  additionalDetails: Record<string, unknown> | null
   category: { id: string; name: string; code: string } | null
-  ballots: { id: string; createdAt: Date }[]
+  ballots: {
+    id: string
+    createdAt: Date
+    ipAddress: string | null
+    userAgent: string | null
+    categoryId: string | null
+    category: { id: string; name: string; code: string } | null
+  }[]
   createdAt: Date
   updatedAt: Date
   createdBy: { id: string; name: string | null; email: string; image: string | null } | null
