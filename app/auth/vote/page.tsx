@@ -205,7 +205,7 @@ function VoteForm() {
                     showCloseButton={false}
                     onPointerDownOutside={(e) => e.preventDefault()}
                     onEscapeKeyDown={(e) => e.preventDefault()}
-                    className="sm:max-w-md"
+                    className="sm:max-w-lg"
                 >
                     <DialogHeader>
                         <div className="flex items-center gap-3 mb-1">
@@ -219,23 +219,20 @@ function VoteForm() {
                                 <p className="text-sm">You are about to enter the secure voting session for:</p>
 
                                 {/* Election Info Card */}
-                                <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <HugeiconsIcon icon={Building03Icon} className="w-4 h-4 text-muted-foreground shrink-0" />
-                                            <span className="text-base font-bold text-foreground truncate">
-                                                {electionInfo?.name}
-                                            </span>
-                                        </div>
-                                        {electionInfo?.categoryName && (
-                                            <Badge variant="secondary" className="shrink-0 text-xs">
+                                <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <HugeiconsIcon icon={Building03Icon} className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                                        <span className="text-base font-bold text-foreground break-words leading-tight">
+                                            {electionInfo?.name}
+                                        </span>
+                                    </div>
+                                    {electionInfo?.categoryName && (
+                                        <div className="pl-6">
+                                            <Badge variant="secondary" className="text-xs">
                                                 {electionInfo.categoryName}
                                             </Badge>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground font-mono">
-                                        Code: {electionInfo?.code}
-                                    </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2 text-[13px]">

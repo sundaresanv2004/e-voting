@@ -370,7 +370,7 @@ export function VoterSessionPortal({
 
             {/* ── Lobby / Entry Screen ─────────────────────────────────── */}
             {!isVoting && !isBallotSubmitted && (
-                <div className="max-w-4xl w-full flex flex-col items-center space-y-14 z-10 -mt-16 animate-in fade-in duration-500">
+                <div className="max-w-7xl w-full flex flex-col items-center space-y-14 z-10 -mt-16 animate-in fade-in duration-500">
                     {/* Org logo */}
                     {election.organization.logo && election.organization.settings?.allowCustomBranding && (
                         <div className="relative w-full max-w-[380px] md:max-w-[500px] aspect-[2258/476]">
@@ -390,24 +390,14 @@ export function VoterSessionPortal({
 
                     {/* Election info */}
                     <div className="text-center space-y-4">
-                        {/* Live badge */}
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-extrabold tracking-[0.2em] uppercase">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
-                            </span>
-                            Live Election
-                            {category && (
-                                <>
-                                    <span className="opacity-40">·</span>
-                                    <Badge variant="secondary" className="text-[10px] font-bold h-4 px-1.5 rounded-full">
-                                        {category.name}
-                                    </Badge>
-                                </>
-                            )}
-                        </div>
+                        {/* Category badge */}
+                        {category && (
+                            <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-extrabold tracking-[0.2em] uppercase">
+                                {category.name}
+                            </div>
+                        )}
 
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight break-words max-w-2xl mx-auto">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight break-words max-w-7xl mx-auto">
                             {election.name}
                         </h1>
 
@@ -424,7 +414,7 @@ export function VoterSessionPortal({
                     {/* Start button */}
                     <Button
                         size="lg"
-                        className="h-12 px-10 rounded-xl text-base font-bold shadow-lg shadow-emerald-500/15 bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 border border-emerald-400/20 transition-all duration-300 active:scale-[0.98]"
+                        className="h-12 px-10 rounded-full text-base font-bold shadow-lg shadow-emerald-500/15 bg-linear-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 border border-emerald-400/20 transition-all duration-300 active:scale-[0.98]"
                         onClick={handleStartAction}
                     >
                         <HugeiconsIcon icon={PlayIcon} className="w-5 h-5 fill-current" />
