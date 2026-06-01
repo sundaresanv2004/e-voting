@@ -204,9 +204,8 @@ model ElectionSettings {
   allowMultipleVotes    Boolean  @default(false)
   allowNota             Boolean  @default(false)
   showSummary           Boolean  @default(true)
-  inOrgElection         Boolean  @default(false)
+  quickElection         Boolean  @default(false)
   lockResult            Boolean  @default(false)
-  assignVoterToSystem   Boolean  @default(false)
   maxVotesPerUser       Int      @default(1)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -290,6 +289,8 @@ model Ballot {
   categoryId    String?
   submissionKey String    @unique
   isAnonymous   Boolean   @default(false)
+  ipAddress     String?
+  userAgent     String?
   createdAt     DateTime  @default(now())
   deletedAt     DateTime? // soft delete — never hard-delete ballots
 
@@ -299,8 +300,7 @@ model Ballot {
   voter    Voter?            @relation(fields: [voterId], references: [id])
   votes    Vote[]
 
-  // Belt-and-suspenders: one ballot per voter per election at the DB level
-  @@unique([voterId, electionId])
+  // Belt-and-suspenders: one ballot per voter per election at the DB level (Removed to support multiple votes)
   // Application MUST use atomic UPDATE Voter SET ballotCount = ballotCount + 1... pattern
   @@index([electionId, voterId])
   @@index([electionId])

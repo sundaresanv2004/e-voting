@@ -30,9 +30,8 @@ const PreferencesSchema = z.object({
   allowMultipleVotes: z.boolean(),
   allowNota: z.boolean(),
   showSummary: z.boolean(),
-  inOrgElection: z.boolean(),
+  quickElection: z.boolean(),
   lockResult: z.boolean(),
-  assignVoterToSystem: z.boolean(),
   maxVotesPerUser: z.number().min(1, "Must be at least 1"),
 })
 
@@ -58,9 +57,8 @@ export function ElectionPreferencesForm({ settings, canManage, tab }: ElectionPr
       allowMultipleVotes: settings?.allowMultipleVotes ?? false,
       allowNota: settings?.allowNota ?? false,
       showSummary: settings?.showSummary ?? true,
-      inOrgElection: settings?.inOrgElection ?? false,
+      quickElection: settings?.quickElection ?? false,
       lockResult: settings?.lockResult ?? false,
-      assignVoterToSystem: settings?.assignVoterToSystem ?? false,
       maxVotesPerUser: settings?.maxVotesPerUser ?? 1,
     },
   })
@@ -76,9 +74,8 @@ export function ElectionPreferencesForm({ settings, canManage, tab }: ElectionPr
         allowMultipleVotes: settings.allowMultipleVotes,
         allowNota: settings.allowNota,
         showSummary: settings.showSummary,
-        inOrgElection: settings.inOrgElection,
+        quickElection: settings.quickElection,
         lockResult: settings.lockResult,
-        assignVoterToSystem: settings.assignVoterToSystem,
         maxVotesPerUser: settings.maxVotesPerUser,
       })
     }
@@ -265,9 +262,9 @@ export function ElectionPreferencesForm({ settings, canManage, tab }: ElectionPr
               />
 
               {renderSwitch(
-                "inOrgElection",
-                "In-Organization Election",
-                "Mark this election as internal to the organization. This streamlines the UI for an internal organizational experience.",
+                "quickElection",
+                "Quick Election",
+                "Makes voting quicker by skipping next/previous steps and streamlining the UI.",
                 Building03Icon
               )}
             </CardContent>
@@ -307,13 +304,6 @@ export function ElectionPreferencesForm({ settings, canManage, tab }: ElectionPr
               "Lock Results Page",
               "Lock the results page for everyone, including admins, for enhanced security and secrecy.",
               Shield01Icon
-            )}
-            {renderSwitch(
-              "assignVoterToSystem",
-              "Assign Voter to System",
-              "Automatically assign the voter to a system user context for enhanced security. This requires 'In-Organization Election' to be enabled.",
-              UserAdd01Icon,
-              true // Disabled state is true as requested
             )}
           </CardContent>
         </Card>

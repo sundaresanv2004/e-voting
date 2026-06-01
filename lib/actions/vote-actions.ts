@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { format } from "date-fns"
+import { headers } from "next/headers"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -347,6 +348,10 @@ export async function submitBallotAction(
                 return { error: "Maximum number of ballots already cast." }
             }
 
+            const reqHeaders = await headers()
+            const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0] || reqHeaders.get("x-real-ip") || ""
+            const userAgent = reqHeaders.get("user-agent") || ""
+
             // Create the ballot, attaching categoryId to track where they voted
             const ballot = await tx.ballot.create({
                 data: {
@@ -355,6 +360,8 @@ export async function submitBallotAction(
                     categoryId,
                     submissionKey: crypto.randomUUID(), // Generate a unique submission key
                     isAnonymous: false,
+                    ipAddress,
+                    userAgent,
                 },
             })
 

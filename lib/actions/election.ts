@@ -454,9 +454,8 @@ export async function updateElectionSettings(electionId: string, data: any) {
         allowMultipleVotes: data.allowMultipleVotes,
         allowNota: data.allowNota,
         showSummary: data.showSummary,
-        inOrgElection: data.inOrgElection,
+        quickElection: data.quickElection,
         lockResult: data.lockResult,
-        assignVoterToSystem: data.assignVoterToSystem,
         maxVotesPerUser: data.maxVotesPerUser,
         updatedByUserId: access.userId
       }
