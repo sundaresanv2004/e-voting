@@ -29,6 +29,8 @@ export type VerifyVoterResult =
                 showCandidateSymbols: boolean
                 shuffleCandidates: boolean
                 allowNota: boolean
+                allowMultipleVotes: boolean
+                maxVotesPerUser: number
             }
             roles: Array<{
                 id: string
@@ -142,8 +144,115 @@ export async function verifyVoterUniqueIdAction(
     uniqueId: string,
     categoryId?: string
 ): Promise<VerifyVoterResult> {
-    // TODO: Implement full voter verification logic per vote_logic.md
-    return { error: "Voter verification is not yet implemented." }
+    try {
+        const election = await db.election.findUnique({
+            where: { id: electionId },
+            include: { settings: true },
+        })
+
+        if (!election) {
+            return { error: "Election not found." }
+        }
+
+        if (election.status === "PAUSED") {
+            return { error: "Election is paused.", status: "PAUSED" }
+        }
+
+        const voter = await db.voter.findUnique({
+            where: {
+                electionId_uniqueId: {
+                    electionId,
+                    uniqueId,
+                }
+            }
+        })
+
+        if (!voter) {
+            return { error: "Invalid Voter ID. Please check your ID and try again." }
+        }
+
+        // Enforce Category Assignments (Rule A and B)
+        if (voter.categoryId) {
+            // Voter is assigned to a specific category. They MUST use that category's access code.
+            if (voter.categoryId !== categoryId) {
+                return { error: "You are assigned to a specific category. Please use your assigned category code to access your ballot." }
+            }
+        }
+
+        // allowMultipleVotes: if false, voter can only ever cast 1 ballot regardless of maxVotesPerUser
+        const allowMultipleVotes = election.settings?.allowMultipleVotes ?? false
+        const maxVotes = allowMultipleVotes ? (election.settings?.maxVotesPerUser ?? 1) : 1
+        if (voter.ballotCount >= maxVotes) {
+            return { error: "You have already cast your ballot for this election." }
+        }
+
+        // Fetch the ballot structure
+        const ballotElection = await db.election.findUnique({
+            where: { id: electionId },
+            select: {
+                id: true,
+                name: true,
+                settings: {
+                    select: {
+                        showCandidateProfiles: true,
+                        showCandidateSymbols: true,
+                        shuffleCandidates: true,
+                        allowNota: true,
+                        allowMultipleVotes: true,
+                        maxVotesPerUser: true,
+                    },
+                },
+                roles: {
+                    // Always fetch all roles for the election — categories don't filter roles.
+                    // The categoryId is only used for voter identity validation, not role visibility.
+                    orderBy: { order: "asc" },
+                    select: {
+                        id: true,
+                        name: true,
+                        order: true,
+                        candidates: {
+                            where: { deletedAt: null },
+                            select: {
+                                id: true,
+                                name: true,
+                                profileImage: true,
+                                symbolImage: true,
+                            },
+                        },
+                    },
+                },
+            },
+        })
+
+        if (!ballotElection || !ballotElection.settings) {
+            return { error: "Failed to load ballot structure." }
+        }
+
+        return {
+            success: true,
+            voter: {
+                id: voter.id,
+                uniqueId: voter.uniqueId,
+                name: voter.name,
+                image: voter.image,
+                additionalDetails: voter.additionalDetails,
+                ballotsCount: voter.ballotCount,
+                maxVotes,
+            },
+            // Pass the effective maxVotes (already capped by allowMultipleVotes) into the ballot settings
+            // so the UI can display remaining votes correctly
+            ballot: {
+                ...ballotElection,
+                settings: {
+                    ...ballotElection.settings!,
+                    maxVotesPerUser: maxVotes,
+                }
+            },
+        }
+    } catch (error) {
+        console.error("[VERIFY_VOTER]", error)
+        return { error: "An unexpected error occurred during verification." }
+    }
 }
 
 // ─── Step 3: Submit Ballot (stub — full logic to be added) ───────────────────
@@ -151,8 +260,88 @@ export async function verifyVoterUniqueIdAction(
 export async function submitBallotAction(
     electionId: string,
     voterId: string,
-    votes: Record<string, string>
+    votes: Record<string, string>,
+    categoryId?: string
 ): Promise<SubmitBallotResult> {
-    // TODO: Implement full ballot submission logic per vote_logic.md
-    return { error: "Ballot submission is not yet implemented." }
+    try {
+        const election = await db.election.findUnique({
+            where: { id: electionId },
+            include: { settings: true },
+        })
+
+        if (!election) {
+            return { error: "Election not found." }
+        }
+
+        if (election.status === "PAUSED") {
+            return { error: "Election is paused.", status: "PAUSED" }
+        }
+
+        if (election.status !== "ACTIVE") {
+            return { error: "Election is not active." }
+        }
+
+        const maxVotes = election.settings?.maxVotesPerUser || 1
+
+        // Use a transaction to ensure ballot submission and voter count increment are atomic
+        return await db.$transaction(async (tx) => {
+            // Check voter status inside transaction
+            const voter = await tx.voter.findUnique({
+                where: { id: voterId },
+            })
+
+            if (!voter) {
+                return { error: "Voter not found." }
+            }
+
+            if (voter.ballotCount >= maxVotes) {
+                return { error: "Maximum number of ballots already cast." }
+            }
+
+            // Create the ballot, attaching categoryId to track where they voted
+            const ballot = await tx.ballot.create({
+                data: {
+                    electionId,
+                    voterId,
+                    categoryId,
+                    submissionKey: crypto.randomUUID(), // Generate a unique submission key
+                    isAnonymous: false,
+                },
+            })
+
+            // Prepare vote records
+            const voteData = Object.entries(votes).map(([roleId, candidateId]) => {
+                // If candidateId is "NOTA", we leave candidateId as null (as per typical NOTA design)
+                // Assuming "NOTA" is handled by leaving candidateId null in the Vote table.
+                const isNota = candidateId === "NOTA"
+
+                return {
+                    ballotId: ballot.id,
+                    electionRoleId: roleId,
+                    candidateId: isNota ? null : candidateId,
+                }
+            })
+
+            // Insert votes
+            if (voteData.length > 0) {
+                await tx.vote.createMany({
+                    data: voteData,
+                })
+            }
+
+            // Increment ballot count
+            await tx.voter.update({
+                where: { id: voterId },
+                data: {
+                    ballotCount: { increment: 1 },
+                    lastVotedAt: new Date(),
+                },
+            })
+
+            return { success: true }
+        })
+    } catch (error) {
+        console.error("[SUBMIT_BALLOT]", error)
+        return { error: "An unexpected error occurred while submitting your ballot." }
+    }
 }

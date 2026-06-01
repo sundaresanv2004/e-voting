@@ -56,6 +56,8 @@ export interface BallotElection {
         showCandidateSymbols: boolean
         shuffleCandidates: boolean
         allowNota: boolean
+        allowMultipleVotes: boolean
+        maxVotesPerUser: number
     }
     roles: BallotRole[]
 }
@@ -92,6 +94,7 @@ function prepareRoles(election: BallotElection, voterId: string): BallotRole[] {
     const settings = election.settings
 
     return [...election.roles]
+        .filter((role) => role.candidates.length > 0)
         .sort((a, b) => a.order - b.order)
         .map((role) => {
             let candidates = [...role.candidates]
@@ -173,13 +176,13 @@ export function BallotInterface({
                     <HugeiconsIcon icon={Image01Icon} className="w-8 h-8 opacity-50" />
                 </div>
                 <div className="space-y-2">
-                    <h3 className="text-xl font-bold tracking-tight">Ballot Not Configured</h3>
+                    <h3 className="text-xl font-bold tracking-tight">No data or candidates to vote</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                        No roles or candidates have been set up yet. Please contact your election coordinator.
+                        There are currently no candidates available for you to vote for in this election.
                     </p>
                 </div>
                 <Button variant="outline" onClick={onBack} className="rounded-xl">
-                    Return to Lobby
+                    Exit
                 </Button>
             </div>
         )

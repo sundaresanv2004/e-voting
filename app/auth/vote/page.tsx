@@ -46,6 +46,8 @@ import { Badge } from "@/components/ui/badge"
 import { validateElectionCodeAction } from "@/lib/actions/vote-actions"
 import { voteSchema } from "@/lib/schemas/auth"
 
+import { useSession } from "@/lib/auth-client"
+
 type VoteFormValues = z.infer<typeof voteSchema>
 
 interface ElectionInfo {
@@ -58,6 +60,9 @@ interface ElectionInfo {
 
 function VoteForm() {
     const router = useRouter()
+    const { data: session } = useSession()
+    const isAdminLoggedIn = !!session
+
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [isRedirecting, setIsRedirecting] = useState(false)
@@ -78,6 +83,7 @@ function VoteForm() {
     }, [isDisclaimerOpen])
 
     const onSubmit = (values: VoteFormValues) => {
+        if (isAdminLoggedIn) return
         setError(null)
         startTransition(async () => {
             const result = await validateElectionCodeAction(values.code)
@@ -97,7 +103,7 @@ function VoteForm() {
     }
 
     const handleContinue = () => {
-        if (!hasAcceptedDisclaimer || !electionInfo) return
+        if (!hasAcceptedDisclaimer || !electionInfo || isAdminLoggedIn) return
 
         // Request fullscreen on this user-gesture
         if (document.documentElement.requestFullscreen) {
@@ -126,6 +132,14 @@ function VoteForm() {
                 </CardHeader>
 
                 <CardContent className="px-0 space-y-4 md:px-6">
+                    {isAdminLoggedIn && (
+                        <Alert variant="destructive">
+                            <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" />
+                            <AlertDescription>
+                                You cannot vote while logged in as an admin/staff. Please log out from dashboard.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     {error && (
                         <Alert variant="destructive">
                             <HugeiconsIcon icon={Alert01Icon} className="h-4 w-4" />
@@ -143,7 +157,7 @@ function VoteForm() {
                                     autoComplete="off"
                                     autoCapitalize="characters"
                                     spellCheck={false}
-                                    disabled={isPending}
+                                    disabled={isPending || isAdminLoggedIn}
                                     {...form.register("code")}
                                 />
                                 <FieldDescription>
@@ -158,7 +172,7 @@ function VoteForm() {
                         <Button
                             type="submit"
                             className="w-full gap-2 mt-5"
-                            disabled={isPending}
+                            disabled={isPending || isAdminLoggedIn}
                         >
                             {isPending ? (
                                 <>
@@ -240,11 +254,10 @@ function VoteForm() {
 
                     {/* Consent checkbox */}
                     <div
-                        className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all duration-200 group ${
-                            hasAcceptedDisclaimer
-                                ? "bg-primary/10 border-primary/30"
-                                : "bg-muted/40 border-border hover:bg-muted/60 hover:border-muted-foreground/20"
-                        }`}
+                        className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer select-none transition-all duration-200 group ${hasAcceptedDisclaimer
+                            ? "bg-primary/10 border-primary/30"
+                            : "bg-muted/40 border-border hover:bg-muted/60 hover:border-muted-foreground/20"
+                            }`}
                         onClick={() => setHasAcceptedDisclaimer(!hasAcceptedDisclaimer)}
                     >
                         <div className="pt-0.5">
@@ -256,11 +269,10 @@ function VoteForm() {
                             />
                         </div>
                         <p
-                            className={`text-sm font-medium leading-snug cursor-pointer transition-colors ${
-                                hasAcceptedDisclaimer
-                                    ? "text-primary"
-                                    : "text-muted-foreground group-hover:text-foreground"
-                            }`}
+                            className={`text-sm font-medium leading-snug cursor-pointer transition-colors ${hasAcceptedDisclaimer
+                                ? "text-primary"
+                                : "text-muted-foreground group-hover:text-foreground"
+                                }`}
                         >
                             I understand the above and I'm ready to proceed.
                         </p>

@@ -18,11 +18,14 @@ import {
   ArrowRight01Icon,
   Time02Icon,
   Alert01Icon,
-  Activity01Icon
+  Activity01Icon,
+  PauseIcon,
+  PlayIcon
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Card,
   CardContent,
@@ -35,7 +38,7 @@ import { Field, FieldLabel, FieldError, FieldContent } from "@/components/ui/fie
 import { Badge } from "@/components/ui/badge"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 
-import { updateElection, logElectionCodeCopy } from "@/lib/actions/election"
+import { updateElection, logElectionCodeCopy, toggleElectionStatus } from "@/lib/actions/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { ElectionStatus } from "@prisma/client"
 import { cn } from "@/lib/utils"
@@ -86,9 +89,10 @@ function StatusBadge({ status }: { status: ElectionStatus }) {
 
 export function ElectionGeneralForm({ election, canManage }: ElectionGeneralFormProps) {
   const router = useRouter()
-  
+
   const [isIdentityPending, setIsIdentityPending] = React.useState(false)
   const [isSchedulePending, setIsSchedulePending] = React.useState(false)
+  const [isTogglePending, setIsTogglePending] = React.useState(false)
 
   const identityForm = useForm<IdentityFormValues>({
     resolver: zodResolver(IdentityFormSchema),
@@ -120,14 +124,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
     }
   }, [election.startTime, election.endTime, scheduleForm])
 
-  React.useEffect(() => {
-    const subscription = scheduleForm.watch((value, { name, type }) => {
-      if ((type === 'change' || name) && scheduleForm.formState.isDirty) {
-        scheduleForm.handleSubmit(onScheduleSubmit)()
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [scheduleForm.watch, scheduleForm.formState.isDirty])
+
 
   const onIdentitySubmit = async (data: IdentityFormValues) => {
     setIsIdentityPending(true)
@@ -173,6 +170,23 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
     }
   }
 
+  const onToggleStatus = async () => {
+    setIsTogglePending(true)
+    try {
+      const res = await toggleElectionStatus(election.id)
+      if (!res.success) {
+        toast.error(res.error)
+      } else {
+        toast.success(res.status === "PAUSED" ? "Election paused" : "Election resumed")
+        router.refresh()
+      }
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsTogglePending(false)
+    }
+  }
+
   // ── Code copy / Reveal ───────────────────────────────────────────────────
   const [copied, setCopied] = React.useState(false)
   const [revealed, setRevealed] = React.useState(false)
@@ -180,7 +194,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
   const handleCopy = () => {
     navigator.clipboard.writeText(election.code)
     setCopied(true)
-    logElectionCodeCopy(election.id).catch(() => {})
+    logElectionCodeCopy(election.id).catch(() => { })
     toast.success("Election code copied to clipboard!")
     setTimeout(() => setCopied(false), 2000)
   }
@@ -220,12 +234,6 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
                       className="w-full"
                       disabled={!canManage || isIdentityPending}
                       {...field}
-                      onBlur={() => {
-                        field.onBlur()
-                        if (identityForm.formState.isDirty) {
-                          identityForm.handleSubmit(onIdentitySubmit)()
-                        }
-                      }}
                     />
                   )}
                 />
@@ -235,6 +243,15 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
               </FieldContent>
             </Field>
           </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={!identityForm.formState.isDirty || isIdentityPending}
+            >
+              {isIdentityPending && <Spinner />}
+              {isIdentityPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </CardFooter>
         </form>
       </Card>
 
@@ -301,6 +318,15 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
               </FieldContent>
             </Field>
           </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={!scheduleForm.formState.isDirty || isSchedulePending}
+            >
+              {isSchedulePending && <Spinner />}
+              {isSchedulePending ? "Saving..." : "Save Changes"}
+            </Button>
+          </CardFooter>
         </form>
       </Card>
 
@@ -328,7 +354,7 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border-2",
                   election.status === 'UPCOMING' ? "border-blue-500 text-blue-500 bg-blue-500/10" :
-                    (election.status === 'ACTIVE' || election.status === 'COMPLETED') ? "border-primary text-primary bg-primary/10" : "border-muted text-muted-foreground bg-muted/50"
+                    (election.status === 'ACTIVE' || election.status === 'PAUSED' || election.status === 'COMPLETED') ? "border-primary text-primary bg-primary/10" : "border-muted text-muted-foreground bg-muted/50"
                 )}>
                   <HugeiconsIcon icon={Time02Icon} className="size-4" />
                 </div>
@@ -342,20 +368,21 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border-2",
                   election.status === 'ACTIVE' ? "border-green-500 text-green-500 bg-green-500/10" :
-                    election.status === 'COMPLETED' ? "border-primary text-primary bg-primary/10" : "border-muted text-muted-foreground bg-muted/50"
+                    election.status === 'PAUSED' ? "border-amber-500 text-amber-500 bg-amber-500/10" :
+                      election.status === 'COMPLETED' ? "border-primary text-primary bg-primary/10" : "border-muted text-muted-foreground bg-muted/50"
                 )}>
-                  <HugeiconsIcon icon={Activity01Icon} className="size-4" />
+                  <HugeiconsIcon icon={election.status === 'PAUSED' ? PauseIcon : Activity01Icon} className="size-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Active</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 max-w-[120px]">Voting is open</p>
+                  <p className="text-sm font-semibold">{election.status === 'PAUSED' ? 'Paused' : 'Active'}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 max-w-[120px]">{election.status === 'PAUSED' ? 'Voting is paused' : 'Voting is open'}</p>
                 </div>
               </div>
 
               <div className="flex flex-col items-center text-center gap-3 bg-card px-2">
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border-2",
-                  election.status === 'COMPLETED' ? "border-amber-500 text-amber-500 bg-amber-500/10" : "border-muted text-muted-foreground bg-muted/50"
+                  election.status === 'COMPLETED' ? "border-primary text-primary bg-primary/10" : "border-muted text-muted-foreground bg-muted/50"
                 )}>
                   <HugeiconsIcon icon={Tick02Icon} className="size-4" />
                 </div>
@@ -369,6 +396,39 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Card: Election Controls ────────────────────────────────────────── */}
+      {(election.status === "ACTIVE" || election.status === "PAUSED") && (
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b flex flex-row items-start gap-3">
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg mt-0.5 ${election.status === "PAUSED" ? "bg-amber-500/10 text-amber-500" : "bg-green-500/10 text-green-500"}`}>
+              <HugeiconsIcon icon={election.status === "ACTIVE" ? PauseIcon : PlayIcon} className="size-4" />
+            </div>
+            <div>
+              <CardTitle>{election.status === "ACTIVE" ? "Pause Election" : "Resume Election"}</CardTitle>
+              <CardDescription>
+                {election.status === "ACTIVE"
+                  ? "Pausing the election will temporarily prevent voters from casting their ballots until it is resumed."
+                  : "Resuming the election will allow voters to cast their ballots again."}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardFooter className="flex justify-end">
+            <Button
+              variant={election.status === "ACTIVE" ? "warningOutline" : "successOutline"}
+              disabled={!canManage || isTogglePending}
+              onClick={onToggleStatus}
+            >
+              {isTogglePending ? (
+                <Spinner />
+              ) : (
+                <HugeiconsIcon icon={election.status === "ACTIVE" ? PauseIcon : PlayIcon} className="size-4" />
+              )}
+              {isTogglePending ? (election.status === "ACTIVE" ? "Pausing..." : "Resuming...") : (election.status === "ACTIVE" ? "Pause Election" : "Resume Election")}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
 
       {/* ── Card 3: Election Access Code ───────────────────────────── */}
       <Card className="border-primary/20 shadow-sm gap-0 p-0 overflow-hidden">

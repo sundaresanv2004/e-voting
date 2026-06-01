@@ -37,9 +37,13 @@ interface ElectionInfo {
     organization: {
         name: string
         logo: string | null
+        settings?: {
+            allowCustomBranding: boolean
+        } | null
     }
     settings: {
         allowOnlineVoting: boolean
+        authorizeVoters: boolean
     } | null
 }
 
@@ -204,7 +208,7 @@ export function VoterSessionPortal({
         if (!voterData) return
         setIsSubmittingBallot(true)
         try {
-            const result = await submitBallotAction(election.id, voterData.id, votes)
+            const result = await submitBallotAction(election.id, voterData.id, votes, category?.id)
             if ("error" in result) {
                 if (result.status === "PAUSED") {
                     setIsSubmittingBallot(false)
@@ -325,7 +329,7 @@ export function VoterSessionPortal({
             {!isVoting && !isBallotSubmitted && (
                 <div className="max-w-4xl w-full flex flex-col items-center space-y-14 z-10 -mt-16 animate-in fade-in duration-500">
                     {/* Org logo */}
-                    {election.organization.logo && (
+                    {election.organization.logo && election.organization.settings?.allowCustomBranding && (
                         <div className="relative w-full max-w-[380px] md:max-w-[500px] aspect-[2258/476]">
                             <Image
                                 src={election.organization.logo}

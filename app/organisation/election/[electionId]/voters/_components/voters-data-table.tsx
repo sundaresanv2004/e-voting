@@ -19,6 +19,7 @@ import {
   GridIcon,
   CloudUploadIcon,
   FilterIcon,
+  RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { useSearchParams, useRouter } from "next/navigation"
 
@@ -75,6 +76,7 @@ import { DataExport } from "@/components/ui/data-export"
 import { VoterDialog, type CategoryOption } from "./voter-dialog"
 import { VoterDetailsSheet, type VoterDetails } from "./voter-details-sheet"
 import { DeleteVoterDialog } from "./delete-voter-dialog"
+import { ResetVoterDialog } from "./reset-voter-dialog"
 import { ImportVotersDialog } from "./import-voters-dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -120,6 +122,7 @@ export function VotersDataTable({
   const [createOpen, setCreateOpen] = React.useState(false)
   const [editTarget, setEditTarget] = React.useState<VoterRow | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<VoterRow | null>(null)
+  const [resetTarget, setResetTarget] = React.useState<VoterRow | null>(null)
   const [detailsTarget, setDetailsTarget] = React.useState<VoterRow | null>(null)
 
   // Table state
@@ -385,6 +388,15 @@ export function VotersDataTable({
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
+                                variant="warning"
+                                disabled={!hasVoted}
+                                onClick={() => setResetTarget(voter)}
+                              >
+                                <HugeiconsIcon icon={RefreshIcon} data-icon="inline-start" />
+                                Reset Vote
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
                                 variant="destructive"
                                 disabled={hasVoted}
                                 onClick={() => setDeleteTarget(voter)}
@@ -512,6 +524,12 @@ export function VotersDataTable({
         voter={deleteTarget}
         electionId={electionId}
       />
+      <ResetVoterDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        voter={resetTarget}
+        electionId={electionId}
+      />
       <VoterDetailsSheet
         open={!!detailsTarget}
         onOpenChange={(open) => !open && setDetailsTarget(null)}
@@ -519,6 +537,7 @@ export function VotersDataTable({
         canManage={canManage}
         onEdit={(v) => setEditTarget(v as VoterRow)}
         onDelete={(v) => setDeleteTarget(v as VoterRow)}
+        onReset={(v) => setResetTarget(v as VoterRow)}
       />
     </div>
   )

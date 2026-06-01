@@ -1,5 +1,7 @@
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
 import { VoterSessionPortal } from "./_components/VoterSessionPortal"
 
 export default async function VotePage({
@@ -9,6 +11,14 @@ export default async function VotePage({
     params: Promise<{ code: string }>
     searchParams: Promise<{ categoryId?: string }>
 }) {
+    // Check if an admin is logged in. They should not be able to access the voting portal.
+    const session = await auth.api.getSession({
+        headers: await headers()
+    })
+    if (session) {
+        redirect("/auth/vote")
+    }
+
     const { code } = await params
     const { categoryId } = await searchParams
 
@@ -27,11 +37,15 @@ export default async function VotePage({
                 select: {
                     name: true,
                     logo: true,
+                    settings: {
+                        select: { allowCustomBranding: true }
+                    }
                 },
             },
             settings: {
                 select: {
                     allowOnlineVoting: true,
+                    authorizeVoters: true,
                 },
             },
         },
@@ -56,11 +70,15 @@ export default async function VotePage({
                             select: {
                                 name: true,
                                 logo: true,
+                                settings: {
+                                    select: { allowCustomBranding: true }
+                                }
                             },
                         },
                         settings: {
                             select: {
                                 allowOnlineVoting: true,
+                                authorizeVoters: true,
                             },
                         },
                     },

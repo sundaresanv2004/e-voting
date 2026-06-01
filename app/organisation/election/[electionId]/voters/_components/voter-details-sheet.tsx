@@ -13,6 +13,7 @@ import {
   Cancel01Icon,
   Copy01Icon,
   Tick02Icon,
+  RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { logVoterIdAccess } from "@/lib/actions/voter"
@@ -114,6 +115,7 @@ interface VoterDetailsSheetProps {
   canManage: boolean
   onEdit: (voter: VoterDetails) => void
   onDelete: (voter: VoterDetails) => void
+  onReset: (voter: VoterDetails) => void
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -125,6 +127,7 @@ export function VoterDetailsSheet({
   canManage,
   onEdit,
   onDelete,
+  onReset,
 }: VoterDetailsSheetProps) {
   if (!voter) return null
 
@@ -286,6 +289,18 @@ export function VoterDetailsSheet({
         {/* Footer actions (admin only) */}
         {canManage && (
           <SheetFooter className="flex flex-col gap-2.5 border-t px-6 py-4 bg-muted/20">
+            <Button
+              variant="warningOutline"
+              className="w-full"
+              disabled={!hasVoted}
+              onClick={() => {
+                onOpenChange(false)
+                setTimeout(() => onReset(voter), 200)
+              }}
+            >
+              <HugeiconsIcon icon={RefreshIcon} className="size-4" />
+              Reset Vote
+            </Button>
             <div className="flex gap-2">
               <Button
                 variant="destructiveOutline"

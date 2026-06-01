@@ -354,6 +354,84 @@ export async function deleteVoter(voterId: string, electionId: string) {
   }
 }
 
+// ─── Reset Voter Vote ─────────────────────────────────────────────────────────
+
+export async function resetVoterVote(voterId: string, electionId: string) {
+  let adminId = ""
+  let orgId = ""
+  try {
+    const access = await requireOrgActionContext({
+      action: "VOTER_VOTE_RESET",
+      entityType: AuditEntityType.ELECTION,
+      entityId: voterId,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const { userId, organizationId } = access
+
+    await db.$transaction(async (tx) => {
+      const voter = await tx.voter.findFirst({
+        where: {
+          id: voterId,
+          electionId,
+          election: { organizationId, deletedAt: null },
+        },
+        include: { ballots: { select: { id: true } } },
+      })
+      if (!voter) throw new Error("Voter not found")
+      if (voter.ballots.length === 0) throw new Error("This voter has not cast a vote yet")
+
+      const ballotIds = voter.ballots.map((b) => b.id)
+
+      // Must delete Vote records first due to onDelete: Restrict on Ballot
+      await tx.vote.deleteMany({
+        where: { ballotId: { in: ballotIds } },
+      })
+
+      // Now safe to delete the ballot(s)
+      await tx.ballot.deleteMany({
+        where: { id: { in: ballotIds } },
+      })
+
+      // Reset voter counters
+      await tx.voter.update({
+        where: { id: voterId },
+        data: { ballotCount: 0, lastVotedAt: null },
+      })
+
+      await logAdminAction({
+        action: "VOTER_VOTE_RESET",
+        entityType: AuditEntityType.ELECTION,
+        entityId: voterId,
+        adminId: userId,
+        organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { electionId, name: voter.name, uniqueId: voter.uniqueId },
+      })
+    })
+
+    revalidatePath(`/organisation/election/${electionId}/voters`)
+    return { success: true }
+  } catch (error: any) {
+    console.error("[RESET_VOTER_VOTE]", error)
+    if (adminId && orgId) {
+      try {
+        await logAdminAction({
+          action: "VOTER_VOTE_RESET",
+          entityType: AuditEntityType.ELECTION,
+          entityId: voterId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { error: error?.message || "Unknown error" },
+        })
+      } catch {}
+    }
+    return { success: false, error: error.message || "Failed to reset voter vote" }
+  }
+}
+
 // ─── Verify Bulk ──────────────────────────────────────────────────────────────
 
 export async function verifyVotersBulk(
