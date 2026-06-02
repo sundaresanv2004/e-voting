@@ -43,8 +43,9 @@ import {
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { validateElectionCodeAction } from "@/lib/actions/vote-actions"
+import { validateElectionCodeAction, prefetchBallotDataAction } from "@/lib/actions/vote-actions"
 import { voteSchema } from "@/lib/schemas/auth"
+import { DeviceGuard } from "@/app/vote/_components/DeviceGuard"
 
 import { useSession } from "@/lib/auth-client"
 
@@ -111,15 +112,32 @@ function VoteForm() {
     const handleContinue = () => {
         if (!hasAcceptedDisclaimer || !electionInfo || isAdminLoggedIn) return
 
-        // Request fullscreen on this user-gesture
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch((err) => {
-                console.warn("Fullscreen request rejected:", err)
-            })
-        }
-
         setIsRedirecting(true)
-        router.push(`/vote/${electionInfo.code}`)
+
+        // Pre-fetch ballot data and cache it in sessionStorage
+        startTransition(async () => {
+            const prefetch = await prefetchBallotDataAction(electionInfo.electionId, electionInfo.categoryId)
+            if ("success" in prefetch) {
+                try {
+                    sessionStorage.setItem(`ballot_cache_${electionInfo.electionId}`, JSON.stringify({
+                        ballot: prefetch.ballot,
+                        updatedAt: prefetch.updatedAt,
+                        cachedAt: new Date().toISOString()
+                    }))
+                } catch (e) {
+                    console.warn("Failed to cache ballot data:", e)
+                }
+            }
+
+            // Request fullscreen on this user-gesture
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    console.warn("Fullscreen request rejected:", err)
+                })
+            }
+
+            router.push(`/vote/${electionInfo.code}`)
+        })
     }
 
     return (
@@ -257,6 +275,8 @@ function VoteForm() {
                                         ) : (
                                             <li>• Be careful! You will not be able to review your votes before submission. <span className="font-medium text-foreground">Votes are cast instantly</span>.</li>
                                         )}
+                                        <li>• <span className="font-medium text-foreground">Desktop/Laptop Required:</span> Voting is not available on mobile phones or tablets.</li>
+                                        <li>• Ballot data is <span className="font-medium text-foreground">cached locally</span> for a faster experience. If any changes need to be reflected, exit and re-enter the vote.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -322,8 +342,10 @@ function VoteForm() {
 
 export default function VotePage() {
     return (
-        <div className="w-full">
-            <VoteForm />
-        </div>
+        <DeviceGuard>
+            <div className="w-full">
+                <VoteForm />
+            </div>
+        </DeviceGuard>
     )
 }

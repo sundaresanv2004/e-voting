@@ -1,8 +1,15 @@
 "use server"
 
 import { db } from "@/lib/db"
+import {
+    assertElectionAcceptsVotes,
+    assertVoteSelectionShape,
+    reserveVoterBallotSlot,
+} from "@/lib/voting/integrity"
 import { format } from "date-fns"
 import { headers } from "next/headers"
+import { logAdminAction } from "@/lib/auth/audit"
+import { AuditEntityType, AuditStatus } from "@prisma/client"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -22,6 +29,32 @@ export type ValidateCodeResult =
       }
     | { error: string }
 
+export interface BallotData {
+    id: string
+    name: string
+    settings: {
+        showCandidateProfiles: boolean
+        showCandidateSymbols: boolean
+        shuffleCandidates: boolean
+        allowNota: boolean
+        allowMultipleVotes: boolean
+        maxVotesPerUser: number
+        showSummary: boolean
+        quickElection: boolean
+    }
+    roles: Array<{
+        id: string
+        name: string
+        order: number
+        candidates: Array<{
+            id: string
+            name: string
+            profileImage: string | null
+            symbolImage: string | null
+        }>
+    }>
+}
+
 export type VerifyVoterResult =
     | {
         success: true
@@ -34,31 +67,7 @@ export type VerifyVoterResult =
             ballotsCount: number
             maxVotes: number
         }
-        ballot: {
-            id: string
-            name: string
-            settings: {
-                showCandidateProfiles: boolean
-                showCandidateSymbols: boolean
-                shuffleCandidates: boolean
-                allowNota: boolean
-                allowMultipleVotes: boolean
-                maxVotesPerUser: number
-                showSummary: boolean
-                quickElection: boolean
-            }
-            roles: Array<{
-                id: string
-                name: string
-                order: number
-                candidates: Array<{
-                    id: string
-                    name: string
-                    profileImage: string | null
-                    symbolImage: string | null
-                }>
-            }>
-        }
+        ballot: BallotData
     }
     | { error: string; status?: string }
 
@@ -215,6 +224,92 @@ export async function checkElectionStatusAction(electionId: string): Promise<Che
     }
 }
 
+// ─── Step 1.5: Prefetch Ballot Data for Caching ──────────────────────────────
+
+export type PrefetchBallotResult = 
+    | { success: true; ballot: BallotData; updatedAt: Date }
+    | { error: string }
+
+export async function prefetchBallotDataAction(
+    electionId: string,
+    categoryId?: string
+): Promise<PrefetchBallotResult> {
+    try {
+        const election = await db.election.findUnique({
+            where: { id: electionId },
+            include: { settings: true },
+        })
+
+        if (!election || !election.settings) {
+            return { error: "Election not found." }
+        }
+
+        const maxVotes = election.settings.allowMultipleVotes ? (election.settings.maxVotesPerUser ?? 1) : 1
+
+        const ballotElection = await db.election.findUnique({
+            where: { id: electionId },
+            select: {
+                id: true,
+                name: true,
+                updatedAt: true,
+                settings: {
+                    select: {
+                        showCandidateProfiles: true,
+                        showCandidateSymbols: true,
+                        shuffleCandidates: true,
+                        allowNota: true,
+                        allowMultipleVotes: true,
+                        maxVotesPerUser: true,
+                        showSummary: true,
+                        quickElection: true,
+                    },
+                },
+                roles: {
+                    ...(categoryId
+                        ? { where: { categories: { some: { id: categoryId } } } }
+                        : {}),
+                    orderBy: { order: "asc" },
+                    select: {
+                        id: true,
+                        name: true,
+                        order: true,
+                        candidates: {
+                            where: { deletedAt: null },
+                            select: {
+                                id: true,
+                                name: true,
+                                profileImage: true,
+                                symbolImage: true,
+                            },
+                        },
+                    },
+                },
+            },
+        })
+
+        if (!ballotElection || !ballotElection.settings) {
+            return { error: "Failed to load ballot structure." }
+        }
+
+        return {
+            success: true,
+            updatedAt: ballotElection.updatedAt,
+            ballot: {
+                id: ballotElection.id,
+                name: ballotElection.name,
+                settings: {
+                    ...ballotElection.settings,
+                    maxVotesPerUser: maxVotes,
+                },
+                roles: ballotElection.roles,
+            },
+        }
+    } catch (error) {
+        console.error("[PREFETCH_BALLOT_DATA]", error)
+        return { error: "Failed to prefetch ballot data." }
+    }
+}
+
 // ─── Step 2: Verify Voter ID (stub — full logic to be added) ─────────────────
 
 export async function verifyVoterUniqueIdAction(
@@ -233,6 +328,14 @@ export async function verifyVoterUniqueIdAction(
         }
 
         if (election.status === "PAUSED") {
+            await logAdminAction({
+                action: "VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Voter session start failed: Election is paused.",
+                metadata: { electionId, uniqueId, categoryId }
+            })
             return { error: "Election is paused.", status: "PAUSED" }
         }
 
@@ -246,6 +349,14 @@ export async function verifyVoterUniqueIdAction(
         })
 
         if (!voter) {
+            await logAdminAction({
+                action: "VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Voter session start failed: Invalid Voter ID entered.",
+                metadata: { electionId, uniqueId, categoryId }
+            })
             return { error: "Invalid Voter ID. Please check your ID and try again." }
         }
 
@@ -253,6 +364,15 @@ export async function verifyVoterUniqueIdAction(
         if (voter.categoryId) {
             // Voter is assigned to a specific category. They MUST use that category's access code.
             if (voter.categoryId !== categoryId) {
+                await logAdminAction({
+                    action: "VOTER_SESSION_STARTED",
+                    entityType: AuditEntityType.VOTER,
+                    entityId: voter.id,
+                    organizationId: election.organizationId,
+                    status: AuditStatus.FAILURE,
+                    description: "Voter session start failed: Voter category mismatch.",
+                    metadata: { electionId, voterId: voter.id, categoryId }
+                })
                 return { error: "You are assigned to a specific category. Please use your assigned category code to access your ballot." }
             }
         }
@@ -261,6 +381,15 @@ export async function verifyVoterUniqueIdAction(
         const allowMultipleVotes = election.settings?.allowMultipleVotes ?? false
         const maxVotes = allowMultipleVotes ? (election.settings?.maxVotesPerUser ?? 1) : 1
         if (voter.ballotCount >= maxVotes) {
+            await logAdminAction({
+                action: "VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                entityId: voter.id,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Voter session start failed: Voter has already voted.",
+                metadata: { electionId, voterId: voter.id, categoryId, ballotCount: voter.ballotCount, maxVotes }
+            })
             return { error: "You have already cast your ballot for this election." }
         }
 
@@ -309,8 +438,27 @@ export async function verifyVoterUniqueIdAction(
         })
 
         if (!ballotElection || !ballotElection.settings) {
+            await logAdminAction({
+                action: "VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                entityId: voter.id,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Voter session start failed: Failed to load ballot structure.",
+                metadata: { electionId, voterId: voter.id, categoryId }
+            })
             return { error: "Failed to load ballot structure." }
         }
+
+        await logAdminAction({
+            action: "VOTER_SESSION_STARTED",
+            entityType: AuditEntityType.VOTER,
+            entityId: voter.id,
+            organizationId: election.organizationId,
+            status: AuditStatus.SUCCESS,
+            description: `Voter "${voter.name}" verified unique ID and started session.`,
+            metadata: { electionId, voterId: voter.id, categoryId }
+        })
 
         return {
             success: true,
@@ -335,6 +483,19 @@ export async function verifyVoterUniqueIdAction(
         }
     } catch (error) {
         console.error("[VERIFY_VOTER]", error)
+        let orgId: string | null = null
+        try {
+            const el = await db.election.findUnique({ where: { id: electionId }, select: { organizationId: true } })
+            orgId = el?.organizationId ?? null
+        } catch {}
+        await logAdminAction({
+            action: "VOTER_SESSION_STARTED",
+            entityType: AuditEntityType.VOTER,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            description: `Voter session start failed: ${error instanceof Error ? error.message : String(error)}`,
+            metadata: { electionId, uniqueId, categoryId }
+        })
         return { error: "An unexpected error occurred during verification." }
     }
 }
@@ -354,10 +515,26 @@ export async function startAnonymousSessionAction(
         }
 
         if (election.status === "PAUSED") {
+            await logAdminAction({
+                action: "ANONYMOUS_VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Anonymous voter session start failed: Election is paused.",
+                metadata: { electionId, categoryId }
+            })
             return { error: "Election is paused.", status: "PAUSED" }
         }
 
         if (election.settings?.authorizeVoters) {
+            await logAdminAction({
+                action: "ANONYMOUS_VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Anonymous voter session start failed: Election requires voter authorization.",
+                metadata: { electionId, categoryId }
+            })
             return { error: "This election requires voter authorization." }
         }
 
@@ -403,8 +580,25 @@ export async function startAnonymousSessionAction(
         })
 
         if (!ballotElection || !ballotElection.settings) {
+            await logAdminAction({
+                action: "ANONYMOUS_VOTER_SESSION_STARTED",
+                entityType: AuditEntityType.VOTER,
+                organizationId: election.organizationId,
+                status: AuditStatus.FAILURE,
+                description: "Anonymous voter session start failed: Failed to load ballot structure.",
+                metadata: { electionId, categoryId }
+            })
             return { error: "Failed to load ballot structure." }
         }
+
+        await logAdminAction({
+            action: "ANONYMOUS_VOTER_SESSION_STARTED",
+            entityType: AuditEntityType.VOTER,
+            organizationId: election.organizationId,
+            status: AuditStatus.SUCCESS,
+            description: "Anonymous voter started session.",
+            metadata: { electionId, categoryId }
+        })
 
         return {
             success: true,
@@ -427,6 +621,19 @@ export async function startAnonymousSessionAction(
         }
     } catch (error) {
         console.error("[START_ANONYMOUS_SESSION]", error)
+        let orgId: string | null = null
+        try {
+            const el = await db.election.findUnique({ where: { id: electionId }, select: { organizationId: true } })
+            orgId = el?.organizationId ?? null
+        } catch {}
+        await logAdminAction({
+            action: "ANONYMOUS_VOTER_SESSION_STARTED",
+            entityType: AuditEntityType.VOTER,
+            organizationId: orgId,
+            status: AuditStatus.FAILURE,
+            description: `Anonymous voter session start failed: ${error instanceof Error ? error.message : String(error)}`,
+            metadata: { electionId, categoryId }
+        })
         return { error: "An unexpected error occurred while starting the session." }
     }
 }
@@ -440,55 +647,128 @@ export async function submitBallotAction(
     categoryId?: string
 ): Promise<SubmitBallotResult> {
     try {
-        const election = await db.election.findUnique({
-            where: { id: electionId },
-            include: { settings: true },
-        })
-
-        if (!election) {
-            return { error: "Election not found." }
-        }
-
-        if (election.status === "PAUSED") {
-            return { error: "Election is paused.", status: "PAUSED" }
-        }
-
-        if (election.status !== "ACTIVE") {
-            return { error: "Election is not active." }
-        }
-
-        const maxVotes = election.settings?.maxVotesPerUser || 1
-
         // If voterId is "anonymous", treat it as null
         const effectiveVoterId = voterId === "anonymous" ? null : voterId
 
-        // Use a transaction to ensure ballot submission and voter count increment are atomic
         return await db.$transaction(async (tx) => {
+            const election = await assertElectionAcceptsVotes(tx, electionId)
+            const settings = election.settings
+            const allowMultipleVotes = settings?.allowMultipleVotes ?? false
+            const maxVotes = effectiveVoterId
+                ? allowMultipleVotes
+                    ? settings?.maxVotesPerUser ?? 1
+                    : 1
+                : 1
+
+            if (!effectiveVoterId && settings?.authorizeVoters) {
+                throw new Error("This election requires voter authorization.")
+            }
+
+            let resolvedCategoryId: string | null = null
+            if (categoryId) {
+                const category = await tx.electionCategory.findFirst({
+                    where: { id: categoryId, electionId },
+                    select: { id: true },
+                })
+                if (!category) {
+                    throw new Error("Invalid voting category.")
+                }
+                resolvedCategoryId = category.id
+            }
+
             if (effectiveVoterId) {
-                // Check voter status inside transaction for authenticated voters
                 const voter = await tx.voter.findUnique({
                     where: { id: effectiveVoterId },
+                    select: { id: true, electionId: true, categoryId: true },
                 })
 
-                if (!voter) {
-                    return { error: "Voter not found." }
+                if (!voter || voter.electionId !== electionId) {
+                    throw new Error("Voter not found for this election.")
                 }
 
-                if (voter.ballotCount >= maxVotes) {
-                    return { error: "Maximum number of ballots already cast." }
+                if (voter.categoryId && voter.categoryId !== resolvedCategoryId) {
+                    throw new Error("Voter must use their assigned category.")
                 }
+            }
+
+            const roles = await tx.electionRole.findMany({
+                where: {
+                    electionId,
+                    ...(resolvedCategoryId
+                        ? { categories: { some: { id: resolvedCategoryId } } }
+                        : {}),
+                },
+                select: {
+                    id: true,
+                    candidates: {
+                        where: { deletedAt: null },
+                        select: { id: true },
+                    },
+                },
+                orderBy: { order: "asc" },
+            })
+
+            if (roles.length === 0) {
+                throw new Error("This ballot has no roles configured.")
+            }
+
+            const requiredRoleIds = roles.map((role) => role.id)
+            const selectedRoleIds = Object.keys(votes)
+            assertVoteSelectionShape({ selectedRoleIds, requiredRoleIds })
+
+            if (selectedRoleIds.length !== requiredRoleIds.length) {
+                throw new Error("Unexpected vote selections are not allowed.")
+            }
+
+            const roleCandidateIds = new Map(
+                roles.map((role) => [role.id, new Set(role.candidates.map((candidate) => candidate.id))])
+            )
+
+            const voteData = Object.entries(votes).map(([roleId, candidateId]) => {
+                const validCandidates = roleCandidateIds.get(roleId)
+                if (!validCandidates) {
+                    throw new Error("Invalid election role selected.")
+                }
+
+                const isNota = candidateId === "NOTA"
+                if (isNota) {
+                    if (!settings?.allowNota) {
+                        throw new Error("NOTA is not enabled for this election.")
+                    }
+                    return {
+                        electionRoleId: roleId,
+                        candidateId: null,
+                    }
+                }
+
+                if (!validCandidates.has(candidateId)) {
+                    throw new Error("Invalid candidate selected.")
+                }
+
+                return {
+                    electionRoleId: roleId,
+                    candidateId,
+                }
+            })
+
+            if (effectiveVoterId) {
+                await reserveVoterBallotSlot({
+                    tx,
+                    electionId,
+                    voterId: effectiveVoterId,
+                    maxVotesPerUser: maxVotes,
+                })
             }
 
             const reqHeaders = await headers()
             const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0] || reqHeaders.get("x-real-ip") || ""
             const userAgent = reqHeaders.get("user-agent") || ""
 
-            // Create the ballot, attaching categoryId to track where they voted
             const ballot = await tx.ballot.create({
                 data: {
                     electionId,
                     voterId: effectiveVoterId,
-                    categoryId,
+                    categoryId: resolvedCategoryId,
                     submissionKey: crypto.randomUUID(), // Generate a unique submission key
                     isAnonymous: !effectiveVoterId,
                     ipAddress,
@@ -496,41 +776,45 @@ export async function submitBallotAction(
                 },
             })
 
-            // Prepare vote records
-            const voteData = Object.entries(votes).map(([roleId, candidateId]) => {
-                // If candidateId is "NOTA", we leave candidateId as null (as per typical NOTA design)
-                // Assuming "NOTA" is handled by leaving candidateId null in the Vote table.
-                const isNota = candidateId === "NOTA"
-
-                return {
+            await tx.vote.createMany({
+                data: voteData.map((vote) => ({
                     ballotId: ballot.id,
-                    electionRoleId: roleId,
-                    candidateId: isNota ? null : candidateId,
-                }
+                    electionRoleId: vote.electionRoleId,
+                    candidateId: vote.candidateId,
+                })),
             })
 
-            // Insert votes
-            if (voteData.length > 0) {
-                await tx.vote.createMany({
-                    data: voteData,
-                })
-            }
-
-            // Increment ballot count ONLY if it's an authenticated voter
-            if (effectiveVoterId) {
-                await tx.voter.update({
-                    where: { id: effectiveVoterId },
-                    data: {
-                        ballotCount: { increment: 1 },
-                        lastVotedAt: new Date(),
-                    },
-                })
-            }
+            await logAdminAction({
+                action: "BALLOT_SUBMITTED",
+                entityType: AuditEntityType.BALLOT,
+                entityId: ballot.id,
+                organizationId: election.organizationId,
+                status: AuditStatus.SUCCESS,
+                description: effectiveVoterId 
+                    ? `Ballot cast successfully by voter ID: ${effectiveVoterId}`
+                    : "Anonymous ballot cast successfully",
+                tx,
+                metadata: { electionId, voterId: effectiveVoterId, categoryId, ballotId: ballot.id }
+            })
 
             return { success: true }
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error("[SUBMIT_BALLOT]", error)
+        try {
+            const election = await db.election.findUnique({
+                where: { id: electionId },
+                select: { organizationId: true }
+            })
+            await logAdminAction({
+                action: "BALLOT_SUBMITTED",
+                entityType: AuditEntityType.BALLOT,
+                organizationId: election?.organizationId,
+                status: AuditStatus.FAILURE,
+                description: `Ballot submission failed: ${error?.message || String(error)}`,
+                metadata: { electionId, voterId, categoryId }
+            })
+        } catch {}
         return { error: "An unexpected error occurred while submitting your ballot." }
     }
 }

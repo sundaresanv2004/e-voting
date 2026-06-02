@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { VoterSessionPortal } from "./_components/VoterSessionPortal"
+import { DeviceGuard } from "../_components/DeviceGuard"
 
 export default async function VotePage({
     params,
@@ -114,11 +115,13 @@ export default async function VotePage({
     const isPaused = resolvedElection.status === "PAUSED"
 
     return (
-        <VoterSessionPortal
-            election={resolvedElection}
-            category={resolvedCategory}
-            accessCode={normalizedCode}
-            isPaused={isPaused}
-        />
+        <DeviceGuard>
+            <VoterSessionPortal
+                election={resolvedElection}
+                category={resolvedCategory}
+                accessCode={normalizedCode}
+                isPaused={isPaused}
+            />
+        </DeviceGuard>
     )
 }

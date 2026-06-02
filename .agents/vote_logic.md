@@ -2,6 +2,13 @@
 
 This document serves as the master specification for the voting logic in the E-Voting application. Because the voting process involves numerous settings, edge cases, and security requirements, we will document the exact logic for each step here before implementing it in code.
 
+## 0. Device Restriction
+
+The voting portal is designed exclusively for large screens (desktops and laptops) to ensure a secure and optimal fullscreen experience.
+- **Action**: Detect device capability before allowing entry (`window.innerWidth >= 1024`).
+- **Failure**: If accessed on a mobile phone or tablet, display a full-screen "Desktop Required" guard overlay instead of the voting interface.
+- **Enforcement**: This applies to both the code entry page (`/auth/vote`) and the portal itself (`/vote/[code]`).
+
 ## 1. Initial Access Code Validation
 
 When a user enters an access code on the `/auth/vote` page, the system must validate the code and determine the election and category contexts.
@@ -145,6 +152,24 @@ These settings control how the ballot is visually presented to the voter.
     - Selecting a candidate on the final role automatically submits the ballot instantly, bypassing the summary page and the confirmation dialog, taking the user straight to the success page.
   - **Success Page**: The "Leave Portal" button is removed, leaving only a "Back to Election" button to quickly reset the portal for the next voter.
 - **If `false`**: Standard manual navigation with Next/Back buttons and confirmation dialogs apply.
+
+## 5. Client-Side Caching
+
+To ensure lightning-fast rendering of the ballot (especially when multiple voters are using the same kiosk device), election structure data is cached locally.
+
+### Step 5.1: Pre-fetch and Cache
+- **Action**: When the user clicks "Proceed to Vote" on the disclaimer dialog (at `/auth/vote`), the client triggers `prefetchBallotDataAction`.
+- **Storage**: The complete ballot payload (roles, candidate names, and image URLs) is saved as a JSON string to `sessionStorage` under `ballot_cache_<electionId>`.
+- **Note**: This payload contains no voter-specific data, only public election configuration.
+
+### Step 5.2: Cache Utilization
+- **Action**: When the voter reaches `/vote/[code]` and their identity is verified (or an anonymous session starts), the portal attempts to read the ballot structure from `sessionStorage` instead of relying solely on the server response.
+- **Result**: The UI renders instantly because image requests (which are cached natively by the browser) resolve immediately, and the JSON payload requires no network roundtrip.
+
+### Step 5.3: Cache Invalidation (Retry after Pause)
+- **Scenario**: An admin pauses an election to make last-minute changes (e.g., fixing a candidate's name or swapping an image). The voter sees the Paused Dialog.
+- **Action**: When the admin resumes the election and the voter clicks "Retry" on the Paused Dialog, the client **deletes** the `ballot_cache_<electionId>` from `sessionStorage`.
+- **Result**: The subsequent verification step correctly falls back to using the fresh data returned by the server, ensuring the voter sees the updated ballot. A toast notifies the user: "Data refreshed. Your ballot is up to date."
 
 ---
 *(Further logic steps will be added here as we progress through the voting flow implementation.)*

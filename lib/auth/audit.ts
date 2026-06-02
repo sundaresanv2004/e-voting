@@ -13,9 +13,14 @@ export async function logUserAction(ctx: any, status: AuditStatus, errorReason?:
             "/sign-out",
             "/reset-password",
             "/request-password-reset",
+            "/forget-password",
+            "/change-password",
             "/email-otp/verify-email",
             "/email-otp/send-verification-otp",
-            "/callback"
+            "/callback",
+            "/two-factor/enable",
+            "/two-factor/disable",
+            "/two-factor/verify"
         ];
         
         // Check if current path matches any tracked path prefixes
@@ -53,9 +58,14 @@ export async function logUserAction(ctx: any, status: AuditStatus, errorReason?:
             "/sign-out": "Log Out",
             "/reset-password": "Reset Password",
             "/request-password-reset": "Request Password Reset",
+            "/forget-password": "Request Password Reset Link",
+            "/change-password": "Change Password",
             "/email-otp/verify-email": "Verify Email",
             "/email-otp/send-verification-otp": "Request Verification Email",
-            "/callback": "OAuth Login"
+            "/callback": "OAuth Login",
+            "/two-factor/enable": "Enable Two-Factor Auth",
+            "/two-factor/disable": "Disable Two-Factor Auth",
+            "/two-factor/verify": "Verify Two-Factor Auth"
         };
         
         const actionString = actionMap[actionPath] || actionPath;

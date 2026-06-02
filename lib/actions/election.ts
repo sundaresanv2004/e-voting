@@ -4,7 +4,8 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { ElectionStatus, AuditEntityType, AuditStatus } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
+import { auth } from "@/lib/auth"
 import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { randomBytes } from "crypto"
@@ -476,6 +477,21 @@ export async function updateElectionSettings(electionId: string, data: any) {
     return { success: true, settings: result }
   } catch (error: any) {
     console.error("[UPDATE_ELECTION_SETTINGS]", error)
+    try {
+      const session = await auth.api.getSession({ headers: await headers() })
+      if (session?.user?.id) {
+        await logAdminAction({
+          action: "ELECTION_SETTINGS_UPDATED",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId: session.user.id,
+          organizationId: session.session.activeOrganizationId,
+          status: AuditStatus.FAILURE,
+          description: `Failed to update election settings: ${error.message || String(error)}`,
+          metadata: { data }
+        })
+      }
+    } catch {}
     return { success: false, error: error.message || "Failed to update settings" }
   }
 }

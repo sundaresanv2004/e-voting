@@ -177,7 +177,19 @@ export function VoterSessionPortal({
             }
 
             setVoterData(result.voter)
-            setBallotElection(result.ballot)
+            
+            const cachedData = sessionStorage.getItem(`ballot_cache_${election.id}`)
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData)
+                    setBallotElection(parsed.ballot)
+                } catch (e) {
+                    setBallotElection(result.ballot)
+                }
+            } else {
+                setBallotElection(result.ballot)
+            }
+            
             setHasConfirmedIdentity(false)
             setIsIdDialogOpen(false)
             setIsPausedDialogOpen(false)
@@ -199,7 +211,19 @@ export function VoterSessionPortal({
             }
 
             setVoterData(result.voter)
-            setBallotElection(result.ballot)
+            
+            const cachedData = sessionStorage.getItem(`ballot_cache_${election.id}`)
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData)
+                    setBallotElection(parsed.ballot)
+                } catch (e) {
+                    setBallotElection(result.ballot)
+                }
+            } else {
+                setBallotElection(result.ballot)
+            }
+            
             setHasConfirmedIdentity(true) // Auto-confirm identity for anonymous
             setIsIdDialogOpen(false)
             setIsPausedDialogOpen(false)
@@ -239,8 +263,12 @@ export function VoterSessionPortal({
             }
             // Election is now active — dismiss the dialog and let them vote
             setIsPausedDialogOpen(false)
+            
+            // Invalidate cache
+            sessionStorage.removeItem(`ballot_cache_${election.id}`)
+            
             toast.info("Secure Session Started", {
-                description: election.settings?.authorizeVoters ? "Your Voter ID will be required to open the ballot." : "Your anonymous ballot is ready.",
+                description: "Data refreshed. Your ballot is up to date.",
                 duration: 4000,
             })
         })
