@@ -2,18 +2,31 @@
 
 import React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { cn } from "@/lib/utils"
 
 interface PageHeaderProps {
   title: string
   description?: string
   icon?: any // Hugeicons icon reference
   actions?: React.ReactNode
+  className?: string
+  innerClassName?: string
 }
 
-export function PageHeader({ title, description, icon: Icon, actions }: PageHeaderProps) {
+export function PageHeader({ 
+  title, 
+  description, 
+  icon: Icon, 
+  actions,
+  className,
+  innerClassName
+}: PageHeaderProps) {
   return (
-    <div className="relative border-b bg-background/50 backdrop-blur-sm">
-      <div className="relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full mx-auto">
+    <div className={cn("relative border-b bg-background/50 backdrop-blur-sm", className)}>
+      <div className={cn(
+        "relative z-10 flex flex-col space-y-4 py-8 px-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 md:px-8 w-full mx-auto",
+        innerClassName
+      )}>
         <div className="flex items-center gap-5">
           {Icon && (
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-card text-primary shadow-sm ring-1 ring-border/50">
@@ -40,3 +53,4 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
     </div>
   )
 }
+

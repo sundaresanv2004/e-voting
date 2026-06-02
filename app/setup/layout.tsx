@@ -51,7 +51,7 @@ export default function SetupLayout({ children }: { children: ReactNode }) {
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href="/profile" className="cursor-pointer w-full">
+                                    <Link href="/user/profile" className="cursor-pointer w-full">
                                         <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
                                         Profile
                                     </Link>

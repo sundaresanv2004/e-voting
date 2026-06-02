@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, usePathname } from "next/navigation"
 import Cookies from "js-cookie"
+import Link from "next/link"
 import { NavElection } from "@/components/sidebar/nav-election"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
 import { NavUser } from "@/components/sidebar/nav-user"
@@ -13,6 +14,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarGroup,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -48,6 +53,7 @@ export function AppSidebar({
   defaultElectionId?: string
 }) {
   const params = useParams()
+  const pathname = usePathname()
   const router = useRouter()
   const [mounted, setMounted] = React.useState(false)
 
@@ -174,6 +180,25 @@ export function AppSidebar({
           userRole={userRole}
         />
         {userRole === "ORG_ADMIN" && <NavOrganization organizationNav={organizationNav} />}
+
+        {userRole === "ORG_ADMIN" && (
+          <SidebarGroup className="mt-auto">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Audit Logs"
+                  isActive={pathname === "/organisation/audit-logs"}
+                >
+                  <Link href="/organisation/audit-logs">
+                    <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
+                    <span>Audit Logs</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

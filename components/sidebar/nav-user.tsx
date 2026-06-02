@@ -88,7 +88,7 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -108,9 +108,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/organisation/settings" className="cursor-pointer">
+                <Link href="/user/profile" className="cursor-pointer">
                   <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
-                  Account Settings
+                  My Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSub>
@@ -154,10 +154,14 @@ export function NavUser({
               variant="destructive"
               className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
               onClick={async () => {
-                await signOut({ fetchOptions: { onSuccess: () => { 
-                  toast.success("Logged out successfully")
-                  window.location.href = "/?logged_out=true" 
-                } } })
+                await signOut({
+                  fetchOptions: {
+                    onSuccess: () => {
+                      toast.success("Logged out successfully")
+                      window.location.href = "/?logged_out=true"
+                    }
+                  }
+                })
               }}
             >
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} className="group-focus:text-destructive-foreground transition-colors" />

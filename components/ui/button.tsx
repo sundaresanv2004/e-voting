@@ -24,12 +24,20 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 focus-visible:ring-destructive/30",
         destructiveOutline:
           "border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:hover:bg-destructive/20 focus-visible:ring-destructive/30",
+        danger:
+          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-ring/30",
+        dangerOutline:
+          "border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:text-destructive dark:border-destructive/30 dark:bg-destructive/10 dark:hover:bg-destructive/20 focus-visible:ring-destructive/30",
+        warning:
+          "bg-amber-500 text-white hover:bg-amber-600 focus-visible:ring-amber-300 dark:bg-amber-600 dark:hover:bg-amber-700",
         warningOutline:
           "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 focus-visible:ring-amber-300",
         success:
           "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 focus-visible:ring-emerald-500/30",
         successOutline:
           "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 focus-visible:ring-emerald-300",
+        info:
+          "bg-blue-500 text-white hover:bg-blue-600 focus-visible:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700",
         infoOutline:
           "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 focus-visible:ring-blue-300",
         link: "text-primary underline-offset-4 hover:underline",
