@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ChartHistogramIcon } from "@hugeicons/core-free-icons"
 
 import { db } from "@/lib/db"
@@ -27,6 +27,10 @@ export default async function ResultsPage({
 }) {
   const { electionId } = await params
   const { member } = await requireOrgMember()
+
+  if (member.role === "viewer") {
+    redirect(`/organisation/election/${electionId}`)
+  }
 
   // ── Fetch election + org branding ───────────────────────────────────────────
   const election = await db.election.findFirst({

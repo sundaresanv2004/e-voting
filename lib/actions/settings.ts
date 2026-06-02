@@ -206,31 +206,25 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
       return { success: false, error: "New owner must be a member of this organization." }
     }
 
-    // 2. Transfer ownership via Better Auth explicitly
-    // Better Auth will demote the current owner to admin automatically when a new owner is assigned
-    const updateRes = await auth.api.updateMemberRole({
-      headers: await headers(),
-      body: {
-        memberId: newOwnerMemberId,
-        role: "owner"
-      }
-    })
-
-    if (!updateRes) {
-      return { success: false, error: "Failed to transfer ownership via Better Auth." }
-    }
-
-    // 3. Update the custom fields via Prisma transaction
+    // 2. Update the custom fields and roles via Prisma transaction
     await db.$transaction(async (tx) => {
+      // Promote new owner in the member table
+      await tx.member.update({
+        where: { id: newOwnerMemberId },
+        data: { role: "org_admin" }
+      })
+
+      // Update organization owner ID
       await tx.organization.update({
-        where: { id: organizationId },
+        where: { id: organizationId as string },
         data: { ownerId: newOwnerUserId }
       })
 
+      // Update global user roles for access
       await tx.user.update({
         where: { id: newOwnerUserId },
         data: {
-          role: "org_admin", // Ensure they get org_admin custom role
+          role: "org_admin", 
           hasAllElectionsAccess: true
         }
       })
@@ -239,9 +233,9 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
       await logAdminAction({
         action: "OWNERSHIP_TRANSFERRED",
         entityType: AuditEntityType.ORGANIZATION,
-        entityId: organizationId,
-        adminId: currentUserId,
-        organizationId,
+        entityId: organizationId as string,
+        adminId: currentUserId as string,
+        organizationId: organizationId as string,
         status: AuditStatus.SUCCESS,
         tx,
         metadata: { 

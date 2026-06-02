@@ -188,6 +188,7 @@ export async function updateElection(
       action: "ELECTION_UPDATED",
       entityType: AuditEntityType.ELECTION,
       entityId: id,
+      adminOnly: false,
     })
     adminId = access.userId;
     orgId = access.organizationId;
@@ -337,6 +338,7 @@ export async function toggleElectionStatus(id: string) {
       action: "ELECTION_STATUS_TOGGLED",
       entityType: AuditEntityType.ELECTION,
       entityId: id,
+      adminOnly: false,
     })
     adminId = access.userId;
     orgId = access.organizationId;
@@ -418,6 +420,7 @@ export async function logElectionCodeCopy(electionId: string) {
       action: "ELECTION_CODE_COPIED",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
     const { userId, organizationId } = access
 

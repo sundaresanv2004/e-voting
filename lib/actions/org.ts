@@ -208,3 +208,41 @@ export async function createOrganization(values: OrganizationFormValues) {
     return { success: false, error: "Failed to create organization" }
   }
 }
+
+export async function deleteOrganizationAction(organizationId: string) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user?.id) return { error: "Unauthorized" }
+
+  const org = await db.organization.findUnique({
+    where: { id: organizationId }
+  })
+
+  if (!org) return { error: "Organization not found." }
+
+  if (org.ownerId !== session.user.id) {
+    return { error: "Only the owner can delete the organization." }
+  }
+
+  try {
+    await db.organization.delete({
+      where: { id: organizationId }
+    })
+    
+    // Also reset user role if they don't own any other organizations
+    const otherOrgs = await db.organization.findFirst({
+      where: { ownerId: session.user.id }
+    })
+    
+    if (!otherOrgs) {
+      await db.user.update({
+        where: { id: session.user.id },
+        data: { role: UserRole.user }
+      })
+    }
+
+    return { success: "Organization deleted successfully." }
+  } catch (err) {
+    console.error("Failed to delete organization:", err)
+    return { error: "Failed to delete organization. Please try again." }
+  }
+}

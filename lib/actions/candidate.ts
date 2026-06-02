@@ -28,6 +28,7 @@ export async function createCandidate(electionId: string, data: CandidateFormVal
       action: "CANDIDATE_CREATED",
       entityType: AuditEntityType.CANDIDATE,
       entityId: "new",
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -120,6 +121,7 @@ export async function updateCandidate(
       action: "CANDIDATE_UPDATED",
       entityType: AuditEntityType.CANDIDATE,
       entityId: candidateId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -219,6 +221,7 @@ export async function deleteCandidate(candidateId: string, electionId: string) {
       action: "CANDIDATE_DELETED",
       entityType: AuditEntityType.CANDIDATE,
       entityId: candidateId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId

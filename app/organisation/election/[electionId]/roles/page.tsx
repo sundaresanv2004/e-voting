@@ -19,7 +19,7 @@ export default async function RolesPage({
   const { freshUser, member } = await requireOrgMember()
 
   const memberRole = member.role as UserRole
-  const canManage = ORG_ADMIN_ROLES.includes(memberRole)
+  const canManage = memberRole !== "viewer"
 
   // Fetch roles with all related data
   const roles = await db.electionRole.findMany({

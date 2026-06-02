@@ -28,6 +28,7 @@ export async function createRole(electionId: string, data: RoleFormValues) {
       action: "ROLE_CREATED",
       entityType: AuditEntityType.ELECTION_ROLE,
       entityId: electionId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -154,6 +155,7 @@ export async function updateRole(
       action: "ROLE_UPDATED",
       entityType: AuditEntityType.ELECTION_ROLE,
       entityId: roleId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -289,6 +291,7 @@ export async function deleteRole(roleId: string, electionId: string) {
       action: "ROLE_DELETED",
       entityType: AuditEntityType.ELECTION_ROLE,
       entityId: roleId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId

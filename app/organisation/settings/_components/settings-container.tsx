@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Building03Icon, Shield01Icon, Settings02Icon, Alert01Icon } from "@hugeicons/core-free-icons"
+import { Building03Icon, Shield01Icon, Settings02Icon, Alert01Icon, Delete02Icon } from "@hugeicons/core-free-icons"
 import { OrganizationType } from "@prisma/client"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 import { SettingsProfileForm } from "./settings-profile-form"
 import { SettingsLimitsForm } from "./settings-limits-form"
@@ -112,49 +113,67 @@ export function SettingsContainer({ organization, currentUserId }: SettingsConta
 
         {isOwner && (
           <TabsContent value="danger" className="space-y-6 mt-0 outline-none">
-            {/* Transfer Ownership Card */}
-            <Card className="border-primary/20 shadow-sm gap-0 p-0 overflow-hidden">
-              <CardHeader className="border-b border-primary/10 flex flex-row items-start gap-3 bg-primary/5 p-6">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-0.5">
-                  <HugeiconsIcon icon={Shield01Icon} className="size-4" />
-                </div>
-                <div>
-                  <CardTitle className="text-primary">Transfer Ownership</CardTitle>
-                  <CardDescription>
-                    Transfer full control of this organization to another member. You will lose owner privileges.
-                  </CardDescription>
+            {/* Danger Actions Card */}
+            <Card className="overflow-hidden border-destructive/30 p-0 gap-0">
+              <CardHeader className="border-b bg-destructive/5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                    <HugeiconsIcon icon={Alert01Icon} strokeWidth={2} className="size-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+                    <CardDescription>
+                      Irreversible organization actions. Proceed with caution.
+                    </CardDescription>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 flex justify-end">
-                <Button
-                  variant="infoOutline"
-                  onClick={() => setTransferOpen(true)}
-                >
-                  Transfer Ownership
-                </Button>
-              </CardContent>
-            </Card>
 
-            {/* Delete Organization Card */}
-            <Card className="border-destructive/20 shadow-sm gap-0 p-0 overflow-hidden">
-              <CardHeader className="border-b border-destructive/10 flex flex-row items-start gap-3 bg-destructive/5 p-6">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive mt-0.5">
-                  <HugeiconsIcon icon={Alert01Icon} className="size-4" />
+              <CardContent className="px-6 divide-y divide-border/50 py-0">
+                {/* Transfer Ownership */}
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4 py-5">
+                  <div className="flex gap-4 items-start flex-1">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                      <HugeiconsIcon icon={Shield01Icon} strokeWidth={2} className="size-5" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground">Transfer Ownership</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Transfer full control of this organization to another member. You will lose owner privileges.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 sm:pt-1">
+                    <Button variant="infoOutline" size="sm" onClick={() => setTransferOpen(true)}>
+                      Transfer Ownership
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-destructive">Delete Organization</CardTitle>
-                  <CardDescription>
-                    Permanently delete this organization and all its data. This action cannot be undone.
-                  </CardDescription>
+
+                {/* Delete Organization */}
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4 py-5">
+                  <div className="flex gap-4 items-start flex-1">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                      <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-5" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground">Delete Organization</span>
+                        <Badge variant="destructive" className="text-xs">Irreversible</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Permanently delete this organization and all its data. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 sm:pt-1">
+                    <Button variant="destructiveOutline" size="sm" onClick={() => setDeleteOpen(true)}>
+                      Delete Organization
+                    </Button>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="p-6 flex justify-end">
-                <Button
-                  variant="destructiveOutline"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  Delete Organization
-                </Button>
               </CardContent>
             </Card>
 

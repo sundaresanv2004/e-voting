@@ -1,7 +1,7 @@
 import { ElectionPageHeader } from "@/components/shared/election-page-header"
 import { Settings02Icon } from "@hugeicons/core-free-icons"
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { requireOrgMember } from "@/lib/auth/access"
 import { ElectionSettingsContainer } from "./_components/election-settings-container"
 import { UserRole } from "@prisma/client"
@@ -13,6 +13,10 @@ export default async function ElectionSettingsPage({
 }) {
   const { electionId } = await params
   const { member } = await requireOrgMember()
+
+  if (member.role === "viewer") {
+    redirect(`/organisation/election/${electionId}`)
+  }
 
   const election = await db.election.findFirst({
     where: {

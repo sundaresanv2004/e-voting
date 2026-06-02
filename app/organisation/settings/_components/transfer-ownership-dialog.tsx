@@ -22,6 +22,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -148,23 +150,26 @@ export function TransferOwnershipDialog({
                   <SelectValue placeholder="Select a member..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {members.map((member) => (
-                    <SelectItem
-                      key={member.memberId}
-                      value={`${member.memberId}|${member.userId}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-5">
-                          {member.image && <AvatarImage src={member.image} />}
-                          <AvatarFallback className="text-[10px]">
-                            {member.name?.substring(0, 2).toUpperCase() || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{member.name}</span>
-                        <span className="text-muted-foreground ml-1">({member.email})</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel>Organization Members</SelectLabel>
+                    {members.map((member) => (
+                      <SelectItem
+                        key={member.memberId}
+                        value={`${member.memberId}|${member.userId}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="size-5">
+                            {member.image && <AvatarImage src={member.image} />}
+                            <AvatarFallback className="text-[10px]">
+                              {member.name?.substring(0, 2).toUpperCase() || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.name}</span>
+                          <span className="text-muted-foreground ml-1">({member.email})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             )}

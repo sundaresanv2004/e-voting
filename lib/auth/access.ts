@@ -4,6 +4,7 @@ import { logAdminAction } from "@/lib/auth/audit"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { AuditEntityType, AuditStatus, UserRole } from "@prisma/client"
+import { cache } from "react"
 
 /**
  * The roles that have full management access to org-level pages
@@ -23,7 +24,7 @@ export const ELECTION_MEMBER_ROLES: UserRole[] = [UserRole.staff, UserRole.viewe
  *
  * Returns the fresh user record with their member info included.
  */
-export async function requireOrgMember() {
+export const requireOrgMember = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user?.id) redirect("/auth/login")
 
@@ -45,7 +46,7 @@ export async function requireOrgMember() {
   if (!freshUser.members || freshUser.members.length === 0) redirect("/setup/organization")
 
   return { session, freshUser, member: freshUser.members[0] }
-}
+})
 
 /**
  * Like requireOrgMember() but additionally enforces that the user's
@@ -144,7 +145,7 @@ export async function requireOrgActionContext({
   if (!member || !member.user.isActive || !member.organization.isActive) {
     await auditActionAuthorizationFailure({
       userId: session.user.id,
-      organizationId: requestedOrgId,
+      organizationId: member?.organizationId || null,
       action,
       entityType,
       entityId,
@@ -158,17 +159,25 @@ export async function requireOrgActionContext({
   const isOwner = member.organization.ownerId === session.user.id
   const isOrgAdmin = isOwner || ORG_ADMIN_ROLES.includes(role)
 
-  if (adminOnly && !isOrgAdmin) {
+  const isAllowed = isOrgAdmin || (!adminOnly && role === UserRole.staff)
+
+  if (!isAllowed) {
     await auditActionAuthorizationFailure({
       userId: session.user.id,
       organizationId: member.organizationId,
       action,
       entityType,
       entityId,
-      reason: "User lacks organization admin access",
+      reason: adminOnly
+        ? "User lacks organization admin access"
+        : "User role is not authorized to perform this action",
       metadata: { role },
     })
-    throw new ActionAuthorizationError("Forbidden: Requires organization admin access")
+    throw new ActionAuthorizationError(
+      adminOnly
+        ? "Forbidden: Requires organization admin access"
+        : "Forbidden: You do not have permission to perform this action"
+    )
   }
 
   return {

@@ -85,6 +85,8 @@ export function AppSidebar({
   const activeElection = _elections.find(e => e.id === activeElectionId)
   const isResultsLocked = activeElection?.lockResult ?? false
 
+  const isViewer = userRole === "VIEWER"
+
   const navMain = [
     {
       title: "Dashboard",
@@ -121,20 +123,24 @@ export function AppSidebar({
         <HugeiconsIcon icon={UserCircleIcon} strokeWidth={2} />
       ),
     },
-    {
-      title: "Results",
-      url: `/organisation/election/${activeElectionId}/results`,
-      icon: (
-        <HugeiconsIcon icon={Analytics01Icon} strokeWidth={2} />
-      ),
-    },
-    {
-      title: "Settings",
-      url: `/organisation/election/${activeElectionId}/settings`,
-      icon: (
-        <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
-      ),
-    },
+    ...(!isViewer
+      ? [
+          {
+            title: "Results",
+            url: `/organisation/election/${activeElectionId}/results`,
+            icon: (
+              <HugeiconsIcon icon={Analytics01Icon} strokeWidth={2} />
+            ),
+          },
+          {
+            title: "Settings",
+            url: `/organisation/election/${activeElectionId}/settings`,
+            icon: (
+              <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
+            ),
+          },
+        ]
+      : []),
   ]
 
   const organizationNav = [

@@ -28,6 +28,8 @@ interface DeleteOrganizationDialogProps {
   organizationId: string
 }
 
+import { deleteOrganizationAction } from "@/lib/actions/org"
+
 export function DeleteOrganizationDialog({
   open,
   onOpenChange,
@@ -50,12 +52,10 @@ export function DeleteOrganizationDialog({
 
     setIsPending(true)
     try {
-      const res = await authClient.organization.delete({
-        organizationId: organizationId
-      })
+      const res = await deleteOrganizationAction(organizationId)
 
       if (res.error) {
-        toast.error(res.error.message || "Failed to delete organization")
+        toast.error(res.error || "Failed to delete organization")
         setIsPending(false)
       } else {
         toast.success("Organization deleted successfully")

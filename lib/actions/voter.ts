@@ -37,6 +37,7 @@ export async function getNewUniqueCode(electionId: string) {
       action: "VOTER_ID_GENERATE",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
     const code = await generateSafeUniqueId(electionId)
     return { code }
@@ -57,6 +58,7 @@ export async function logVoterIdAccess(
       action: "VOTER_ID_COPIED",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
 
     await logAdminAction({
@@ -85,6 +87,7 @@ export async function createVoter(electionId: string, data: VoterFormValues) {
       action: "VOTER_CREATED",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -187,6 +190,7 @@ export async function updateVoter(
       action: "VOTER_UPDATED",
       entityType: AuditEntityType.ELECTION,
       entityId: voterId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -297,6 +301,7 @@ export async function deleteVoter(voterId: string, electionId: string) {
       action: "VOTER_DELETED",
       entityType: AuditEntityType.ELECTION,
       entityId: voterId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -364,6 +369,7 @@ export async function resetVoterVote(voterId: string, electionId: string) {
       action: "VOTER_VOTE_RESET",
       entityType: AuditEntityType.ELECTION,
       entityId: voterId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -444,6 +450,7 @@ export async function verifyVotersBulk(
       action: "VOTERS_BULK_VERIFY",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
 
     // Build a code → category map
@@ -527,6 +534,7 @@ export async function importVotersBulk(
       action: "VOTERS_BULK_IMPORT",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId

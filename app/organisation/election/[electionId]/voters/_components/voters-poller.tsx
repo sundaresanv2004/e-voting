@@ -3,33 +3,21 @@
 import { useEffect, useRef, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-const POLL_INTERVAL_MS = 5_000 // 5 seconds
-
-interface ResultsPollerProps {
-  enabled: boolean
-}
+const POLL_INTERVAL_MS = 30_000 // 30 seconds
 
 /**
- * ResultsPoller — invisible client component that refreshes the server-rendered
- * results data every 30 seconds by calling router.refresh().
+ * VotersPoller — invisible client component that refreshes the server-rendered
+ * voters data every 30 seconds by calling router.refresh().
  *
  * Pauses polling when the tab is inactive and resumes + refreshes immediately
- * when the user returns. Only active when `enabled` is true.
+ * when the user returns.
  */
-export function ResultsPoller({ enabled }: ResultsPollerProps) {
+export function VotersPoller() {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (!enabled) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-
     const poll = () => {
       startTransition(() => {
         router.refresh()
@@ -64,7 +52,7 @@ export function ResultsPoller({ enabled }: ResultsPollerProps) {
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       stopPolling()
     }
-  }, [enabled, router])
+  }, [router])
 
   return null
 }

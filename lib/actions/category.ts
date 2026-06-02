@@ -52,6 +52,7 @@ export async function createCategory(electionId: string, data: CategoryFormValue
       action: "CATEGORY_CREATED",
       entityType: AuditEntityType.ELECTION_CATEGORY,
       entityId: electionId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -166,6 +167,7 @@ export async function updateCategory(
       action: "CATEGORY_UPDATED",
       entityType: AuditEntityType.ELECTION_CATEGORY,
       entityId: categoryId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId
@@ -274,6 +276,7 @@ export async function deleteCategory(categoryId: string, electionId: string) {
       action: "CATEGORY_DELETED",
       entityType: AuditEntityType.ELECTION_CATEGORY,
       entityId: categoryId,
+      adminOnly: false,
     })
     adminId = access.userId
     orgId = access.organizationId

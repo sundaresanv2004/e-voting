@@ -19,7 +19,7 @@ export default async function CategoriesPage({
   const { member } = await requireOrgMember()
 
   const memberRole = member.role as UserRole
-  const canManage = ORG_ADMIN_ROLES.includes(memberRole)
+  const canManage = memberRole !== "viewer"
 
   // We need the election code to identify the default category
   const election = await db.election.findFirst({

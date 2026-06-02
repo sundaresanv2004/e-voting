@@ -11,6 +11,7 @@ interface AuditPaginationProps {
   currentPage: number
   totalPages: number
   totalMatching: number
+  pageSize: number
   q?: string
   entityTypeParam?: string
   statusParam?: string
@@ -18,7 +19,7 @@ interface AuditPaginationProps {
   toParam?: string
 }
 
-export function AuditPagination({ currentPage, totalPages, totalMatching, q, entityTypeParam, statusParam, fromParam, toParam }: AuditPaginationProps) {
+export function AuditPagination({ currentPage, totalPages, totalMatching, pageSize, q, entityTypeParam, statusParam, fromParam, toParam }: AuditPaginationProps) {
   if (totalMatching === 0) return null
 
   const getPageUrl = (pageNum: number) => {
@@ -31,8 +32,6 @@ export function AuditPagination({ currentPage, totalPages, totalMatching, q, ent
     paramsObj.set("page", pageNum.toString())
     return `/organisation/audit-logs?${paramsObj.toString()}`
   }
-
-  const pageSize = 20
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">

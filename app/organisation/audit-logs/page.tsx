@@ -132,6 +132,7 @@ export default async function AuditLogsPage({ searchParams }: { searchParams: Au
           currentPage={currentPage}
           totalPages={totalPages}
           totalMatching={totalMatching}
+          pageSize={pageSize}
           q={q}
           entityTypeParam={entityTypeParam}
           statusParam={statusParam}

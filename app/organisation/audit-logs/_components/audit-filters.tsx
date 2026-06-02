@@ -33,9 +33,9 @@ export function AuditFilters({ q, entityTypeParam, statusParam, fromParam, toPar
     <Card>
       <CardContent className="px-4 md:px-6 py-2">
         <form method="GET" action="/organisation/audit-logs" className="flex flex-col gap-4">
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-end">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {/* Search */}
-            <div className="space-y-1.5 flex-1 w-full lg:col-span-1">
+            <div className="space-y-1.5 w-full">
               <label htmlFor="q" className="text-xs font-bold text-muted-foreground tracking-wide">Search</label>
               <InputGroup>
                 <InputGroupAddon align="inline-start">
@@ -51,7 +51,7 @@ export function AuditFilters({ q, entityTypeParam, statusParam, fromParam, toPar
             </div>
 
             {/* Entity Filter */}
-            <div className="space-y-1.5 flex-1 w-full">
+            <div className="space-y-1.5 w-full">
               <label className="text-xs font-bold text-muted-foreground tracking-wide">Entity Type</label>
               <Select name="entityType" defaultValue={entityTypeParam || "ALL"}>
                 <SelectTrigger className="w-full rounded-3xl">
@@ -70,7 +70,7 @@ export function AuditFilters({ q, entityTypeParam, statusParam, fromParam, toPar
             </div>
 
             {/* Status Filter */}
-            <div className="space-y-1.5 flex-1 w-full">
+            <div className="space-y-1.5 w-full">
               <label className="text-xs font-bold text-muted-foreground tracking-wide">Status</label>
               <Select name="status" defaultValue={statusParam || "ALL"}>
                 <SelectTrigger className="w-full rounded-3xl">
@@ -89,7 +89,7 @@ export function AuditFilters({ q, entityTypeParam, statusParam, fromParam, toPar
             </div>
 
             {/* Date Range Picker */}
-            <div className="space-y-1.5 flex-1 w-full lg:col-span-1">
+            <div className="space-y-1.5 w-full">
               <label className="text-xs font-bold text-muted-foreground tracking-wide">Date Range</label>
               <input type="hidden" name="from" value={date?.from ? format(date.from, "yyyy-MM-dd") : ""} />
               <input type="hidden" name="to" value={date?.to ? format(date.to, "yyyy-MM-dd") : ""} />

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ElectionPageHeader } from "@/components/shared/election-page-header"
 import { VotersDataTable } from "./_components/voters-data-table"
 import { ImportVotersDialog } from "./_components/import-voters-dialog"
+import { VotersPoller } from "./_components/voters-poller"
 import { requireOrgMember, ORG_ADMIN_ROLES } from "@/lib/auth/access"
 import { db } from "@/lib/db"
 import { UserRole } from "@prisma/client"
@@ -20,7 +21,7 @@ export default async function VotersPage({
   const { member } = await requireOrgMember()
 
   const memberRole = member.role as UserRole
-  const canManage = ORG_ADMIN_ROLES.includes(memberRole)
+  const canManage = memberRole !== "viewer"
 
   const election = await db.election.findFirst({
     where: { id: electionId, organizationId: member.organizationId, deletedAt: null },
@@ -70,6 +71,7 @@ export default async function VotersPage({
 
   return (
     <div className="flex flex-col flex-1 w-full">
+      <VotersPoller />
       <ElectionPageHeader
         electionId={electionId}
         title="Voters"
