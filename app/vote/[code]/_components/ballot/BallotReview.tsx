@@ -24,10 +24,10 @@ export function BallotReview({ roles, votes, settings, onEditRole }: BallotRevie
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 mb-1">
                     <HugeiconsIcon icon={CheckmarkBadge01Icon} className="w-7 h-7" />
                 </div>
-                <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                <h3 className="text-3xl sm:text-4xl font-black font-heading tracking-tight text-foreground">
                     Review Your Ballot
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                <p className="text-sm text-muted-foreground max-w-none mx-auto leading-relaxed">
                     Confirm your selections before casting. This action cannot be undone.
                 </p>
             </div>

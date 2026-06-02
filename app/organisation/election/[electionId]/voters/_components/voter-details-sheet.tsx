@@ -314,19 +314,24 @@ export function VoterDetailsSheet({
                 <HugeiconsIcon icon={hasVoted ? Tick01Icon : Cancel01Icon} className="size-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{hasVoted ? "Ballot Cast" : "Awaiting Vote"}</p>
+                <p className="text-sm font-medium">
+                  {hasVoted 
+                    ? (voter.ballots.length > 1 ? "Multiple Ballots Cast" : "Ballot Cast") 
+                    : "Awaiting Vote"}
+                </p>
                 <p className="text-xs text-muted-foreground leading-tight mt-0.5">
                   {hasVoted
-                    ? "This voter has successfully cast their ballot."
+                    ? "This voter has successfully participated in the election."
                     : "This voter is registered but has not participated yet."}
                 </p>
               </div>
               {hasVoted && latestBallot?.createdAt && (
                 <div className="text-right shrink-0">
                   <Badge variant="secondary" className="text-[10px] shadow-none bg-emerald-500/10 text-emerald-600 border-none">
-                    Cast
+                    {voter.ballots.length > 1 ? `${voter.ballots.length} Ballots` : "Cast"}
                   </Badge>
                   <p className="text-[10px] text-muted-foreground whitespace-nowrap mt-1">
+                    {voter.ballots.length > 1 ? "Last: " : ""}
                     {format(new Date(latestBallot.createdAt), "MMM d, h:mm a")}
                   </p>
                 </div>
@@ -335,75 +340,86 @@ export function VoterDetailsSheet({
           </div>
 
           {/* Vote Details — shown only when voted */}
-          {hasVoted && latestBallot && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 px-0.5">
-                <HugeiconsIcon icon={Globe02Icon} className="size-4 text-muted-foreground" />
-                <h4 className="text-sm font-medium">Vote Details</h4>
-              </div>
-              <div className="rounded-2xl border bg-card overflow-hidden divide-y">
-
-                {/* Category voted under */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={GridIcon} className="size-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                      Voted Under Category
-                    </p>
-                    {latestBallot.category ? (
-                      <p className="text-sm font-medium leading-tight mt-0.5">
-                        {latestBallot.category.name}
-                        <code className="ml-2 text-[10px] font-mono text-muted-foreground">{latestBallot.category.code}</code>
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground leading-tight mt-0.5">Global</p>
+          {hasVoted && (
+            <div className="space-y-6">
+              {voter.ballots.map((ballot, idx) => (
+                <div key={ballot.id} className="space-y-3">
+                  <div className="flex items-center justify-between px-0.5">
+                    <div className="flex items-center gap-2">
+                      <HugeiconsIcon icon={Globe02Icon} className="size-4 text-muted-foreground" />
+                      <h4 className="text-sm font-medium">
+                        {voter.ballots.length > 1 ? `Vote Details (Ballot ${voter.ballots.length - idx})` : "Vote Details"}
+                      </h4>
+                    </div>
+                    {voter.ballots.length > 1 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(ballot.createdAt), "MMM d, h:mm a")}
+                      </span>
                     )}
                   </div>
-                </div>
+                  <div className="rounded-2xl border bg-card overflow-hidden divide-y">
+                    {/* Category voted under */}
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <HugeiconsIcon icon={GridIcon} className="size-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                          Voted Under Category
+                        </p>
+                        {ballot.category ? (
+                          <p className="text-sm font-medium leading-tight mt-0.5">
+                            {ballot.category.name}
+                            <code className="ml-2 text-[10px] font-mono text-muted-foreground">{ballot.category.code}</code>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground leading-tight mt-0.5">Global</p>
+                        )}
+                      </div>
+                    </div>
 
-                {/* IP Address */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={Location01Icon} className="size-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                      IP Address
-                    </p>
-                    <code className="text-sm font-mono leading-tight mt-0.5 block truncate">
-                      {latestBallot.ipAddress ?? "Not recorded"}
-                    </code>
+                    {/* IP Address */}
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <HugeiconsIcon icon={Location01Icon} className="size-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                          IP Address
+                        </p>
+                        <code className="text-sm font-mono leading-tight mt-0.5 block truncate">
+                          {ballot.ipAddress ?? "Not recorded"}
+                        </code>
+                      </div>
+                    </div>
+
+                    {/* Browser / OS */}
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <HugeiconsIcon icon={ComputerIcon} className="size-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                          Browser / OS
+                        </p>
+                        <p className="text-sm font-medium leading-tight mt-0.5">
+                          {parseBrowser(ballot.userAgent)}
+                          <span className="text-muted-foreground font-normal"> on </span>
+                          {parseOS(ballot.userAgent)}
+                        </p>
+                        {ballot.userAgent && (
+                          <p
+                            className="text-[10px] text-muted-foreground mt-0.5 truncate"
+                            title={ballot.userAgent}
+                          >
+                            {ballot.userAgent}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Browser / OS */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                    <HugeiconsIcon icon={ComputerIcon} className="size-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                      Browser / OS
-                    </p>
-                    <p className="text-sm font-medium leading-tight mt-0.5">
-                      {parseBrowser(latestBallot.userAgent)}
-                      <span className="text-muted-foreground font-normal"> on </span>
-                      {parseOS(latestBallot.userAgent)}
-                    </p>
-                    {latestBallot.userAgent && (
-                      <p
-                        className="text-[10px] text-muted-foreground mt-0.5 truncate"
-                        title={latestBallot.userAgent}
-                      >
-                        {latestBallot.userAgent}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-              </div>
+              ))}
             </div>
           )}
 

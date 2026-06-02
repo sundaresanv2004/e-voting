@@ -129,5 +129,22 @@ These settings control how the ballot is visually presented to the voter.
   - If `now > election.endTime`:
     - Return Error: "This election has ended." (Do not show the end date/time, just state it has ended).
 
+### Step 4.5: Show Summary Page (`showSummary`)
+- **If `true`**: After the voter makes their selection on the final role page, clicking "Next" navigates them to a Review/Summary page where they can see all their choices before submitting. The "Submit Ballot" dialog is triggered from this Review page.
+- **If `false`**: The Review page is skipped entirely. On the final role page, the primary button changes from "Next" to "Cast Ballot". Clicking this button immediately opens the "Submit Ballot" dialog.
+
+### Step 4.6: Quick Election (`quickElection`)
+- **If `true`**:
+  - The "Back" and "Next" buttons are completely removed from the Ballot Footer (when viewing candidate roles).
+  - When the voter selects a candidate (or NOTA), the system *automatically* advances them to the next role (with a very short delay for visual feedback).
+  - **With `showSummary = true`**: 
+    - The user is automatically advanced to the Summary/Review Page after their final selection. 
+    - The "Edit Ballot" (Back) button is removed from the footer. Voters can only edit choices by clicking the inline "Edit" buttons on each role's card.
+    - Clicking the "Cast Ballot" button submits the vote immediately, bypassing the confirmation dialog.
+  - **With `showSummary = false`**: 
+    - Selecting a candidate on the final role automatically submits the ballot instantly, bypassing the summary page and the confirmation dialog, taking the user straight to the success page.
+  - **Success Page**: The "Leave Portal" button is removed, leaving only a "Back to Election" button to quickly reset the portal for the next voter.
+- **If `false`**: Standard manual navigation with Next/Back buttons and confirmation dialogs apply.
+
 ---
 *(Further logic steps will be added here as we progress through the voting flow implementation.)*

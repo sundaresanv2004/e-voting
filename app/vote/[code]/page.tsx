@@ -46,6 +46,7 @@ export default async function VotePage({
                 select: {
                     allowOnlineVoting: true,
                     authorizeVoters: true,
+                    quickElection: true,
                 },
             },
         },
@@ -79,6 +80,7 @@ export default async function VotePage({
                             select: {
                                 allowOnlineVoting: true,
                                 authorizeVoters: true,
+                                quickElection: true,
                             },
                         },
                     },

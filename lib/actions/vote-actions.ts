@@ -7,7 +7,19 @@ import { headers } from "next/headers"
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export type ValidateCodeResult =
-    | { success: true; electionId: string; name: string; code: string; categoryId?: string; categoryName?: string }
+    | { 
+        success: true; 
+        electionId: string; 
+        name: string; 
+        code: string; 
+        categoryId?: string; 
+        categoryName?: string;
+        settings?: {
+            authorizeVoters: boolean;
+            showSummary: boolean;
+            quickElection: boolean;
+        }
+      }
     | { error: string }
 
 export type VerifyVoterResult =
@@ -32,6 +44,8 @@ export type VerifyVoterResult =
                 allowNota: boolean
                 allowMultipleVotes: boolean
                 maxVotesPerUser: number
+                showSummary: boolean
+                quickElection: boolean
             }
             roles: Array<{
                 id: string
@@ -79,13 +93,17 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 return { error: "Voting is disabled. Please contact your organization or election administrator." }
             }
 
-            // Paused — let through, portal handles it
             if (election.status === "PAUSED") {
                 return {
                     success: true,
                     electionId: election.id,
                     name: election.name,
                     code: normalizedCode,
+                    settings: election.settings ? {
+                        authorizeVoters: election.settings.authorizeVoters,
+                        showSummary: election.settings.showSummary,
+                        quickElection: election.settings.quickElection,
+                    } : undefined,
                 }
             }
 
@@ -105,6 +123,11 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 electionId: election.id,
                 name: election.name,
                 code: normalizedCode,
+                settings: election.settings ? {
+                    authorizeVoters: election.settings.authorizeVoters,
+                    showSummary: election.settings.showSummary,
+                    quickElection: election.settings.quickElection,
+                } : undefined,
             }
         }
 
@@ -126,7 +149,6 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 return { error: "Voting is disabled. Please contact your organization or election administrator." }
             }
 
-            // Paused — let through, portal handles it
             if (catElection.status === "PAUSED") {
                 return {
                     success: true,
@@ -135,6 +157,11 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                     code: normalizedCode,
                     categoryId: category.id,
                     categoryName: category.name,
+                    settings: catElection.settings ? {
+                        authorizeVoters: catElection.settings.authorizeVoters,
+                        showSummary: catElection.settings.showSummary,
+                        quickElection: catElection.settings.quickElection,
+                    } : undefined,
                 }
             }
 
@@ -156,6 +183,11 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 code: normalizedCode,
                 categoryId: category.id,
                 categoryName: category.name,
+                settings: catElection.settings ? {
+                    authorizeVoters: catElection.settings.authorizeVoters,
+                    showSummary: catElection.settings.showSummary,
+                    quickElection: catElection.settings.quickElection,
+                } : undefined,
             }
         }
 
@@ -247,6 +279,8 @@ export async function verifyVoterUniqueIdAction(
                         allowNota: true,
                         allowMultipleVotes: true,
                         maxVotesPerUser: true,
+                        showSummary: true,
+                        quickElection: true,
                     },
                 },
                 roles: {
@@ -305,11 +339,103 @@ export async function verifyVoterUniqueIdAction(
     }
 }
 
+export async function startAnonymousSessionAction(
+    electionId: string,
+    categoryId?: string
+): Promise<VerifyVoterResult> {
+    try {
+        const election = await db.election.findUnique({
+            where: { id: electionId },
+            include: { settings: true },
+        })
+
+        if (!election) {
+            return { error: "Election not found." }
+        }
+
+        if (election.status === "PAUSED") {
+            return { error: "Election is paused.", status: "PAUSED" }
+        }
+
+        if (election.settings?.authorizeVoters) {
+            return { error: "This election requires voter authorization." }
+        }
+
+        // Fetch the ballot structure
+        const ballotElection = await db.election.findUnique({
+            where: { id: electionId },
+            select: {
+                id: true,
+                name: true,
+                settings: {
+                    select: {
+                        showCandidateProfiles: true,
+                        showCandidateSymbols: true,
+                        shuffleCandidates: true,
+                        allowNota: true,
+                        allowMultipleVotes: true,
+                        maxVotesPerUser: true,
+                        showSummary: true,
+                        quickElection: true,
+                    },
+                },
+                roles: {
+                    ...(categoryId
+                        ? { where: { categories: { some: { id: categoryId } } } }
+                        : {}),
+                    orderBy: { order: "asc" },
+                    select: {
+                        id: true,
+                        name: true,
+                        order: true,
+                        candidates: {
+                            where: { deletedAt: null },
+                            select: {
+                                id: true,
+                                name: true,
+                                profileImage: true,
+                                symbolImage: true,
+                            },
+                        },
+                    },
+                },
+            },
+        })
+
+        if (!ballotElection || !ballotElection.settings) {
+            return { error: "Failed to load ballot structure." }
+        }
+
+        return {
+            success: true,
+            voter: {
+                id: "anonymous",
+                uniqueId: "anonymous",
+                name: "Anonymous Voter",
+                image: null,
+                additionalDetails: null,
+                ballotsCount: 0,
+                maxVotes: 1,
+            },
+            ballot: {
+                ...ballotElection,
+                settings: {
+                    ...ballotElection.settings!,
+                    maxVotesPerUser: 1,
+                }
+            },
+        }
+    } catch (error) {
+        console.error("[START_ANONYMOUS_SESSION]", error)
+        return { error: "An unexpected error occurred while starting the session." }
+    }
+}
+
 // ─── Step 3: Submit Ballot (stub — full logic to be added) ───────────────────
 
 export async function submitBallotAction(
     electionId: string,
-    voterId: string,
+    voterId: string | null,
     votes: Record<string, string>,
     categoryId?: string
 ): Promise<SubmitBallotResult> {
@@ -333,19 +459,24 @@ export async function submitBallotAction(
 
         const maxVotes = election.settings?.maxVotesPerUser || 1
 
+        // If voterId is "anonymous", treat it as null
+        const effectiveVoterId = voterId === "anonymous" ? null : voterId
+
         // Use a transaction to ensure ballot submission and voter count increment are atomic
         return await db.$transaction(async (tx) => {
-            // Check voter status inside transaction
-            const voter = await tx.voter.findUnique({
-                where: { id: voterId },
-            })
+            if (effectiveVoterId) {
+                // Check voter status inside transaction for authenticated voters
+                const voter = await tx.voter.findUnique({
+                    where: { id: effectiveVoterId },
+                })
 
-            if (!voter) {
-                return { error: "Voter not found." }
-            }
+                if (!voter) {
+                    return { error: "Voter not found." }
+                }
 
-            if (voter.ballotCount >= maxVotes) {
-                return { error: "Maximum number of ballots already cast." }
+                if (voter.ballotCount >= maxVotes) {
+                    return { error: "Maximum number of ballots already cast." }
+                }
             }
 
             const reqHeaders = await headers()
@@ -356,10 +487,10 @@ export async function submitBallotAction(
             const ballot = await tx.ballot.create({
                 data: {
                     electionId,
-                    voterId,
+                    voterId: effectiveVoterId,
                     categoryId,
                     submissionKey: crypto.randomUUID(), // Generate a unique submission key
-                    isAnonymous: false,
+                    isAnonymous: !effectiveVoterId,
                     ipAddress,
                     userAgent,
                 },
@@ -385,14 +516,16 @@ export async function submitBallotAction(
                 })
             }
 
-            // Increment ballot count
-            await tx.voter.update({
-                where: { id: voterId },
-                data: {
-                    ballotCount: { increment: 1 },
-                    lastVotedAt: new Date(),
-                },
-            })
+            // Increment ballot count ONLY if it's an authenticated voter
+            if (effectiveVoterId) {
+                await tx.voter.update({
+                    where: { id: effectiveVoterId },
+                    data: {
+                        ballotCount: { increment: 1 },
+                        lastVotedAt: new Date(),
+                    },
+                })
+            }
 
             return { success: true }
         })

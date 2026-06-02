@@ -37,7 +37,7 @@ export function BallotCandidateGrid({
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-primary/70">
                     Select your candidate
                 </p>
-                <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground break-words">
+                <h3 className="text-3xl sm:text-4xl font-black font-heading tracking-tight text-foreground break-words">
                     {currentRole.name}
                 </h3>
             </div>

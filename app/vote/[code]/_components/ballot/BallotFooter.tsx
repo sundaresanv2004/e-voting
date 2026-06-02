@@ -3,6 +3,7 @@
 import React from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Spinner } from "@/components/ui/spinner"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -22,6 +23,8 @@ interface BallotFooterProps {
     onSubmit: () => void
     isFirstRole: boolean
     isLastRole: boolean
+    showSummary: boolean
+    quickElection: boolean
 }
 
 export function BallotFooter({
@@ -37,6 +40,8 @@ export function BallotFooter({
     onSubmit,
     isFirstRole,
     isLastRole,
+    showSummary,
+    quickElection,
 }: BallotFooterProps) {
     return (
         <div className="fixed bottom-0 inset-x-0 z-40 bg-background/90 backdrop-blur-xl border-t border-border/50">
@@ -44,15 +49,19 @@ export function BallotFooter({
             <Progress value={progress} className="h-0.5 rounded-none" />
 
             <div className="max-w-3xl mx-auto w-full flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 gap-4">
-                <Button
-                    variant="ghost"
-                    size="lg"
-                    onClick={onBack}
-                    disabled={isFirstRole || isSubmitting}
-                >
-                    <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4" />
-                    {isReviewing ? "Edit Ballot" : "Back"}
-                </Button>
+                {!quickElection ? (
+                    <Button
+                        variant="ghost"
+                        size="lg"
+                        onClick={onBack}
+                        disabled={isFirstRole || isSubmitting}
+                    >
+                        <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4" />
+                        {isReviewing ? "Edit Ballot" : "Back"}
+                    </Button>
+                ) : (
+                    <div className="w-[100px]" />
+                )}
 
                 {/* Center: Voter badge */}
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
@@ -78,35 +87,60 @@ export function BallotFooter({
                     )}
                 </div>
 
-                {!isReviewing ? (
-                    <Button
-                        size="lg"
-                        onClick={onNext}
-                        disabled={!canGoNext}
-                    >
-                        {isLastRole ? "Review" : "Next"}
-                        <HugeiconsIcon icon={ArrowRight01Icon} className="w-4 h-4" />
-                    </Button>
-                ) : (
-                    <Button
-                        size="lg"
-                        onClick={onSubmit}
-                        disabled={isSubmitting || !canSubmit}
-                        className="bg-emerald-600 hover:bg-emerald-500"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Spinner />
-                                Submitting...
-                            </>
+                <div className="flex items-center gap-3">
+                    {(!quickElection || isReviewing) && (
+                        !isReviewing ? (
+                            isLastRole && !showSummary ? (
+                                <Button
+                                    size="lg"
+                                    onClick={onSubmit}
+                                    disabled={!canSubmit || isSubmitting}
+                                    className="bg-emerald-600 hover:bg-emerald-500"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Spinner />
+                                            Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4" />
+                                            Cast Ballot
+                                        </>
+                                    )}
+                                </Button>
+                            ) : (
+                                <Button
+                                    size="lg"
+                                    onClick={onNext}
+                                    disabled={!canGoNext}
+                                >
+                                    {isLastRole ? "Review" : "Next"}
+                                    <HugeiconsIcon icon={ArrowRight01Icon} className="w-4 h-4" />
+                                </Button>
+                            )
                         ) : (
-                            <>
-                                <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4" />
-                                Cast Ballot
-                            </>
-                        )}
-                    </Button>
-                )}
+                            <Button
+                                size="lg"
+                                onClick={onSubmit}
+                                disabled={isSubmitting || !canSubmit}
+                                className="bg-emerald-600 hover:bg-emerald-500"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Spinner />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-4 h-4" />
+                                        Cast Ballot
+                                    </>
+                                )}
+                            </Button>
+                        )
+                    )}
+                </div>
             </div>
         </div>
     )

@@ -56,6 +56,11 @@ interface ElectionInfo {
     code: string
     categoryId?: string
     categoryName?: string
+    settings?: {
+        authorizeVoters: boolean
+        showSummary: boolean
+        quickElection: boolean
+    }
 }
 
 function VoteForm() {
@@ -97,6 +102,7 @@ function VoteForm() {
                 code: result.code,
                 categoryId: result.categoryId,
                 categoryName: result.categoryName,
+                settings: result.settings,
             })
             setIsDisclaimerOpen(true)
         })
@@ -240,9 +246,17 @@ function VoteForm() {
                                         Important:
                                     </p>
                                     <ul className="space-y-1.5 text-muted-foreground">
-                                        <li>• Your ballot opens only after your Voter ID is verified.</li>
+                                        {electionInfo?.settings?.authorizeVoters !== false ? (
+                                            <li>• Your ballot opens only after your Voter ID is verified.</li>
+                                        ) : (
+                                            <li>• This is an anonymous election. Your ballot will open immediately.</li>
+                                        )}
                                         <li>• Please vote in <span className="font-medium text-foreground">fullscreen mode</span> — exiting fullscreen will interrupt your session.</li>
-                                        <li>• Review your selections carefully before final submission. <span className="font-medium text-foreground">Votes cannot be changed</span> once cast.</li>
+                                        {electionInfo?.settings?.showSummary !== false && electionInfo?.settings?.quickElection !== true ? (
+                                            <li>• Review your selections carefully before final submission. <span className="font-medium text-foreground">Votes cannot be changed</span> once cast.</li>
+                                        ) : (
+                                            <li>• Be careful! You will not be able to review your votes before submission. <span className="font-medium text-foreground">Votes are cast instantly</span>.</li>
+                                        )}
                                     </ul>
                                 </div>
                             </div>

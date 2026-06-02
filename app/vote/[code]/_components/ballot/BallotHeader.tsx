@@ -27,16 +27,11 @@ export function BallotHeader({ electionName, isSubmitting, onCancel }: BallotHea
                     Cancel
                 </Button>
                 <div className="text-center min-w-0">
-                    <h2 className="text-sm sm:text-base font-bold text-foreground truncate">
+                    <h2 className="text-sm sm:text-base font-bold font-heading text-foreground truncate">
                         {electionName}
                     </h2>
                 </div>
-                <Badge
-                    variant="outline"
-                    className="hidden sm:flex border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider"
-                >
-                    Verified
-                </Badge>
+                <div className="w-16 sm:w-20" />
             </div>
         </header>
     )

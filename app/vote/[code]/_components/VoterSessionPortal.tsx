@@ -24,7 +24,7 @@ import { VoterConfirmDialog } from "./VoterConfirmDialog"
 import { VoterPausedDialog } from "./VoterPausedDialog"
 import { VoterExitDialog } from "./VoterExitDialog"
 import { BallotInterface } from "./BallotInterface"
-import { verifyVoterUniqueIdAction, submitBallotAction, checkElectionStatusAction } from "@/lib/actions/vote-actions"
+import { verifyVoterUniqueIdAction, startAnonymousSessionAction, submitBallotAction, checkElectionStatusAction } from "@/lib/actions/vote-actions"
 import { voterIdSchema } from "@/lib/schemas/auth"
 import type { BallotElection, VoterData } from "./BallotInterface"
 
@@ -44,6 +44,7 @@ interface ElectionInfo {
     settings: {
         allowOnlineVoting: boolean
         authorizeVoters: boolean
+        quickElection: boolean
     } | null
 }
 
@@ -98,7 +99,7 @@ export function VoterSessionPortal({
                 setIsPausedDialogOpen(true)
             } else {
                 toast.info("Secure Session Started", {
-                    description: "Your Voter ID will be required to open the ballot.",
+                    description: election.settings?.authorizeVoters ? "Your Voter ID will be required to open the ballot." : "Your anonymous ballot is ready.",
                     duration: 4000,
                 })
             }
@@ -133,20 +134,25 @@ export function VoterSessionPortal({
     }
 
     const handleStartAction = () => {
+        const proceed = () => {
+            form.reset()
+            if (election.settings?.authorizeVoters) {
+                setIsIdDialogOpen(true)
+            } else {
+                startAnonymousVoting()
+            }
+        }
+
         const elem = document.documentElement
         if (!document.fullscreenElement && elem.requestFullscreen) {
             elem.requestFullscreen()
-                .then(() => {
-                    form.reset()
-                    setIsIdDialogOpen(true)
-                })
+                .then(proceed)
                 .catch(() => {
                     toast.error("Fullscreen mode is required to vote. Please allow it and try again.")
                 })
             return
         }
-        form.reset()
-        setIsIdDialogOpen(true)
+        proceed()
     }
 
     const handleIdDialogOpenChange = (open: boolean) => {
@@ -179,6 +185,34 @@ export function VoterSessionPortal({
         })
     }
 
+    const startAnonymousVoting = () => {
+        startTransition(async () => {
+            const result = await startAnonymousSessionAction(election.id, category?.id)
+
+            if ("error" in result) {
+                if (result.status === "PAUSED") {
+                    setIsPausedDialogOpen(true)
+                } else {
+                    toast.error(result.error)
+                }
+                return
+            }
+
+            setVoterData(result.voter)
+            setBallotElection(result.ballot)
+            setHasConfirmedIdentity(true) // Auto-confirm identity for anonymous
+            setIsIdDialogOpen(false)
+            setIsPausedDialogOpen(false)
+            setIsConfirmDialogOpen(false)
+            
+            toast.success("Session Started", {
+                description: "Your ballot is ready.",
+                duration: 3000,
+            })
+            setIsVoting(true)
+        })
+    }
+
     const onIdSubmit = (values: z.infer<typeof voterIdSchema>) => {
         verifyVoter(values.uniqueId)
     }
@@ -206,7 +240,7 @@ export function VoterSessionPortal({
             // Election is now active — dismiss the dialog and let them vote
             setIsPausedDialogOpen(false)
             toast.info("Secure Session Started", {
-                description: "Your Voter ID will be required to open the ballot.",
+                description: election.settings?.authorizeVoters ? "Your Voter ID will be required to open the ballot." : "Your anonymous ballot is ready.",
                 duration: 4000,
             })
         })
@@ -346,24 +380,26 @@ export function VoterSessionPortal({
                         <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
                             Ballot Submitted
                         </p>
-                        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+                        <h1 className="text-3xl sm:text-4xl font-black font-heading tracking-tight text-foreground">
                             Thank you for voting
                         </h1>
                         <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
                             Your ballot for <span className="font-semibold text-foreground">{election.name}</span> has been recorded. You may now leave this device.
                         </p>
                     </div>
-                    <div className="w-full max-w-sm grid gap-3 sm:grid-cols-2">
-                        <Button variant="outline" size="lg" onClick={handleReturnToLobby}>
-                            Return to Election
+                    <div className={cn("w-full max-w-sm grid gap-3", election.settings?.quickElection ? "sm:grid-cols-1" : "sm:grid-cols-2")}>
+                        <Button variant={election.settings?.quickElection ? "default" : "outline"} size="lg" className={election.settings?.quickElection ? "bg-emerald-600 hover:bg-emerald-500" : ""} onClick={handleReturnToLobby}>
+                            {election.settings?.quickElection ? "Back to Election" : "Return to Election"}
                         </Button>
-                        <Button
-                            size="lg"
-                            className="bg-emerald-600 hover:bg-emerald-500"
-                            onClick={handleExitClick}
-                        >
-                            Leave Portal
-                        </Button>
+                        {!election.settings?.quickElection && (
+                            <Button
+                                size="lg"
+                                className="bg-emerald-600 hover:bg-emerald-500"
+                                onClick={handleExitClick}
+                            >
+                                Leave Portal
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
@@ -397,7 +433,7 @@ export function VoterSessionPortal({
                             </div>
                         )}
 
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight break-words max-w-7xl mx-auto">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-heading text-foreground tracking-tight leading-tight break-words max-w-7xl mx-auto">
                             {election.name}
                         </h1>
 
@@ -406,9 +442,16 @@ export function VoterSessionPortal({
                             <span className="font-medium">{election.organization.name}</span>
                         </div>
 
-                        <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-sm mx-auto font-medium">
-                            Keep your Voter ID ready. Your identity will be verified before the ballot opens.
-                        </p>
+                        {election.settings?.authorizeVoters && (
+                            <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-sm mx-auto font-medium">
+                                Keep your Voter ID ready. Your identity will be verified before the ballot opens.
+                            </p>
+                        )}
+                        {!election.settings?.authorizeVoters && (
+                            <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-sm mx-auto font-medium">
+                                This is an anonymous election. No Voter ID is required.
+                            </p>
+                        )}
                     </div>
 
                     {/* Start button */}

@@ -23,6 +23,8 @@ export interface BallotElection {
         allowNota: boolean
         allowMultipleVotes: boolean
         maxVotesPerUser: number
+        showSummary: boolean
+        quickElection: boolean
     }
     roles: BallotRole[]
 }

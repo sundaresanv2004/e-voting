@@ -94,7 +94,22 @@ export function BallotInterface({
             : ((activeRoleIndex + 1) / roles.length) * 100
 
     const handleVoteChange = (roleId: string, candidateId: string) => {
-        setVotes((prev) => ({ ...prev, [roleId]: candidateId }))
+        const newVotes = { ...votes, [roleId]: candidateId }
+        setVotes(newVotes)
+
+        if (settings.quickElection) {
+            setTimeout(() => {
+                if (activeRoleIndex < roles.length - 1) {
+                    setActiveRoleIndex((i) => i + 1)
+                } else {
+                    if (settings.showSummary) {
+                        setIsReviewing(true)
+                    } else {
+                        onSubmitBallot(newVotes)
+                    }
+                }
+            }, 300)
+        }
     }
 
     const handleNext = () => {
@@ -183,9 +198,17 @@ export function BallotInterface({
                 canSubmit={allVoted}
                 onBack={handleBack}
                 onNext={handleNext}
-                onSubmit={() => setIsSubmitDialogOpen(true)}
+                onSubmit={() => {
+                    if (settings.quickElection) {
+                        onSubmitBallot(votes)
+                    } else {
+                        setIsSubmitDialogOpen(true)
+                    }
+                }}
                 isFirstRole={activeRoleIndex === 0 && !isReviewing}
                 isLastRole={activeRoleIndex === roles.length - 1}
+                showSummary={settings.showSummary}
+                quickElection={settings.quickElection}
             />
 
             {/* ── Submit Confirmation Dialog ────────────────────────────── */}
