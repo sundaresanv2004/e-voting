@@ -39,23 +39,20 @@ export const styles = {
     backgroundColor: colors.pageBg,
     fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     margin: "0",
-    padding: "40px 16px",
+    padding: "0",
   } as React.CSSProperties,
 
   container: {
     backgroundColor: colors.cardBg,
-    border: `1px solid ${colors.border}`,
-    borderRadius: "16px",
     maxWidth: "600px",
     margin: "0 auto",
     padding: "0",
-    overflow: "hidden",
   } as React.CSSProperties,
 
   // ── Header Band ──────────────────────────────────────────────────────────────
   header: {
     background: `linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #60a5fa 100%)`,
-    padding: "36px 40px 32px",
+    padding: "32px 24px",
     textAlign: "center" as const,
   } as React.CSSProperties,
 
@@ -79,7 +76,7 @@ export const styles = {
 
   // ── Content Area ─────────────────────────────────────────────────────────────
   content: {
-    padding: "36px 40px 32px",
+    padding: "32px 24px",
   } as React.CSSProperties,
 
   heading: {
@@ -176,7 +173,7 @@ export const styles = {
 
   // ── Footer ────────────────────────────────────────────────────────────────────
   footer: {
-    padding: "24px 40px 28px",
+    padding: "24px 24px 32px",
     textAlign: "center" as const,
   } as React.CSSProperties,
 

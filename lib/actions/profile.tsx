@@ -7,6 +7,10 @@ import { revalidatePath } from "next/cache"
 import { logUserAction } from "@/lib/auth/audit"
 import { AuditStatus } from "@prisma/client"
 import { z } from "zod"
+import { sendEmail } from "@/lib/email"
+import PasswordResetSuccessEmail from "@/emails/PasswordResetSuccessEmail"
+import OrgLeftEmail from "@/emails/OrgLeftEmail"
+import AccountDeletedEmail from "@/emails/AccountDeletedEmail"
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -141,6 +145,12 @@ export async function changePasswordAction(values: {
       },
     })
 
+    await sendEmail({
+      to: session.user.email,
+      subject: "Your password has been changed – e-voting",
+      react: <PasswordResetSuccessEmail userName={session.user.name} />,
+    })
+
     return { success: "Password changed successfully." }
   } catch (error: any) {
     console.error("[CHANGE_PASSWORD]", error)
@@ -214,6 +224,12 @@ export async function leaveOrganizationAction() {
       },
     })
 
+    await sendEmail({
+      to: session.user.email,
+      subject: `You have left ${org.name} – e-voting`,
+      react: <OrgLeftEmail userName={session.user.name} orgName={org.name} />,
+    })
+
     return { success: "You have left the organization." }
   } catch (error) {
     console.error("[LEAVE_ORG]", error)
@@ -252,6 +268,12 @@ export async function deleteAccountAction() {
     })
 
     await db.user.delete({ where: { id: session.user.id } })
+
+    await sendEmail({
+      to: session.user.email,
+      subject: "Your account has been deleted – e-voting",
+      react: <AccountDeletedEmail userName={session.user.name} />,
+    })
 
     return { success: "Account deleted successfully." }
   } catch (error) {

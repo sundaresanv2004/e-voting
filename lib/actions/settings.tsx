@@ -8,6 +8,8 @@ import { AuditEntityType, AuditStatus, OrganizationType } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
 import { requireOrgActionContext } from "@/lib/auth/access"
 import { OrganizationSchema, OrganizationSettingsSchema } from "@/lib/schemas/org"
+import { sendEmail } from "@/lib/email"
+import OrgOwnershipTransferredEmail from "@/emails/OrgOwnershipTransferredEmail"
 /**
  * Gets the current active organization data
  */
@@ -244,6 +246,27 @@ export async function transferOwnershipAction(newOwnerMemberId: string, newOwner
         }
       })
     })
+
+    // Fetch user details to send the email
+    const users = await db.user.findMany({
+      where: { id: { in: [currentUserId as string, newOwnerUserId] } },
+      select: { id: true, name: true, email: true }
+    })
+    
+    const previousOwner = users.find(u => u.id === currentUserId)
+    const newOwner = users.find(u => u.id === newOwnerUserId)
+
+    if (newOwner && newOwner.email) {
+      await sendEmail({
+        to: newOwner.email,
+        subject: `You are now the owner of ${organization.name} – e-voting`,
+        react: <OrgOwnershipTransferredEmail 
+                 userName={newOwner.name} 
+                 orgName={organization.name} 
+                 previousOwnerName={previousOwner?.name || "Previous Owner"} 
+               />,
+      })
+    }
 
     revalidatePath("/organisation/settings")
     return { success: true }

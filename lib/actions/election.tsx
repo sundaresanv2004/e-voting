@@ -10,6 +10,8 @@ import { ElectionSchema } from "@/lib/schemas/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { randomBytes } from "crypto"
 import { requireOrgActionContext } from "@/lib/auth/access"
+import { sendEmail } from "@/lib/email"
+import ElectionCreatedEmail from "@/emails/ElectionCreatedEmail"
 
 function generateCode(orgName: string = "EV") {
   const sanitized = orgName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -145,6 +147,52 @@ export async function createElection(formData: {
 
       return election
     })
+
+    // --- Send Emails ---
+    const owner = await db.user.findUnique({
+      where: { id: organization.ownerId || "" },
+      select: { email: true, name: true, id: true }
+    })
+    
+    const creator = await db.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true, id: true }
+    })
+
+    if (owner && owner.email) {
+      await sendEmail({
+        to: owner.email,
+        subject: `New Election Created: ${result.name}`,
+        react: <ElectionCreatedEmail 
+                 userName={owner.name} 
+                 electionName={result.name} 
+                 electionCode={result.code} 
+                 orgName={organization.name} 
+                 electionId={result.id}
+                 startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                 endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                 createdBy={creator?.name || "an administrator"}
+               />,
+      })
+    }
+
+    if (creator && creator.id !== owner?.id && creator.email) {
+      await sendEmail({
+        to: creator.email,
+        subject: `You Created an Election: ${result.name}`,
+        react: <ElectionCreatedEmail 
+                 userName={creator.name} 
+                 electionName={result.name} 
+                 electionCode={result.code} 
+                 orgName={organization.name} 
+                 electionId={result.id}
+                 startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                 endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                 createdBy="you"
+               />,
+      })
+    }
+    // -------------------
 
     const cookieStore = await cookies()
     cookieStore.set("last_election_id", result.id, {

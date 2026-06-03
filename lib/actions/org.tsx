@@ -6,6 +6,9 @@ import { UserRole, AuditStatus, AuditEntityType } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { randomBytes } from "crypto"
+import { sendEmail } from "@/lib/email"
+import OrgCreatedEmail from "@/emails/OrgCreatedEmail"
+import OrgDeletedEmail from "@/emails/OrgDeletedEmail"
 
 import { OrganizationFormValues, OrganizationSchema } from "@/lib/schemas/org"
 
@@ -174,6 +177,13 @@ export async function createOrganization(values: OrganizationFormValues) {
       })
     })
 
+    // Send the organization created email
+    await sendEmail({
+      to: user.email,
+      subject: "Organization Created Successfully – e-voting",
+      react: <OrgCreatedEmail userName={user.name} orgName={name} orgCode={code} />,
+    })
+
     revalidatePath("/")
     revalidatePath("/organisation")
 
@@ -239,6 +249,13 @@ export async function deleteOrganizationAction(organizationId: string) {
         data: { role: UserRole.user }
       })
     }
+
+    // Send the organization deleted email
+    await sendEmail({
+      to: session.user.email,
+      subject: `Organization "${org.name}" Deleted – e-voting`,
+      react: <OrgDeletedEmail userName={session.user.name} orgName={org.name} />,
+    })
 
     return { success: "Organization deleted successfully." }
   } catch (err) {

@@ -7,6 +7,10 @@ import { revalidatePath } from "next/cache"
 import { AuditEntityType, AuditStatus } from "@prisma/client"
 import { logAdminAction } from "@/lib/auth/audit"
 import { requireOrgActionContext } from "@/lib/auth/access"
+import { sendEmail } from "@/lib/email"
+import OrgMemberInviteEmail from "@/emails/OrgMemberInviteEmail"
+import OrgMemberAccessUpdatedEmail from "@/emails/OrgMemberAccessUpdatedEmail"
+import crypto from "crypto"
 import {
   AddMemberSearchSchema,
   MemberMutationSchema,
@@ -168,12 +172,13 @@ export async function addMemberAction(
     if (isAlreadyInAnotherOrg) return { success: false, error: "This user belongs to a different org. They need to leave it to join yours." }
 
     // Add to Better Auth Member table natively
-    await auth.api.addMember({
-      headers: await headers(), // Ensure we use auth headers
-      body: {
-        userId: values.userId,
+    await db.member.create({
+      data: {
+        id: crypto.randomUUID(),
         organizationId: orgId,
+        userId: values.userId,
         role: values.role as any,
+        createdAt: new Date()
       }
     })
 
@@ -206,7 +211,8 @@ export async function addMemberAction(
             electionId: id,
             createdByUserId: adminId,
             updatedByUserId: adminId
-          }))
+          })),
+          skipDuplicates: true
         })
       }
 
@@ -222,6 +228,31 @@ export async function addMemberAction(
         metadata: { role: values.role, hasAllAccess: values.hasAllAccess, electionIds: validElectionIds }
       })
     })
+
+    const addedMember = await db.user.findUnique({ where: { id: values.userId }, select: { name: true, email: true } })
+    const org = await db.organization.findUnique({ where: { id: orgId! }, select: { name: true } })
+    const admin = await db.user.findUnique({ where: { id: adminId! }, select: { name: true } })
+
+    let electionNames: string[] = []
+    if (!values.hasAllAccess && validElectionIds.length > 0) {
+      const elections = await db.election.findMany({ where: { id: { in: validElectionIds } }, select: { name: true } })
+      electionNames = elections.map(e => e.name)
+    }
+
+    if (addedMember?.email && org) {
+      await sendEmail({
+        to: addedMember.email,
+        subject: `You have been added to ${org.name}`,
+        react: <OrgMemberInviteEmail 
+          userName={addedMember.name || undefined}
+          orgName={org.name}
+          role={values.role === "org_admin" ? "organization admin" : values.role}
+          accessType={values.hasAllAccess || values.role === "org_admin" ? "all" : "specific"}
+          elections={electionNames}
+          addedBy={admin?.name || "An administrator"}
+        />
+      })
+    }
 
     revalidatePath("/organisation/members")
     return { success: true }
@@ -274,14 +305,21 @@ export async function updateMemberAccess(
 
     if (!targetMember) return { success: false, error: "Member not found in organization" }
 
+    const oldUser = await db.user.findUnique({
+      where: { id: values.userId },
+      include: { electionAccess: { include: { election: true } } }
+    })
+    
+    const oldRole = oldUser?.role || "viewer"
+    const oldHasAllAccess = oldUser?.hasAllElectionsAccess || false
+    const oldElectionAccess = oldUser?.electionAccess || []
+    const oldElectionIdsSet = new Set(oldElectionAccess.map(e => e.electionId))
+    const oldElectionsMap = new Map(oldElectionAccess.map(e => [e.electionId, e.election.name]))
+
     if (targetMember.role !== values.role) {
-      await auth.api.updateMemberRole({
-        headers: await headers(),
-        body: {
-          memberId: targetMember.id,
-          organizationId: orgId,
-          role: values.role as any
-        }
+      await db.member.update({
+        where: { id: targetMember.id },
+        data: { role: values.role as any }
       })
     }
 
@@ -318,7 +356,8 @@ export async function updateMemberAccess(
             electionId,
             createdByUserId: adminId,
             updatedByUserId: adminId
-          }))
+          })),
+          skipDuplicates: true
         })
       }
 
@@ -334,6 +373,48 @@ export async function updateMemberAccess(
         metadata: { role: values.role, hasAllAccess: values.hasAllAccess, electionIds: validElectionIds }
       })
     })
+
+    const updatedMember = await db.user.findUnique({ where: { id: values.userId }, select: { name: true, email: true } })
+    const org = await db.organization.findUnique({ where: { id: orgId! }, select: { name: true } })
+    const admin = await db.user.findUnique({ where: { id: adminId! }, select: { name: true } })
+
+    let addedElectionNames: string[] = []
+    let removedElectionNames: string[] = []
+
+    if (!values.hasAllAccess && validElectionIds.length > 0) {
+      const newElections = await db.election.findMany({ where: { id: { in: validElectionIds } }, select: { id: true, name: true } })
+      const newElectionIdsSet = new Set(newElections.map(e => e.id))
+      const newElectionsMap = new Map(newElections.map(e => [e.id, e.name]))
+      
+      for (const id of newElectionIdsSet) {
+        if (!oldElectionIdsSet.has(id)) addedElectionNames.push(newElectionsMap.get(id)!)
+      }
+      for (const id of oldElectionIdsSet) {
+        if (!newElectionIdsSet.has(id)) removedElectionNames.push(oldElectionsMap.get(id)!)
+      }
+    } else if (!values.hasAllAccess && validElectionIds.length === 0) {
+      for (const id of oldElectionIdsSet) {
+        removedElectionNames.push(oldElectionsMap.get(id)!)
+      }
+    }
+    
+    if (updatedMember?.email && org) {
+      await sendEmail({
+        to: updatedMember.email,
+        subject: `Your access in ${org.name} has been updated`,
+        react: <OrgMemberAccessUpdatedEmail 
+          userName={updatedMember.name || undefined}
+          orgName={org.name}
+          newRole={values.role as any}
+          oldRole={oldRole as any}
+          nowHasAllAccess={values.hasAllAccess}
+          previouslyHadAllAccess={oldHasAllAccess}
+          addedElections={addedElectionNames}
+          removedElections={removedElectionNames}
+          updatedBy={admin?.name || "An administrator"}
+        />
+      })
+    }
 
     revalidatePath("/organisation/members")
     return { success: true }
@@ -404,17 +485,13 @@ export async function removeMemberAction(userId: string) {
 
     if (!targetMember) return { success: false, error: "Member not found in organization" }
 
-    // Remove from Better Auth organization
-    await auth.api.removeMember({
-      headers: await headers(),
-      body: {
-        memberIdOrEmail: targetMember.id,
-        organizationId: orgId
-      }
-    })
-
     // Perform custom updates in a transaction
     await db.$transaction(async (tx) => {
+      // 1. Remove from Better Auth organization
+      await tx.member.delete({
+        where: { id: targetMember.id }
+      })
+
       // Clear their custom role and full access flag globally
       await tx.user.update({
         where: { id: parsed.data.userId },
