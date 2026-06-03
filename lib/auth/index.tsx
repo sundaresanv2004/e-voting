@@ -126,8 +126,8 @@ export const auth = betterAuth({
 
               // Get IP address (handles proxies via common headers)
               const ip =
+                request?.headers?.get?.("x-real-ip")?.trim() ??
                 request?.headers?.get?.("x-forwarded-for")?.split(",")?.[0]?.trim() ??
-                request?.headers?.get?.("x-real-ip") ??
                 "Unknown IP";
 
               // Attempt to resolve location

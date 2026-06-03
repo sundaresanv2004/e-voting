@@ -6,6 +6,7 @@ import {
     assertVoteSelectionShape,
     reserveVoterBallotSlot,
 } from "@/lib/voting/integrity"
+import { createVoterSession, getVoterSession, clearVoterSession } from "@/lib/voting/session"
 import { format } from "date-fns"
 import { headers } from "next/headers"
 import { logAdminAction } from "@/lib/auth/audit"
@@ -460,6 +461,8 @@ export async function verifyVoterUniqueIdAction(
             metadata: { electionId, voterId: voter.id, categoryId }
         })
 
+        await createVoterSession({ voterId: voter.id, electionId: election.id, isAnonymous: false })
+
         return {
             success: true,
             voter: {
@@ -600,6 +603,8 @@ export async function startAnonymousSessionAction(
             metadata: { electionId, categoryId }
         })
 
+        await createVoterSession({ voterId: crypto.randomUUID(), electionId: election.id, isAnonymous: true })
+
         return {
             success: true,
             voter: {
@@ -642,13 +647,22 @@ export async function startAnonymousSessionAction(
 
 export async function submitBallotAction(
     electionId: string,
-    voterId: string | null,
     votes: Record<string, string>,
     categoryId?: string
 ): Promise<SubmitBallotResult> {
     try {
-        // If voterId is "anonymous", treat it as null
-        const effectiveVoterId = voterId === "anonymous" ? null : voterId
+        const session = await getVoterSession()
+        
+        if (!session || session.electionId !== electionId) {
+            return { error: "Invalid or expired voting session. Please refresh and try again." }
+        }
+
+        const effectiveVoterId = session.isAnonymous ? null : session.voterId
+        const sessionVoterId = session.voterId
+
+        const reqHeaders = await headers()
+        const ipAddress = reqHeaders.get("x-real-ip") || reqHeaders.get("x-forwarded-for")?.split(",")[0] || ""
+        const userAgent = reqHeaders.get("user-agent") || ""
 
         return await db.$transaction(async (tx) => {
             const election = await assertElectionAcceptsVotes(tx, electionId)
@@ -760,9 +774,6 @@ export async function submitBallotAction(
                 })
             }
 
-            const reqHeaders = await headers()
-            const ipAddress = reqHeaders.get("x-forwarded-for")?.split(",")[0] || reqHeaders.get("x-real-ip") || ""
-            const userAgent = reqHeaders.get("user-agent") || ""
 
             const ballot = await tx.ballot.create({
                 data: {
@@ -770,7 +781,7 @@ export async function submitBallotAction(
                     voterId: effectiveVoterId,
                     categoryId: resolvedCategoryId,
                     submissionKey: crypto.randomUUID(), // Generate a unique submission key
-                    isAnonymous: !effectiveVoterId,
+                    isAnonymous: session.isAnonymous,
                     ipAddress,
                     userAgent,
                 },
@@ -794,7 +805,7 @@ export async function submitBallotAction(
                     ? `Ballot cast successfully by voter ID: ${effectiveVoterId}`
                     : "Anonymous ballot cast successfully",
                 tx,
-                metadata: { electionId, voterId: effectiveVoterId, categoryId, ballotId: ballot.id }
+                metadata: { electionId, voterId: effectiveVoterId, sessionVoterId, categoryId, ballotId: ballot.id }
             })
 
             return { success: true }
@@ -812,7 +823,7 @@ export async function submitBallotAction(
                 organizationId: election?.organizationId,
                 status: AuditStatus.FAILURE,
                 description: `Ballot submission failed: ${error?.message || String(error)}`,
-                metadata: { electionId, voterId, categoryId }
+                metadata: { electionId, categoryId }
             })
         } catch {}
         return { error: "An unexpected error occurred while submitting your ballot." }

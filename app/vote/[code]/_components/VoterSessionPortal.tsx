@@ -291,7 +291,7 @@ export function VoterSessionPortal({
                 return
             }
 
-            const result = await submitBallotAction(election.id, voterData.id, votes, category?.id)
+            const result = await submitBallotAction(election.id, votes, category?.id)
             if ("error" in result) {
                 if (result.status === "PAUSED") {
                     setIsSubmittingBallot(false)
