@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth"
 import { VoterSessionPortal } from "./_components/VoterSessionPortal"
 import { DeviceGuard } from "../_components/DeviceGuard"
 
+export const dynamic = "force-dynamic"
+
 export default async function VotePage({
     params,
     searchParams,

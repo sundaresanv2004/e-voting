@@ -438,6 +438,167 @@ export async function resetVoterVote(voterId: string, electionId: string) {
   }
 }
 
+// ─── Delete Anonymous Ballot ──────────────────────────────────────────────────
+
+export async function deleteAnonymousBallot(ballotId: string, electionId: string) {
+  let adminId = ""
+  let orgId = ""
+  try {
+    const access = await requireOrgActionContext({
+      action: "VOTER_VOTE_RESET",
+      entityType: AuditEntityType.ELECTION,
+      entityId: ballotId,
+      adminOnly: false,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const { userId, organizationId } = access
+
+    await db.$transaction(async (tx) => {
+      const ballot = await tx.ballot.findFirst({
+        where: {
+          id: ballotId,
+          electionId,
+          isAnonymous: true,
+          election: { organizationId, deletedAt: null },
+        },
+      })
+      if (!ballot) throw new Error("Anonymous ballot not found")
+
+      // Must delete Vote records first due to onDelete: Restrict on Ballot
+      await tx.vote.deleteMany({
+        where: { ballotId },
+      })
+
+      // Now safe to delete the ballot
+      await tx.ballot.delete({
+        where: { id: ballotId },
+      })
+
+      await logAdminAction({
+        action: "VOTER_VOTE_RESET",
+        entityType: AuditEntityType.ELECTION,
+        entityId: ballotId,
+        adminId: userId,
+        organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: { electionId, submissionKey: ballot.submissionKey, isAnonymous: true },
+      })
+    })
+
+    revalidatePath(`/organisation/election/${electionId}/voters`)
+    return { success: true }
+  } catch (error: any) {
+    console.error("[DELETE_ANONYMOUS_BALLOT]", error)
+    if (adminId && orgId) {
+      try {
+        await logAdminAction({
+          action: "VOTER_VOTE_RESET",
+          entityType: AuditEntityType.ELECTION,
+          entityId: ballotId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { error: error?.message || "Unknown error" },
+        })
+      } catch {}
+    }
+    return { success: false, error: error.message || "Failed to delete anonymous ballot" }
+  }
+}
+
+// ─── Delete Ballots by IP ─────────────────────────────────────────────────────
+
+export async function deleteBallotsByIp(electionId: string, ipAddress: string) {
+  let adminId = ""
+  let orgId = ""
+  try {
+    const access = await requireOrgActionContext({
+      action: "VOTER_VOTE_RESET",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+      adminOnly: false,
+    })
+    adminId = access.userId
+    orgId = access.organizationId
+    const { userId, organizationId } = access
+
+    await db.$transaction(async (tx) => {
+      // Find all ballots matching this IP for this election
+      const ballots = await tx.ballot.findMany({
+        where: {
+          electionId,
+          ipAddress,
+          deletedAt: null,
+          election: { organizationId, deletedAt: null },
+        },
+        select: { id: true, voterId: true, isAnonymous: true },
+      })
+
+      if (ballots.length === 0) {
+        throw new Error("No ballots found for this IP address")
+      }
+
+      const ballotIds = ballots.map((b) => b.id)
+      const voterIds = ballots.map((b) => b.voterId).filter(Boolean) as string[]
+
+      // Must delete Vote records first due to onDelete: Restrict on Ballot
+      await tx.vote.deleteMany({
+        where: { ballotId: { in: ballotIds } },
+      })
+
+      // Now safe to delete the ballots
+      await tx.ballot.deleteMany({
+        where: { id: { in: ballotIds } },
+      })
+
+      // Reset any registered voters affected
+      if (voterIds.length > 0) {
+        await tx.voter.updateMany({
+          where: { id: { in: voterIds } },
+          data: { ballotCount: 0, lastVotedAt: null },
+        })
+      }
+
+      await logAdminAction({
+        action: "VOTER_VOTE_RESET",
+        entityType: AuditEntityType.ELECTION,
+        entityId: electionId,
+        adminId: userId,
+        organizationId,
+        status: AuditStatus.SUCCESS,
+        tx,
+        metadata: {
+          ipAddress,
+          deletedBallotCount: ballotIds.length,
+          resetVoterCount: voterIds.length,
+        },
+      })
+    })
+
+    revalidatePath(`/organisation/election/${electionId}/results`)
+    revalidatePath(`/organisation/election/${electionId}/voters`)
+    return { success: true }
+  } catch (error: any) {
+    console.error("[DELETE_BALLOTS_BY_IP]", error)
+    if (adminId && orgId) {
+      try {
+        await logAdminAction({
+          action: "VOTER_VOTE_RESET",
+          entityType: AuditEntityType.ELECTION,
+          entityId: electionId,
+          adminId,
+          organizationId: orgId,
+          status: AuditStatus.FAILURE,
+          metadata: { error: error?.message || "Unknown error", ipAddress },
+        })
+      } catch {}
+    }
+    return { success: false, error: error.message || "Failed to delete ballots by IP" }
+  }
+}
+
 // ─── Verify Bulk ──────────────────────────────────────────────────────────────
 
 export async function verifyVotersBulk(

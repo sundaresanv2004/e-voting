@@ -91,6 +91,7 @@ import { cn } from "@/lib/utils"
 import { ResultsStateBanner } from "./results-state-banner"
 import { ResultsNonVoterTable, type NonVoter } from "./results-nonvoter-table"
 import { ResultsIntegrityCard } from "./results-integrity-card"
+import { ResultsIpTable, type IpStat } from "./results-ip-table"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ export interface TimelinePoint {
 }
 
 export interface ResultsDashboardProps {
+  electionId: string
   electionName: string
   electionStatus: ElectionStatus
   isFinalized: boolean
@@ -147,6 +149,7 @@ export interface ResultsDashboardProps {
   notaCount: number
   anonymousBallotCount: number
   ipDiversity: number
+  ipStats: IpStat[]
   electionSettings: Partial<ElectionSettings>
   isAnonymous: boolean
   userRole: UserRole
@@ -349,6 +352,7 @@ function RoleCard({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export function ResultsDashboard({
+  electionId,
   electionName,
   electionStatus,
   isFinalized,
@@ -362,6 +366,7 @@ export function ResultsDashboard({
   notaCount,
   anonymousBallotCount,
   ipDiversity,
+  ipStats,
   electionSettings,
   isAnonymous,
   userRole,
@@ -506,7 +511,7 @@ export function ResultsDashboard({
                   sub={`${uniqueVotersVoted.toLocaleString()} unique voters`}
                 />
                 <StatCard
-                  label="Abstained"
+                  label="Not Voted"
                   value={(stats.totalVoters - uniqueVotersVoted).toLocaleString()}
                   icon={UserMinus01Icon}
                   sub="Have not voted yet"
@@ -541,9 +546,9 @@ export function ResultsDashboard({
                 <h3 className="text-sm font-semibold">Ballot Integrity &amp; Participation</h3>
                 <p className="text-sm text-muted-foreground">Security metrics and a list of registered voters yet to cast their ballot.</p>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                 <div className="lg:col-span-2">
-                  <ResultsNonVoterTable nonVoters={nonVoters} isAnonymous={isAnonymous} />
+                  <ResultsNonVoterTable nonVoters={nonVoters} isAnonymous={false} />
                 </div>
                 <div>
                   <ResultsIntegrityCard
@@ -553,6 +558,14 @@ export function ResultsDashboard({
                     isAdmin={userRole === "admin" || userRole === "org_admin" || userRole === "staff"}
                   />
                 </div>
+              </div>
+              
+              <div>
+                <ResultsIpTable 
+                  data={ipStats} 
+                  electionId={electionId}
+                  canManage={userRole === "admin" || userRole === "org_admin" || userRole === "staff"}
+                />
               </div>
             </div>
 
@@ -616,7 +629,7 @@ export function ResultsDashboard({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm bg-muted-foreground/20" />
-                    Abstained
+                    Not Voted
                   </div>
                 </div>
               </CardContent>

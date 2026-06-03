@@ -4,8 +4,11 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { UserCircleIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { ElectionPageHeader } from "@/components/shared/election-page-header"
 import { VotersDataTable } from "./_components/voters-data-table"
+import { AnonymousBallotsTable } from "./_components/anonymous-ballots-table"
 import { ImportVotersDialog } from "./_components/import-voters-dialog"
 import { VotersPoller } from "./_components/voters-poller"
 import { requireOrgMember, ORG_ADMIN_ROLES } from "@/lib/auth/access"
@@ -69,6 +72,25 @@ export default async function VotersPage({
     },
   })
 
+  // Fetch anonymous ballots
+  const anonymousBallots = await db.ballot.findMany({
+    where: {
+      electionId,
+      isAnonymous: true,
+      deletedAt: null,
+      election: { organizationId: member.organizationId },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      submissionKey: true,
+      ipAddress: true,
+      userAgent: true,
+      createdAt: true,
+      category: { select: { id: true, name: true, code: true } },
+    },
+  })
+
   return (
     <div className="flex flex-col flex-1 w-full">
       <VotersPoller />
@@ -93,12 +115,29 @@ export default async function VotersPage({
         }
       />
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
-        <VotersDataTable
-          data={voters as any}
-          electionId={electionId}
-          allCategories={allCategories}
-          canManage={canManage}
-        />
+        <Tabs defaultValue="registered" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="registered">Registered Voters</TabsTrigger>
+            <TabsTrigger value="anonymous">Anonymous Ballots</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="registered" className="mt-0 outline-none">
+            <VotersDataTable
+              data={voters as any}
+              electionId={electionId}
+              allCategories={allCategories}
+              canManage={canManage}
+            />
+          </TabsContent>
+          
+          <TabsContent value="anonymous" className="mt-0 outline-none">
+            <AnonymousBallotsTable
+              data={anonymousBallots as any}
+              electionId={electionId}
+              canManage={canManage}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -169,10 +169,12 @@ export default async function ResultsPage({
 
   const totalBallots = election._count.ballots
   const totalVoters = election._count.voters
-  const turnoutPercentage = totalVoters > 0 ? (totalBallots / totalVoters) * 100 : 0
+  const anonymousBallotCount = ballots.filter(b => b.isAnonymous).length
+  const namedBallotCount = totalBallots - anonymousBallotCount
+  
+  const turnoutPercentage = totalVoters > 0 ? (namedBallotCount / totalVoters) * 100 : 0
   const participationRate = totalVoters > 0 ? (uniqueVotersVoted / totalVoters) * 100 : 0
   
-  const anonymousBallotCount = ballots.filter(b => b.isAnonymous).length
   const ipDiversity = new Set(ballots.map(b => b.ipAddress).filter(Boolean)).size
   
   // Determine if election is anonymous based on ballots or setting (if we had one)
@@ -205,16 +207,19 @@ export default async function ResultsPage({
   })
 
   // Category turnout breakdown
-  const categoryTurnout: CategoryTurnout[] = categories.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    code: cat.code,
-    totalVoters: cat._count.voters,
-    ballotsCast: cat._count.ballots,
-    turnoutPercentage: cat._count.voters > 0
-      ? (cat._count.ballots / cat._count.voters) * 100
-      : 0,
-  }))
+  const categoryTurnout: CategoryTurnout[] = categories.map((cat) => {
+    const namedBallotsInCat = ballots.filter(b => b.categoryId === cat.id && !b.isAnonymous).length
+    return {
+      id: cat.id,
+      name: cat.name,
+      code: cat.code,
+      totalVoters: cat._count.voters,
+      ballotsCast: namedBallotsInCat,
+      turnoutPercentage: cat._count.voters > 0
+        ? (namedBallotsInCat / cat._count.voters) * 100
+        : 0,
+    }
+  })
 
   // Hourly timeline
   const timelineMap: Record<string, number> = {}
@@ -230,6 +235,27 @@ export default async function ResultsPage({
   const timelineData: TimelinePoint[] = Object.entries(timelineMap).map(
     ([time, count]) => ({ time, count })
   )
+
+  // IP Stats computation
+  const ipStatsMap: Record<string, { count: number; lastActivity: Date }> = {}
+  ballots.forEach((b) => {
+    if (!b.ipAddress) return
+    const ip = b.ipAddress
+    if (!ipStatsMap[ip]) {
+      ipStatsMap[ip] = { count: 0, lastActivity: b.createdAt }
+    }
+    ipStatsMap[ip].count += 1
+    if (new Date(b.createdAt) > new Date(ipStatsMap[ip].lastActivity)) {
+      ipStatsMap[ip].lastActivity = b.createdAt
+    }
+  })
+  const ipStats = Object.entries(ipStatsMap)
+    .map(([ipAddress, data]) => ({
+      ipAddress,
+      ballotCount: data.count,
+      lastActivity: data.lastActivity,
+    }))
+    .sort((a, b) => b.ballotCount - a.ballotCount)
 
   const totalCandidates = rolesData.reduce((sum, r) => sum + r.candidates.length, 0)
 
@@ -266,6 +292,7 @@ export default async function ResultsPage({
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <Suspense fallback={<ResultsDashboardSkeleton />}>
           <ResultsDashboard
+            electionId={electionId}
             electionName={election.name}
             electionStatus={election.status}
             isFinalized={election.result?.isFinalized ?? false}
@@ -286,6 +313,7 @@ export default async function ResultsPage({
             notaCount={election.settings?.allowNota ? notaCount : 0}
             anonymousBallotCount={anonymousBallotCount}
             ipDiversity={ipDiversity}
+            ipStats={ipStats}
             electionSettings={election.settings!}
             isAnonymous={isAnonymous}
             userRole={member.role}

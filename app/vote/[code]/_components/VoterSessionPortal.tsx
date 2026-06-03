@@ -178,17 +178,7 @@ export function VoterSessionPortal({
 
             setVoterData(result.voter)
             
-            const cachedData = sessionStorage.getItem(`ballot_cache_${election.id}`)
-            if (cachedData) {
-                try {
-                    const parsed = JSON.parse(cachedData)
-                    setBallotElection(parsed.ballot)
-                } catch (e) {
-                    setBallotElection(result.ballot)
-                }
-            } else {
-                setBallotElection(result.ballot)
-            }
+            setBallotElection(result.ballot)
             
             setHasConfirmedIdentity(false)
             setIsIdDialogOpen(false)
@@ -212,17 +202,7 @@ export function VoterSessionPortal({
 
             setVoterData(result.voter)
             
-            const cachedData = sessionStorage.getItem(`ballot_cache_${election.id}`)
-            if (cachedData) {
-                try {
-                    const parsed = JSON.parse(cachedData)
-                    setBallotElection(parsed.ballot)
-                } catch (e) {
-                    setBallotElection(result.ballot)
-                }
-            } else {
-                setBallotElection(result.ballot)
-            }
+            setBallotElection(result.ballot)
             
             setHasConfirmedIdentity(true) // Auto-confirm identity for anonymous
             setIsIdDialogOpen(false)
@@ -264,8 +244,7 @@ export function VoterSessionPortal({
             // Election is now active — dismiss the dialog and let them vote
             setIsPausedDialogOpen(false)
             
-            // Invalidate cache
-            sessionStorage.removeItem(`ballot_cache_${election.id}`)
+            // Cache removed: we always fetch fresh data on session start
             
             toast.info("Secure Session Started", {
                 description: "Data refreshed. Your ballot is up to date.",
