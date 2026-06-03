@@ -50,6 +50,7 @@ export interface ResultsExportData {
     turnoutPercentage: number
     totalRoles: number
     totalCandidates: number
+    anonymousBallots: number
   }
 }
 
@@ -272,16 +273,24 @@ export function ResultsExport({ data }: ResultsExportProps) {
       doc.text("ELECTION SUMMARY", mx, y)
       y += 6
 
+      const summaryHead = ["Total Voters", "Ballots Cast", "Voter Turnout", "Positions", "Candidates"]
+      const summaryBody = [
+        data.stats.totalVoters.toLocaleString(),
+        data.stats.ballotsCast.toLocaleString(),
+        `${data.stats.turnoutPercentage.toFixed(1)}%`,
+        data.stats.totalRoles.toString(),
+        data.stats.totalCandidates.toString(),
+      ]
+
+      if (data.stats.anonymousBallots > 0) {
+        summaryHead.splice(2, 0, "Anonymous")
+        summaryBody.splice(2, 0, data.stats.anonymousBallots.toLocaleString())
+      }
+
       autoTable(doc, {
         startY: y,
-        head: [["Total Voters", "Ballots Cast", "Voter Turnout", "Positions", "Candidates"]],
-        body: [[
-          data.stats.totalVoters.toLocaleString(),
-          data.stats.ballotsCast.toLocaleString(),
-          `${data.stats.turnoutPercentage.toFixed(1)}%`,
-          data.stats.totalRoles.toString(),
-          data.stats.totalCandidates.toString(),
-        ]],
+        head: [summaryHead],
+        body: [summaryBody],
         theme: "grid",
         headStyles: {
           fillColor: [40, 40, 40],

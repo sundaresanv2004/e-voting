@@ -38,6 +38,7 @@ export default async function ElectionSettingsPage({
         title="Settings" 
         description="Configure election settings"
         icon={Settings02Icon} 
+        showSettings={false}
       />
       <div className="px-4 md:px-8 py-8 max-w-[1400px] mx-auto w-full">
         <ElectionSettingsContainer election={election} role={member.role as UserRole} />

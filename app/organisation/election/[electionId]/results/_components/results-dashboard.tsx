@@ -15,8 +15,12 @@ import {
   ShieldKeyIcon,
   GridIcon,
   ChartHistogramIcon,
+  HelpCircleIcon,
+  PieChartIcon,
+  Cancel01Icon,
+  UserMinus01Icon,
 } from "@hugeicons/core-free-icons"
-import { ElectionStatus } from "@prisma/client"
+import { ElectionStatus, ElectionSettings, UserRole } from "@prisma/client"
 import {
   Bar,
   BarChart,
@@ -26,6 +30,13 @@ import {
   RadialBarChart,
   RadialBar,
   PolarAngleAxis,
+  Area,
+  AreaChart,
+  ComposedChart,
+  Pie,
+  PieChart,
+  Cell,
+  Tooltip,
 } from "recharts"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,6 +55,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select"
 import {
   InputGroup,
@@ -75,6 +89,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 import { ResultsStateBanner } from "./results-state-banner"
+import { ResultsNonVoterTable, type NonVoter } from "./results-nonvoter-table"
+import { ResultsIntegrityCard } from "./results-integrity-card"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,12 +135,21 @@ export interface ResultsDashboardProps {
     totalVoters: number
     ballotsCast: number
     turnoutPercentage: number
+    participationRate: number
     totalRoles: number
     totalCandidates: number
   }
   roleResults: RoleResult[]
   categoryTurnout: CategoryTurnout[]
   timelineData: TimelinePoint[]
+  uniqueVotersVoted: number
+  nonVoters: NonVoter[]
+  notaCount: number
+  anonymousBallotCount: number
+  ipDiversity: number
+  electionSettings: Partial<ElectionSettings>
+  isAnonymous: boolean
+  userRole: UserRole
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -171,20 +196,20 @@ function CandidateRow({
 }) {
   const rankClass =
     rank === 1 && candidate.isLeading
-      ? "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20"
+      ? "bg-blue-600/10 text-blue-600 ring-1 ring-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20"
       : rank === 2
-        ? "bg-blue-500/10 text-blue-600 ring-1 ring-blue-500/20"
+        ? "bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/20 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20"
         : rank === 3
-          ? "bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20"
+          ? "bg-sky-500/10 text-sky-600 ring-1 ring-sky-500/20 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20"
           : "bg-muted text-muted-foreground"
 
   const barClass =
     rank === 1 && candidate.isLeading
-      ? "bg-emerald-500"
+      ? "bg-blue-600 dark:bg-blue-500"
       : rank === 2
-        ? "bg-blue-500"
+        ? "bg-blue-500 dark:bg-blue-400"
         : rank === 3
-          ? "bg-amber-500"
+          ? "bg-sky-500 dark:bg-sky-400"
           : "bg-muted-foreground/30"
 
   return (
@@ -217,7 +242,7 @@ function CandidateRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate">{candidate.name}</span>
           {candidate.isLeading && (
-            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-bold uppercase py-0 px-1.5 h-4 gap-0.5 shrink-0">
+            <Badge className="bg-blue-600/10 text-blue-600 border-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 text-[9px] font-bold uppercase py-0 px-1.5 h-4 gap-0.5 shrink-0">
               <HugeiconsIcon icon={Crown02Icon} className="w-2.5 h-2.5" />
               Leading
             </Badge>
@@ -287,7 +312,7 @@ function RoleCard({
         {role.totalVotes > 0 && leadingCount > 0 && (
           <Badge
             variant="outline"
-            className="text-[9px] font-bold gap-1 bg-emerald-500/5 text-emerald-600 border-emerald-500/20"
+            className="text-[9px] font-bold gap-1 bg-blue-600/5 text-blue-600 border-blue-600/20 dark:bg-blue-500/5 dark:text-blue-400 dark:border-blue-500/20"
           >
             <HugeiconsIcon icon={Crown02Icon} className="w-3 h-3" />
             {leadingCount > 1
@@ -332,6 +357,14 @@ export function ResultsDashboard({
   roleResults,
   categoryTurnout,
   timelineData,
+  uniqueVotersVoted,
+  nonVoters,
+  notaCount,
+  anonymousBallotCount,
+  ipDiversity,
+  electionSettings,
+  isAnonymous,
+  userRole,
 }: ResultsDashboardProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -383,34 +416,6 @@ export function ResultsDashboard({
         ballotsCast={stats.ballotsCast}
       />
 
-      {/* ── Stat Cards ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Eligible Voters"
-          value={stats.totalVoters.toLocaleString()}
-          icon={UserGroupIcon}
-          sub="Registered voters"
-        />
-        <StatCard
-          label="Ballots Cast"
-          value={stats.ballotsCast.toLocaleString()}
-          icon={Ticket01Icon}
-          sub="Votes submitted"
-        />
-        <StatCard
-          label="Voter Turnout"
-          value={`${stats.turnoutPercentage.toFixed(1)}%`}
-          icon={AnonymousIcon}
-          sub={`${stats.totalVoters - stats.ballotsCast} remaining`}
-        />
-        <StatCard
-          label="Positions"
-          value={stats.totalRoles.toString()}
-          icon={ShieldKeyIcon}
-          sub={`${stats.totalCandidates} total candidates`}
-        />
-      </div>
-
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         {/* Tab list */}
@@ -419,6 +424,10 @@ export function ResultsDashboard({
             <TabsTrigger value="standings">
               <HugeiconsIcon icon={Crown02Icon} className="w-4 h-4" />
               Standings
+            </TabsTrigger>
+            <TabsTrigger value="metrics">
+              <HugeiconsIcon icon={GridIcon} className="w-4 h-4" />
+              Metrics
             </TabsTrigger>
             <TabsTrigger value="analytics">
               <HugeiconsIcon icon={ChartBarLineIcon} className="w-4 h-4" />
@@ -453,16 +462,104 @@ export function ResultsDashboard({
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {roleResults.map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>Roles</SelectLabel>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {roleResults.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
         )}
+
+        {/* ── Metrics Tab ───────────────────────────────────────────────────── */}
+        <TabsContent value="metrics" className="mt-0 outline-none">
+          <div className="space-y-8">
+
+            {/* Section: Overview */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold">Overview</h3>
+                <p className="text-sm text-muted-foreground">High-level participation and turnout metrics for this election.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <StatCard
+                  label="Eligible Voters"
+                  value={stats.totalVoters.toLocaleString()}
+                  icon={UserGroupIcon}
+                  sub="Registered voters"
+                />
+                <StatCard
+                  label="Ballots Cast"
+                  value={stats.ballotsCast.toLocaleString()}
+                  icon={Ticket01Icon}
+                  sub="Total votes submitted"
+                />
+                <StatCard
+                  label="Participation"
+                  value={`${stats.participationRate.toFixed(1)}%`}
+                  icon={ChartBarLineIcon}
+                  sub={`${uniqueVotersVoted.toLocaleString()} unique voters`}
+                />
+                <StatCard
+                  label="Abstained"
+                  value={(stats.totalVoters - uniqueVotersVoted).toLocaleString()}
+                  icon={UserMinus01Icon}
+                  sub="Have not voted yet"
+                />
+                <StatCard
+                  label="Positions"
+                  value={stats.totalRoles.toString()}
+                  icon={ShieldKeyIcon}
+                  sub={`${stats.totalCandidates} candidates`}
+                />
+                {electionSettings.allowNota ? (
+                  <StatCard
+                    label="NOTA Votes"
+                    value={notaCount.toLocaleString()}
+                    icon={Cancel01Icon}
+                    sub="None of the above"
+                  />
+                ) : (
+                  <StatCard
+                    label="Turnout (Ballots)"
+                    value={`${stats.turnoutPercentage.toFixed(1)}%`}
+                    icon={AnonymousIcon}
+                    sub="Ballots / Total Voters"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Section: Ballot Integrity & Non-Voters */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold">Ballot Integrity &amp; Participation</h3>
+                <p className="text-sm text-muted-foreground">Security metrics and a list of registered voters yet to cast their ballot.</p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <ResultsNonVoterTable nonVoters={nonVoters} isAnonymous={isAnonymous} />
+                </div>
+                <div>
+                  <ResultsIntegrityCard
+                    anonymousBallotCount={anonymousBallotCount}
+                    namedBallotCount={stats.ballotsCast - anonymousBallotCount}
+                    ipDiversity={ipDiversity}
+                    isAdmin={userRole === "admin" || userRole === "org_admin" || userRole === "staff"}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Removed Section: Election Settings */}
+
+          </div>
+        </TabsContent>
 
         {/* ── Standings Tab ─────────────────────────────────────────────────── */}
         <TabsContent value="standings" className="mt-0 outline-none">
@@ -487,277 +584,189 @@ export function ResultsDashboard({
         {/* ── Analytics Tab ─────────────────────────────────────────────────── */}
         <TabsContent value="analytics" className="mt-0 outline-none space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Turnout gauge */}
+
+            {/* Participation Stacked Bar */}
             <Card className="p-6 gap-0">
               <CardHeader className="p-0 mb-4">
                 <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                  Voter Turnout
+                  Voter Participation
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0 flex flex-col items-center justify-center">
-                <div className="relative h-44 w-44 flex items-center justify-center">
-                  <ChartContainer
-                    config={{
-                      turnout: { label: "Turnout", color: "hsl(var(--primary))" },
-                    }}
-                    className="h-full w-full absolute inset-0"
-                  >
-                    <RadialBarChart
-                      data={[
-                        {
-                          name: "Turnout",
-                          value: stats.turnoutPercentage,
-                          fill: "var(--color-turnout)",
-                        },
-                      ]}
-                      innerRadius="75%"
-                      outerRadius="100%"
-                      barSize={12}
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      <PolarAngleAxis
-                        type="number"
-                        domain={[0, 100]}
-                        angleAxisId={0}
-                        tick={false}
-                      />
-                      <RadialBar
-                        background={{ fill: "hsl(var(--muted)/0.5)" }}
-                        dataKey="value"
-                        cornerRadius={8}
-                      />
-                    </RadialBarChart>
-                  </ChartContainer>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold tracking-tighter">
-                      {stats.turnoutPercentage.toFixed(1)}%
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                      Turnout
-                    </span>
-                  </div>
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-3xl font-bold tabular-nums">{stats.participationRate.toFixed(1)}%</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {uniqueVotersVoted.toLocaleString()} of {stats.totalVoters.toLocaleString()} voted
+                  </span>
                 </div>
-                <div className="flex items-center gap-8 mt-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums">
-                      {stats.ballotsCast.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                      Voted
-                    </p>
+                <div className="h-4 w-full bg-muted rounded-full overflow-hidden flex">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-1000"
+                    style={{ width: `${stats.participationRate}%` }}
+                  />
+                  <div
+                    className="h-full bg-muted-foreground/20 transition-all duration-1000"
+                    style={{ width: `${100 - stats.participationRate}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-4 mt-4 text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-blue-500" />
+                    Voted
                   </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums">
-                      {(stats.totalVoters - stats.ballotsCast).toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                      Remaining
-                    </p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-muted-foreground/20" />
+                    Abstained
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Category breakdown */}
+            {/* Category Turnout Bar Chart */}
             {categoryTurnout.length > 0 ? (
               <Card className="p-6 gap-0">
                 <CardHeader className="p-0 mb-4">
                   <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                    Turnout by Category
+                    Category Turnout
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="rounded-xl border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50 hover:bg-muted/50">
-                          <TableHead className="text-xs">Category</TableHead>
-                          <TableHead className="text-xs text-right">
-                            Voters
-                          </TableHead>
-                          <TableHead className="text-xs text-right">
-                            Voted
-                          </TableHead>
-                          <TableHead className="text-xs text-right">
-                            Turnout
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {categoryTurnout.map((cat) => (
-                          <TableRow key={cat.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <HugeiconsIcon
-                                  icon={GridIcon}
-                                  className="h-3.5 w-3.5 text-muted-foreground shrink-0"
-                                />
-                                <span className="text-sm font-medium">
-                                  {cat.name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right text-sm tabular-nums">
-                              {cat.totalVoters.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right text-sm tabular-nums">
-                              {cat.ballotsCast.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-xs font-semibold tabular-nums",
-                                  cat.turnoutPercentage >= 75
-                                    ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20"
-                                    : cat.turnoutPercentage >= 40
-                                      ? "bg-amber-500/5 text-amber-600 border-amber-500/20"
-                                      : "bg-muted"
-                                )}
-                              >
-                                {cat.turnoutPercentage.toFixed(1)}%
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <ChartContainer
+                    config={{ turnout: { label: "Turnout %", color: "hsl(217 91% 60%)" } }}
+                    className="h-40 w-full"
+                  >
+                    <BarChart
+                      data={categoryTurnout.map(c => ({ name: c.name, turnout: c.turnoutPercentage }))}
+                      margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                      layout="vertical"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
+                      <XAxis type="number" domain={[0, 100]} tickLine={false} axisLine={false} fontSize={11} />
+                      <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} fontSize={11} width={80} />
+                      <Tooltip cursor={{ fill: "hsl(var(--muted)/0.5)" }} content={<ChartTooltipContent />} />
+                      <Bar dataKey="turnout" fill="var(--color-turnout)" radius={[0, 4, 4, 0]} maxBarSize={20} />
+                    </BarChart>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="p-6 flex items-center justify-center">
-                <p className="text-sm text-muted-foreground text-center">
-                  No categories configured for this election.
-                </p>
+              <Card className="p-6 flex items-center justify-center border-dashed">
+                <p className="text-sm text-muted-foreground">No categories configured</p>
               </Card>
             )}
           </div>
 
-          {/* Voting timeline */}
-          {timelineData.length > 0 && (
-            <Card className="p-6 gap-0">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                  Voting Activity Timeline
-                </CardTitle>
-                <CardDescription>Ballots submitted per hour</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ChartContainer
-                  config={{
-                    count: { label: "Ballots", color: "hsl(var(--primary))" },
-                  }}
-                  className="h-56 w-full mt-2"
-                >
-                  <BarChart
-                    data={timelineData}
-                    margin={{ top: 4, right: 0, left: -20, bottom: 0 }}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Voting Timeline with Cumulative Line */}
+            {timelineData.length > 0 && (
+              <Card className="p-6 gap-0">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                    Voting Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ChartContainer
+                    config={{
+                      count: { label: "Hourly Ballots", color: "hsl(217 91% 60%)" },
+                      cumulative: { label: "Total Ballots", color: "hsl(217 91% 70%)" }
+                    }}
+                    className="h-56 w-full mt-2"
                   >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      className="stroke-muted"
-                    />
-                    <XAxis
-                      dataKey="time"
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={10}
-                      fontSize={11}
-                      className="fill-muted-foreground"
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={8}
-                      fontSize={11}
-                      className="fill-muted-foreground"
-                      allowDecimals={false}
-                    />
-                    <ChartTooltip
-                      cursor={{ fill: "hsl(var(--muted)/0.5)" }}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Bar
-                      dataKey="count"
-                      fill="var(--color-count)"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={40}
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          )}
+                    <ComposedChart
+                      data={(() => {
+                        let cum = 0;
+                        return timelineData.map(d => {
+                          cum += d.count;
+                          return { ...d, cumulative: cum };
+                        });
+                      })()}
+                      margin={{ top: 4, right: 0, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
+                      <XAxis dataKey="time" axisLine={false} tickLine={false} tickMargin={10} fontSize={11} className="fill-muted-foreground" />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tickMargin={8} fontSize={11} className="fill-muted-foreground" allowDecimals={false} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tickMargin={8} fontSize={11} className="fill-muted-foreground" allowDecimals={false} />
+                      <Tooltip cursor={{ fill: "hsl(var(--muted)/0.5)" }} content={<ChartTooltipContent />} />
+                      <Bar yAxisId="left" dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Area yAxisId="right" type="monotone" dataKey="cumulative" stroke="var(--color-cumulative)" fill="var(--color-cumulative)" fillOpacity={0.1} />
+                    </ComposedChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Per-role bar chart */}
-          {roleResults.length > 0 && roleResults.some((r) => r.totalVotes > 0) && (
-            <Card className="p-6 gap-0">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                  Votes per Position
-                </CardTitle>
-                <CardDescription>
-                  Total votes cast in each role
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ChartContainer
-                  config={{
-                    votes: { label: "Votes", color: "hsl(var(--primary))" },
-                  }}
-                  className="h-56 w-full mt-2"
-                >
-                  <BarChart
-                    data={roleResults.map((r) => ({
-                      name: r.name,
-                      votes: r.totalVotes,
-                    }))}
-                    margin={{ top: 4, right: 0, left: -20, bottom: 0 }}
-                    layout="vertical"
+            {/* Votes per Position Bar Chart */}
+            {roleResults.length > 0 && roleResults.some(r => r.totalVotes > 0) && (
+              <Card className="p-6 gap-0">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                    Votes per Position
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ChartContainer
+                    config={{ votes: { label: "Votes", color: "hsl(217 91% 60%)" } }}
+                    className="h-56 w-full mt-2"
                   >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      horizontal={false}
-                      className="stroke-muted"
-                    />
-                    <XAxis
-                      type="number"
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={8}
-                      fontSize={11}
-                      allowDecimals={false}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={8}
-                      fontSize={11}
-                      width={120}
-                      className="fill-muted-foreground"
-                    />
-                    <ChartTooltip
-                      cursor={{ fill: "hsl(var(--muted)/0.5)" }}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Bar
-                      dataKey="votes"
-                      fill="var(--color-votes)"
-                      radius={[0, 4, 4, 0]}
-                      maxBarSize={28}
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          )}
+                    <BarChart
+                      data={roleResults.map(r => ({ name: r.name, votes: r.totalVotes }))}
+                      margin={{ top: 4, right: 0, left: -20, bottom: 0 }}
+                      layout="vertical"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
+                      <XAxis type="number" axisLine={false} tickLine={false} tickMargin={8} fontSize={11} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tickMargin={8} fontSize={11} width={120} className="fill-muted-foreground" />
+                      <Tooltip cursor={{ fill: "hsl(var(--muted)/0.5)" }} content={<ChartTooltipContent />} />
+                      <Bar dataKey="votes" fill="var(--color-votes)" radius={[0, 4, 4, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {roleResults.map((role) => (
+              <Card key={role.id} className="p-6 gap-0">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                    {role.name} Share
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 flex items-center justify-center">
+                  <ChartContainer
+                    config={{
+                      share: { label: "Share", color: "hsl(217 91% 60%)" },
+                    }}
+                    className="h-64 w-full"
+                  >
+                    <PieChart>
+                      <Pie
+                        data={role.candidates.filter(c => c.voteCount > 0)}
+                        dataKey="voteCount"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={2}
+                      >
+                        {role.candidates.filter(c => c.voteCount > 0).map((entry, index) => {
+                          const colors = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"]
+                          return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                        })}
+                      </Pie>
+                      <Tooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
         </TabsContent>
+
 
         {/* ── Summary Tab ───────────────────────────────────────────────────── */}
         <TabsContent value="summary" className="mt-0 outline-none">
@@ -790,9 +799,9 @@ export function ResultsDashboard({
                             key={winner.id}
                             className="flex items-center gap-3"
                           >
-                            <Avatar className="h-11 w-11 border-2 border-emerald-500/20">
+                            <Avatar className="h-11 w-11 border-2 border-blue-600/20 dark:border-blue-500/20">
                               <AvatarImage src={winner.profileImage || ""} />
-                              <AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-xs font-bold">
+                              <AvatarFallback className="bg-emerald-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
                                 {winner.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
@@ -806,12 +815,12 @@ export function ResultsDashboard({
                                   className="w-3.5 h-3.5 text-amber-500 shrink-0"
                                 />
                               </div>
-                              <p className="text-xs text-emerald-600 font-semibold">
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
                                 {winner.percentage.toFixed(1)}% ·{" "}
                                 {winner.voteCount.toLocaleString()} votes
                               </p>
                             </div>
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-bold uppercase shrink-0">
+                            <Badge className="bg-blue-600/10 text-blue-600 border-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 text-[9px] font-bold uppercase shrink-0">
                               {winners.length > 1 ? "Tied" : "Leading"}
                             </Badge>
                           </div>
@@ -869,8 +878,8 @@ export function ResultsDashboardSkeleton() {
       {/* Banner */}
       <Skeleton className="h-16 w-full rounded-xl" />
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <Skeleton key={i} className="h-28 rounded-xl" />
         ))}
       </div>

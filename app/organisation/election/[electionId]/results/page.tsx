@@ -53,10 +53,22 @@ export default async function ResultsPage({
         },
       },
       result: {
-        select: { isFinalized: true, finalizedAt: true },
+        select: { isFinalized: true, finalizedAt: true, generatedAt: true, generatedBy: { select: { name: true } } },
       },
       settings: {
-        select: { lockResult: true },
+        select: {
+          lockResult: true,
+          allowOnlineVoting: true,
+          authorizeVoters: true,
+          showCandidateProfiles: true,
+          showCandidateSymbols: true,
+          shuffleCandidates: true,
+          allowMultipleVotes: true,
+          allowNota: true,
+          showSummary: true,
+          quickElection: true,
+          maxVotesPerUser: true,
+        },
       },
       _count: { select: { ballots: true, voters: true } },
     },
@@ -90,59 +102,82 @@ export default async function ResultsPage({
 
   const allowCustomBranding = election.organization.settings?.allowCustomBranding ?? false
 
-  // ── Fetch roles with candidate vote + image data ─────────────────────────────
-  const rolesData = await db.electionRole.findMany({
-    where: {
-      electionId,
-      election: { organizationId: member.organizationId, deletedAt: null },
-    },
-    orderBy: { order: "asc" },
-    include: {
-      candidates: {
-        where: { deletedAt: null },
-        select: {
-          id: true,
-          name: true,
-          profileImage: true,
-          symbolImage: true,
-          _count: { select: { votes: true } },
-        },
-        orderBy: { name: "asc" },
+  // ── Fetch all data in parallel ─────────────────────────────────────────────
+  const [
+    rolesData,
+    ballots,
+    categories,
+    uniqueVotersVoted,
+    nonVoters,
+    notaCount,
+  ] = await Promise.all([
+    db.electionRole.findMany({
+      where: {
+        electionId,
+        election: { organizationId: member.organizationId, deletedAt: null },
       },
-    },
-  })
-
-  // ── Fetch ballots (for timeline) ─────────────────────────────────────────────
-  const ballots = await db.ballot.findMany({
-    where: {
-      electionId,
-      election: { organizationId: member.organizationId, deletedAt: null },
-      deletedAt: null,
-    },
-    select: { createdAt: true, categoryId: true, voterId: true },
-    orderBy: { createdAt: "asc" },
-  })
-
-  // ── Fetch categories with voter/ballot counts ────────────────────────────────
-  const categories = await db.electionCategory.findMany({
-    where: {
-      electionId,
-      election: { organizationId: member.organizationId, deletedAt: null },
-    },
-    select: {
-      id: true,
-      name: true,
-      code: true,
-      _count: { select: { voters: true, ballots: true } },
-    },
-    orderBy: { name: "asc" },
-  })
+      orderBy: { order: "asc" },
+      include: {
+        candidates: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            symbolImage: true,
+            _count: { select: { votes: true } },
+          },
+          orderBy: { name: "asc" },
+        },
+      },
+    }),
+    db.ballot.findMany({
+      where: {
+        electionId,
+        election: { organizationId: member.organizationId, deletedAt: null },
+        deletedAt: null,
+      },
+      select: { createdAt: true, categoryId: true, voterId: true, isAnonymous: true, ipAddress: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    db.electionCategory.findMany({
+      where: {
+        electionId,
+        election: { organizationId: member.organizationId, deletedAt: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        _count: { select: { voters: true, ballots: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    db.voter.count({ where: { electionId, ballotCount: { gt: 0 } } }),
+    db.voter.findMany({
+      where: { electionId, ballotCount: 0 },
+      select: { id: true, name: true, uniqueId: true, category: { select: { name: true } } },
+      orderBy: { name: "asc" },
+      take: 200,
+    }),
+    db.vote.count({
+      where: { ballot: { electionId }, candidateId: null, deletedAt: null },
+    }),
+  ])
 
   // ── Aggregations ─────────────────────────────────────────────────────────────
 
   const totalBallots = election._count.ballots
   const totalVoters = election._count.voters
   const turnoutPercentage = totalVoters > 0 ? (totalBallots / totalVoters) * 100 : 0
+  const participationRate = totalVoters > 0 ? (uniqueVotersVoted / totalVoters) * 100 : 0
+  
+  const anonymousBallotCount = ballots.filter(b => b.isAnonymous).length
+  const ipDiversity = new Set(ballots.map(b => b.ipAddress).filter(Boolean)).size
+  
+  // Determine if election is anonymous based on ballots or setting (if we had one)
+  // For now, if any ballot is anonymous, we'll consider it anonymous for privacy
+  const isAnonymous = anonymousBallotCount > 0
 
   // Role results with leading detection
   const roleResults: RoleResult[] = rolesData.map((role) => {
@@ -211,6 +246,7 @@ export default async function ResultsPage({
       turnoutPercentage,
       totalRoles: rolesData.length,
       totalCandidates,
+      anonymousBallots: anonymousBallotCount,
     },
   }
 
@@ -238,12 +274,21 @@ export default async function ResultsPage({
               totalVoters,
               ballotsCast: totalBallots,
               turnoutPercentage,
+              participationRate,
               totalRoles: rolesData.length,
               totalCandidates,
             }}
             roleResults={roleResults}
             categoryTurnout={categoryTurnout}
             timelineData={timelineData}
+            uniqueVotersVoted={uniqueVotersVoted}
+            nonVoters={nonVoters}
+            notaCount={election.settings?.allowNota ? notaCount : 0}
+            anonymousBallotCount={anonymousBallotCount}
+            ipDiversity={ipDiversity}
+            electionSettings={election.settings!}
+            isAnonymous={isAnonymous}
+            userRole={member.role}
           />
         </Suspense>
       </div>
