@@ -105,7 +105,7 @@ export default async function AuditLogsPage({ searchParams }: { searchParams: Au
   return (
     <div className="flex-1 w-full min-h-screen bg-background rounded-2xl">
       <PageHeader
-        title="Admin Audit Logs"
+        title="Audit Logs"
         description="Monitor system-wide admin activities, election actions, and security operations."
         icon={ShieldKeyIcon}
       />

@@ -1,108 +1,184 @@
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-    MapsIcon,
-    UserGroupIcon,
-    ComputerIcon,
-    ArrowRight01Icon,
-    Building06Icon,
-} from "@hugeicons/core-free-icons"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { PageHeader } from "@/components/shared/page-header"
 import { requireOrgAdmin } from "@/lib/auth/access"
+import { AuditEntityType, ElectionStatus } from "@prisma/client"
+
+import { PageHeader } from "@/components/shared/page-header"
+import { Building06Icon } from "@hugeicons/core-free-icons"
+import { OrgMetricCards } from "./_components/org-metric-cards"
+import { OrgTeamSnapshot } from "./_components/org-team-snapshot"
+import { OrgActivityFeed } from "./_components/org-activity-feed"
+import { OrgCodeCard } from "./_components/org-code-card"
+import { OrgQuickNavigate } from "./_components/org-quick-navigate"
+import { OrgElectionsOverview } from "./_components/org-elections-overview"
+
+export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-    // Enforce org_admin / admin for the main dashboard page
-    const { member } = await requireOrgAdmin()
-    const org = member.organization
+  const { member, session } = await requireOrgAdmin()
+  const orgId = member.organizationId
+  const org = member.organization
 
-    return (
-        <div className="flex-1 w-full">
-            <PageHeader
-                title={`Welcome to ${org.name}`}
-                description="Manage your elections, members, and systems from the dashboard."
-                icon={Building06Icon}
+  if (!org) redirect("/setup/organization")
+
+  const [
+    settings,
+    totalMembers,
+    adminCount,
+    staffCount,
+    viewerCount,
+    pendingInvites,
+    totalElections,
+    electionsByStatus,
+    recentActivity,
+    lockedUserCount,
+    ownedOrg,
+    latestElections,
+  ] = await Promise.all([
+    db.organizationSettings.findUnique({
+      where: { organizationId: orgId },
+      select: { maxElections: true, maxMembers: true }
+    }),
+    db.member.count({ where: { organizationId: orgId } }),
+    db.member.count({ where: { organizationId: orgId, role: "org_admin" } }),
+    db.member.count({ where: { organizationId: orgId, role: "staff" } }),
+    db.member.count({ where: { organizationId: orgId, role: "viewer" } }),
+    db.invitation.count({ where: { organizationId: orgId, status: "pending" } }),
+    db.election.count({ where: { organizationId: orgId, deletedAt: null } }),
+    db.election.groupBy({
+      by: ["status"],
+      where: { organizationId: orgId, deletedAt: null },
+      _count: { _all: true }
+    }),
+    db.adminAuditLog.findMany({
+      where: {
+        organizationId: orgId,
+        entityType: {
+          in: [
+            AuditEntityType.ORGANIZATION,
+            AuditEntityType.MEMBER,
+            AuditEntityType.SETTINGS,
+            AuditEntityType.ACCESS,
+            AuditEntityType.AUTH,
+            AuditEntityType.SECURITY,
+            AuditEntityType.ELECTION,
+          ]
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: {
+        admin: { select: { name: true, email: true } }
+      }
+    }),
+    db.user.count({
+      where: {
+        members: { some: { organizationId: orgId } },
+        lockedUntil: { gt: new Date() }
+      }
+    }),
+    db.organization.findUnique({
+      where: { id: orgId },
+      select: { code: true, type: true, logo: true, name: true, createdAt: true, ownerId: true }
+    }),
+    db.election.findMany({
+      where: { organizationId: orgId, deletedAt: null },
+      orderBy: [
+        { status: "asc" },
+        { startTime: "desc" },
+      ],
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        startTime: true,
+        endTime: true,
+        code: true,
+        roles: {
+          select: {
+            _count: { select: { candidates: true } }
+          }
+        },
+        _count: { select: { roles: true } },
+        settings: { select: { allowNota: true, allowMultipleVotes: true } },
+      }
+    })
+  ])
+
+  const maxElections = settings?.maxElections ?? 5
+  const maxMembers = settings?.maxMembers ?? 100
+
+  // Build status summary map
+  const statusMap = Object.fromEntries(
+    electionsByStatus.map(e => [e.status, e._count._all])
+  ) as Record<ElectionStatus, number>
+
+  const activeCount = statusMap[ElectionStatus.ACTIVE] ?? 0
+  const upcomingCount = statusMap[ElectionStatus.UPCOMING] ?? 0
+  const completedCount = statusMap[ElectionStatus.COMPLETED] ?? 0
+  const pausedCount = statusMap[ElectionStatus.PAUSED] ?? 0
+
+  const isOwner = ownedOrg?.ownerId === session.user.id
+
+  return (
+    <div className="flex-1 w-full">
+      <PageHeader
+        title={org.name}
+        description="Here's an overview of your organization's activity, team, and elections."
+        icon={Building06Icon}
+      />
+
+      <div className="px-4 md:px-8 py-8 space-y-6 max-w-[1400px] mx-auto w-full">
+
+        {/* Row 1 — Metric Cards */}
+        <OrgMetricCards
+          totalMembers={totalMembers}
+          pendingInvites={pendingInvites}
+          totalElections={totalElections}
+          activeCount={activeCount}
+        />
+
+        {/* Row 2 — Two-column main layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column (2/3) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Elections Overview in old-site style */}
+            <OrgElectionsOverview elections={latestElections} />
+
+            {/* Quick Navigate */}
+            <OrgQuickNavigate totalElections={totalElections} totalMembers={totalMembers} />
+
+            {/* Activity Feed */}
+            <OrgActivityFeed logs={recentActivity} />
+          </div>
+
+          {/* Right column (1/3) */}
+          <div className="space-y-6">
+            {/* Org Code Card */}
+            {ownedOrg && (
+              <OrgCodeCard
+                code={ownedOrg.code}
+                orgName={ownedOrg.name}
+                orgType={ownedOrg.type}
+                createdAt={ownedOrg.createdAt}
+              />
+            )}
+
+
+
+            {/* Team Snapshot */}
+            <OrgTeamSnapshot
+              totalMembers={totalMembers}
+              adminCount={adminCount}
+              staffCount={staffCount}
+              viewerCount={viewerCount}
             />
-            <div className="px-4 md:px-8 py-8 space-y-8 max-w-[1400px] mx-auto w-full">
-                {/* Metric Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="bg-card/50 backdrop-blur-xl border-primary/10 hover:border-primary/30 transition-colors">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Elections</CardTitle>
-                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                <HugeiconsIcon icon={MapsIcon} className="h-4 w-4 text-blue-500" strokeWidth={2} />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">0</div>
-                            <p className="text-xs text-muted-foreground mt-1">+0% from last month</p>
-                        </CardContent>
-                    </Card>
 
-                    <Card className="bg-card/50 backdrop-blur-xl border-primary/10 hover:border-primary/30 transition-colors">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                            <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <HugeiconsIcon icon={UserGroupIcon} className="h-4 w-4 text-green-500" strokeWidth={2} />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">1</div>
-                            <p className="text-xs text-muted-foreground mt-1">You are the only member</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-card/50 backdrop-blur-xl border-primary/10 hover:border-primary/30 transition-colors">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Authorized Systems</CardTitle>
-                            <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                                <HugeiconsIcon icon={ComputerIcon} className="h-4 w-4 text-purple-500" strokeWidth={2} />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">0</div>
-                            <p className="text-xs text-muted-foreground mt-1">Pending authorizations</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                    <Card className="border border-border/50 bg-card/40 backdrop-blur-md">
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>Actions performed across your organization.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="min-h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-                            No recent activity found.
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-border/50 bg-card/40 backdrop-blur-md flex flex-col justify-between">
-                        <CardHeader>
-                            <CardTitle>Quick Start</CardTitle>
-                            <CardDescription>Get your organization up and running quickly.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Button variant="outline" className="w-full justify-between hover:bg-primary/5 border-primary/20" asChild>
-                                <Link href="/organisation/elections?new=true">
-                                    <span>Create an Election</span>
-                                    <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <Button variant="outline" className="w-full justify-between hover:bg-primary/5 border-primary/20" asChild>
-                                <Link href="/organisation/members">
-                                    <span>Invite Members</span>
-                                    <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+            {/* Quick Actions - already replaced by OrgQuickNavigate in left col */}
+          </div>
         </div>
-    )
+      </div>
+    </div>
+  )
 }
