@@ -1,75 +1,57 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Text,
-  Tailwind,
-} from "@react-email/components";
+import { Section, Text, Link } from "@react-email/components";
 import * as React from "react";
+import { BaseEmail, styles } from "./BaseEmail";
 
 interface ResetPasswordEmailProps {
-  resetPasswordLink: string;
+  resetPasswordLink?: string;
+  userName?: string;
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://evoting.sundaresan.dev";
+const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+
 export const ResetPasswordEmail = ({
-  resetPasswordLink = "https://evoting.sundaresan.dev/reset-password",
+  resetPasswordLink = `${cleanBaseUrl}/auth/reset-password`,
+  userName,
 }: ResetPasswordEmailProps) => {
   return (
-    <Html>
-      <Tailwind>
-        <Head />
-        <Preview>Reset your e-voting account password</Preview>
-        <Body className="bg-zinc-50 dark:bg-zinc-950 font-sans my-auto mx-auto px-2 py-10">
-          <Container className="border border-solid border-zinc-200 dark:border-zinc-800 rounded-xl my-[40px] mx-auto p-[40px] max-w-[600px] bg-white dark:bg-zinc-900 shadow-sm">
-            <Section className="mb-[24px] text-center">
-              <Text className="text-2xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight m-0">
-                e-voting
-              </Text>
-            </Section>
+    <BaseEmail preview="Reset your e-voting account password">
+      <Section style={styles.content}>
+        <Text style={styles.heading}>Reset your password</Text>
+        <Text style={styles.subheading}>
+          {userName ? `Hi ${userName},` : "Hello,"}{" "}
+          we received a request to reset the password for your e-voting account. Click the button below to set a new password.
+        </Text>
 
-            <Heading className="text-zinc-950 dark:text-zinc-50 text-[24px] font-semibold text-center p-0 my-[24px] mx-0 tracking-tight">
-              Reset Your Password
-            </Heading>
-            
-            <Text className="text-zinc-700 dark:text-zinc-300 text-[16px] leading-[24px]">
-              Hello,
-            </Text>
-            <Text className="text-zinc-700 dark:text-zinc-300 text-[16px] leading-[24px]">
-              We received a request to reset the password associated with your e-voting account. You can securely set a new password by clicking the button below.
-            </Text>
-            
-            <Section className="text-center mt-[32px] mb-[32px]">
-              <Button
-                className="bg-[#4f46e5] text-white rounded-full text-[16px] font-semibold no-underline text-center px-[32px] py-[12px]"
-                href={resetPasswordLink}
-              >
-                Reset Password
-              </Button>
-            </Section>
-            
-            <Text className="text-zinc-700 dark:text-zinc-300 text-[16px] leading-[24px]">
-              This link will expire securely in <strong>30 minutes</strong>. If you did not request a password reset, please ignore this email—your account remains secure.
-            </Text>
-            
-            <Hr className="border border-solid border-zinc-200 dark:border-zinc-800 my-[32px] mx-0 w-full" />
-            
-            <Text className="text-zinc-500 dark:text-zinc-400 text-[14px] leading-[24px] text-center m-0">
-              For security assistance, contact our support team at{" "}
-              <Link href="mailto:support@evoting.sundaresan.dev" className="text-indigo-600 dark:text-indigo-400 underline">
-                support@evoting.sundaresan.dev
-              </Link>
-            </Text>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        {/* CTA Button */}
+        <div style={styles.buttonWrapper}>
+          <Link href={resetPasswordLink} style={styles.button}>
+            Reset Password
+          </Link>
+        </div>
+
+        {/* Info note */}
+        <div style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            This link expires in <strong>30 minutes</strong>. If you didn't request a password reset, you can safely ignore this email — your account is secure.
+          </Text>
+        </div>
+
+        <Text style={styles.paragraph}>
+          If the button above doesn't work, copy and paste the link below into your browser:
+        </Text>
+        <Text
+          style={{
+            ...styles.paragraph,
+            fontSize: "12px",
+            color: "#6366f1",
+            wordBreak: "break-all",
+          }}
+        >
+          {resetPasswordLink}
+        </Text>
+      </Section>
+    </BaseEmail>
   );
 };
 
