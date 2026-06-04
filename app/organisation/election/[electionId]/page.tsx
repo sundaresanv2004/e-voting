@@ -9,7 +9,6 @@ import { ElectionMetricCards } from "./_components/election-metric-cards"
 import { ElectionQuickNavigate } from "./_components/election-quick-navigate"
 import { ElectionTurnoutChart } from "./_components/election-turnout-chart"
 import { ElectionActivityFeed } from "./_components/election-activity-feed"
-import { ElectionCodeCard } from "./_components/election-code-card"
 import { ElectionRolesSnapshot } from "./_components/election-roles-snapshot"
 import { ElectionCategoriesSnapshot } from "./_components/election-categories-snapshot"
 import { ElectionVotersSnapshot } from "./_components/election-voters-snapshot"
@@ -165,15 +164,6 @@ export default async function ElectionOverviewPage({
 
           {/* Right column (1/3) */}
           <div className="space-y-6">
-            {/* Election Code */}
-            <ElectionCodeCard
-              code={election.code}
-              electionId={electionId}
-              electionName={election.name}
-              electionStatus={election.status}
-              totalCategories={election._count.categories}
-            />
-
             {/* Roles Snapshot */}
             <ElectionRolesSnapshot
               electionId={electionId}

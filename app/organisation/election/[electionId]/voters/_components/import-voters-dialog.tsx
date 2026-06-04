@@ -6,28 +6,21 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CloudUploadIcon,
   File01Icon,
-  InformationCircleIcon,
   Tick02Icon,
   Cancel01Icon,
   Alert01Icon,
   CheckmarkCircle02Icon,
-  SearchListIcon,
-  GridIcon,
 } from "@hugeicons/core-free-icons"
 
-import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { verifyVotersBulk, importVotersBulk } from "@/lib/actions/voter"
@@ -35,6 +28,7 @@ import { verifyVotersBulk, importVotersBulk } from "@/lib/actions/voter"
 interface ImportVotersDialogProps {
   electionId: string
   allCategories: { id: string; name: string; code: string }[]
+  trigger?: React.ReactNode
 }
 
 type ImportStep = "upload" | "verifying" | "resolving" | "ready" | "importing" | "success"
@@ -54,14 +48,13 @@ interface VerifyResult {
   duplicates: DuplicateVoter[]
 }
 
-export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDialogProps) {
+export function ImportVotersDialog({ electionId, allCategories, trigger }: ImportVotersDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [step, setStep] = React.useState<ImportStep>("upload")
   const [file, setFile] = React.useState<File | null>(null)
   const [parsedData, setParsedData] = React.useState<any[]>([])
   const [verifyResult, setVerifyResult] = React.useState<VerifyResult | null>(null)
   const [importCount, setImportCount] = React.useState<number | null>(null)
-
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -79,18 +72,17 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
     if (!selected) return
-
     const validTypes = [
       "text/csv",
       "application/vnd.ms-excel",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ]
     if (!validTypes.includes(selected.type) && !selected.name.match(/\.(csv|xlsx|xls)$/i)) {
-      toast.error("Please upload a valid CSV or Excel file")
+      toast.error("Please upload a CSV or Excel file")
       return
     }
     if (selected.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB")
+      toast.error("File must be under 5 MB")
       return
     }
     setFile(selected)
@@ -99,7 +91,6 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
   const handleVerify = async () => {
     if (!file) return
     setStep("verifying")
-
     try {
       const reader = new FileReader()
       reader.onload = async (e) => {
@@ -113,9 +104,7 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
           setStep("upload")
           return
         }
-
-        const headers = Object.keys(json[0] as object)
-        if (!headers.includes("name")) {
+        if (!Object.keys(json[0] as object).includes("name")) {
           toast.error('Missing required column: "name"')
           setStep("upload")
           return
@@ -136,7 +125,7 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
       }
       reader.readAsArrayBuffer(file)
     } catch {
-      toast.error("Failed to parse file")
+      toast.error("Failed to read file")
       setStep("upload")
     }
   }
@@ -174,77 +163,54 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
   }
 
   const cleanCount = (verifyResult?.total ?? 0) - (verifyResult?.duplicateCount ?? 0)
+  const isBusy = step === "verifying" || step === "importing"
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="border-dashed gap-2">
-          <HugeiconsIcon icon={CloudUploadIcon} className="h-4 w-4" />
-          <span>Import Voters</span>
-        </Button>
-      </DialogTrigger>
+      {/* Trigger */}
+      <div onClick={() => setIsOpen(true)} className="cursor-pointer">
+        {trigger ?? (
+          <Button variant="outline" className="border-dashed gap-2">
+            <HugeiconsIcon icon={CloudUploadIcon} className="h-4 w-4" />
+            Import Voters
+          </Button>
+        )}
+      </div>
 
-      <DialogContent className="sm:max-w-xl p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
-        <DialogHeader className="px-6 py-5">
-          <DialogTitle className="font-heading">
-            {step === "resolving" ? "Conflicts Detected" : "Bulk Import Voters"}
-          </DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden gap-0">
+        {/* Header */}
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <DialogTitle className="text-base font-bold tracking-tight">
             {step === "resolving"
-              ? "Some voters in your file already exist in this election."
-              : "Register multiple voters at once via spreadsheet."}
-          </DialogDescription>
+              ? "Duplicates Found"
+              : step === "success"
+                ? "Import Complete"
+                : "Import Voters"}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {step === "upload" && "Upload a CSV or Excel file to register multiple voters at once."}
+            {step === "verifying" && "Checking your file for issues…"}
+            {step === "resolving" && `${verifyResult?.duplicateCount} voter${verifyResult?.duplicateCount !== 1 ? "s" : ""} in your file already exist and will be skipped.`}
+            {step === "ready" && `${verifyResult?.total} voter${verifyResult?.total !== 1 ? "s" : ""} ready to import.`}
+            {step === "importing" && "Saving records to the database…"}
+            {step === "success" && `${importCount} voter${importCount !== 1 ? "s" : ""} successfully registered.`}
+          </p>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+        {/* Body */}
+        <div className="px-6 pb-6 space-y-4">
 
           {/* ── UPLOAD ── */}
           {step === "upload" && (
             <>
-              {/* Instructions */}
-              <div className="rounded-2xl bg-blue-500/5 border border-blue-500/20 p-5 space-y-3">
-                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold text-sm">
-                  <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 shrink-0" />
-                  Expected Spreadsheet Format
-                </div>
-                <div className="text-sm text-foreground/80 space-y-3">
-                  <p>Your file should include these column headers:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-black uppercase border-emerald-500/20">
-                      name (Required)
-                    </Badge>
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-black uppercase border-blue-500/20">
-                      unique_id (Optional)
-                    </Badge>
-                    <Badge variant="outline" className="bg-purple-500/10 text-purple-700 dark:text-purple-300 font-mono text-[10px] font-black uppercase border-purple-500/20">
-                      category (Optional)
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    The <code className="text-primary font-bold">category</code> column should contain a valid category <strong>code</strong>. If blank or unrecognised, the voter will be treated as a global voter (can vote in all categories).
-                    {allCategories.length > 0 && (
-                      <span className="block mt-1.5">
-                        Available codes:{" "}
-                        {allCategories.map((c, i) => (
-                          <React.Fragment key={c.id}>
-                            <code className="bg-muted px-1 rounded font-bold">{c.code}</code>
-                            {i < allCategories.length - 1 && ", "}
-                          </React.Fragment>
-                        ))}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
               {/* Drop zone */}
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "relative group rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-10 transition-all duration-300 cursor-pointer",
+                  "relative rounded-2xl border-2 border-dashed flex flex-col items-center justify-center py-10 gap-3 cursor-pointer transition-colors duration-200",
                   file
                     ? "border-emerald-500/50 bg-emerald-500/5"
-                    : "border-muted-foreground/20 hover:border-primary/40 hover:bg-primary/5"
+                    : "border-border hover:border-primary/40 hover:bg-muted/40"
                 )}
               >
                 <input
@@ -254,130 +220,153 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
                   accept=".csv,.xlsx,.xls"
                   onChange={handleFileChange}
                 />
+
                 {file ? (
-                  <div className="flex flex-col items-center text-center space-y-3 animate-in zoom-in-95 duration-300">
-                    <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-2 relative">
-                      <HugeiconsIcon icon={File01Icon} className="w-8 h-8" />
-                      <div className="absolute -top-2 -right-2 h-6 w-6 bg-emerald-500 rounded-full flex items-center justify-center text-white border-2 border-background">
-                        <HugeiconsIcon icon={Tick02Icon} className="w-3.5 h-3.5" strokeWidth={3} />
-                      </div>
+                  <>
+                    <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 relative">
+                      <HugeiconsIcon icon={File01Icon} className="w-6 h-6" />
+                      <span className="absolute -top-1.5 -right-1.5 h-5 w-5 bg-emerald-500 rounded-full flex items-center justify-center text-white border-2 border-background">
+                        <HugeiconsIcon icon={Tick02Icon} className="w-2.5 h-2.5" strokeWidth={3} />
+                      </span>
                     </div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-sm">{file.name}</p>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">{file.name}</p>
                       <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={removeFile}
-                      className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                      className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
                     >
                       <HugeiconsIcon icon={Cancel01Icon} className="w-3 h-3" />
-                      Remove File
+                      Remove
                     </Button>
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300">
-                      <HugeiconsIcon icon={CloudUploadIcon} className="w-8 h-8" />
+                  <>
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                      <HugeiconsIcon icon={CloudUploadIcon} className="w-6 h-6" />
                     </div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-sm">Click or drag file to this area</p>
-                      <p className="text-xs text-muted-foreground font-medium">CSV or Excel (max 5MB)</p>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">Click to choose a file</p>
+                      <p className="text-xs text-muted-foreground">CSV or Excel · max 5 MB</p>
                     </div>
+                  </>
+                )}
+              </div>
+
+              {/* Compact format hint */}
+              <div className="rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground leading-relaxed space-y-1.5">
+                <p className="font-semibold text-foreground">Required column</p>
+                <p><code className="font-mono bg-background px-1 rounded">name</code> — voter's full name</p>
+                <p className="font-semibold text-foreground pt-1">Optional columns</p>
+                <p>
+                  <code className="font-mono bg-background px-1 rounded">unique_id</code> — admission ID (auto-generated if blank)
+                </p>
+                {allCategories.length > 0 && (
+                  <div className="space-y-0.5">
+                    <p>
+                      <code className="font-mono bg-background px-1 rounded">category</code> — leave empty to allow voting in <span className="text-foreground font-medium">any category</span>, or enter a category code to restrict to a specific one.
+                    </p>
                   </div>
                 )}
+                <div className="border-t border-border/50 mt-2 pt-2">
+                  <p className="text-muted-foreground/80">
+                    Any other columns you include — such as <span className="text-foreground font-medium">class</span> or <span className="text-foreground font-medium">section</span> — will be saved as additional details and shown alongside the voter's profile during the election for easier identification.
+                  </p>
+                </div>
               </div>
             </>
           )}
 
           {/* ── VERIFYING / IMPORTING ── */}
-          {(step === "verifying" || step === "importing") && (
-            <div className="py-20 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in duration-300">
-              <Spinner className="size-10 text-primary" />
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold tracking-tight">
-                  {step === "verifying" ? "Verifying Data..." : "Importing Records..."}
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  {step === "verifying"
-                    ? "Checking for duplicates, validating categories, and ensuring data integrity."
-                    : "Saving the verified voter records to the database."}
-                </p>
-              </div>
+          {isBusy && (
+            <div className="py-16 flex flex-col items-center gap-4 text-center">
+              <Spinner className="size-8 text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">
+                {step === "verifying" ? "Checking for duplicates and validating data…" : "Saving voter records…"}
+              </p>
             </div>
           )}
 
-          {/* ── RESOLVING (conflicts) ── */}
+          {/* ── CONFLICTS ── */}
           {step === "resolving" && verifyResult && (
-            <div className="space-y-4">
-              {/* Duplicate warning */}
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
-                <HugeiconsIcon icon={Alert01Icon} className="w-5 h-5 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold">
-                    {verifyResult.duplicateCount} duplicate {verifyResult.duplicateCount === 1 ? "record" : "records"} found
-                  </p>
-                  <p className="text-xs mt-0.5 opacity-80">
-                    These voters already exist in this election and will be skipped automatically.
-                  </p>
-                </div>
+            <div className="space-y-3">
+              {/* Summary stat row */}
+              <div className="grid grid-cols-2 gap-3">
+                <StatPill label="To import" value={cleanCount} color="emerald" />
+                <StatPill label="Skipped (duplicates)" value={verifyResult.duplicateCount} color="amber" />
               </div>
 
               {/* Duplicate list */}
-              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
-                Conflicting Records
-              </p>
-              <ScrollArea className="h-[180px] rounded-2xl border bg-muted/30 p-2">
-                <div className="space-y-2">
+              <div className="rounded-xl border bg-muted/30 overflow-hidden">
+                <div className="px-3 py-2 border-b bg-muted/50">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Conflicting records
+                  </p>
+                </div>
+                <div className="max-h-44 overflow-y-auto divide-y divide-border/50">
                   {verifyResult.duplicates.map((dup, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-card border shadow-sm">
+                    <div key={i} className="flex items-center justify-between px-3 py-2.5">
                       <div className="min-w-0">
-                        <p className="text-xs font-bold truncate">{dup.name}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground opacity-70">{dup.uniqueId}</p>
+                        <p className="text-xs font-semibold truncate">{dup.name}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground">{dup.uniqueId}</p>
                       </div>
-                      <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter h-5 shrink-0">
-                        DUPLICATE
-                      </Badge>
+                      <span className="ml-2 shrink-0 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                        EXISTS
+                      </span>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
 
-              {/* Info notices */}
-              <InfoNotices verifyResult={verifyResult} cleanCount={cleanCount} />
+              {/* Category summary */}
+              <CategorySummary categorySummary={verifyResult.categorySummary} />
+
+              {verifyResult.missingIdCount > 0 && (
+                <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <HugeiconsIcon icon={Alert01Icon} className="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-500" />
+                  {verifyResult.missingIdCount} voter{verifyResult.missingIdCount !== 1 ? "s" : ""} without an ID — unique IDs will be auto-generated.
+                </p>
+              )}
             </div>
           )}
 
           {/* ── READY ── */}
           {step === "ready" && verifyResult && (
-            <div className="py-10 flex flex-col items-center text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
+            <div className="space-y-4">
+              <div className="py-4 flex flex-col items-center gap-3 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={32} />
+                </div>
+                <div>
+                  <p className="text-3xl font-black tabular-nums">{verifyResult.total}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    voter{verifyResult.total !== 1 ? "s" : ""} ready to register
+                  </p>
+                </div>
+                {verifyResult.missingIdCount > 0 && (
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    {verifyResult.missingIdCount} without an ID will receive an auto-generated one.
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black tracking-tight text-emerald-600">Verification Complete</h3>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  All <span className="text-foreground font-bold">{verifyResult.total}</span> records are clean and ready for import.
-                </p>
-              </div>
-              <div className="w-full">
-                <InfoNotices verifyResult={verifyResult} cleanCount={cleanCount} />
-              </div>
+              {/* Category summary */}
+              <CategorySummary categorySummary={verifyResult.categorySummary} />
             </div>
           )}
 
           {/* ── SUCCESS ── */}
           {step === "success" && (
-            <div className="py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="h-24 w-24 rounded-[2rem] bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
-                <HugeiconsIcon icon={Tick02Icon} size={48} strokeWidth={3} />
+            <div className="py-8 flex flex-col items-center gap-3 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <HugeiconsIcon icon={Tick02Icon} size={32} strokeWidth={3} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black tracking-tight">Import Successful!</h3>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  <span className="text-foreground font-black text-lg">{importCount}</span>{" "}
-                  voter{importCount !== 1 ? "s" : ""} have been successfully registered for this election.
+              <div>
+                <p className="text-3xl font-black tabular-nums">{importCount}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  voter{importCount !== 1 ? "s" : ""} registered successfully
                 </p>
               </div>
             </div>
@@ -385,28 +374,28 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
         </div>
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-4 flex flex-row items-center justify-end gap-3">
+        <DialogFooter className="px-6 py-4 flex flex-row gap-2 justify-end">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => setIsOpen(false)}
-            disabled={step === "verifying" || step === "importing"}
+            disabled={isBusy}
           >
-            {step === "success" ? "Close" : "Cancel"}
+            {step === "success" ? "Done" : "Cancel"}
           </Button>
 
           {step === "upload" && (
-            <Button onClick={handleVerify} disabled={!file} className="px-8 font-bold gap-2">
-              Verify Data
+            <Button onClick={handleVerify} disabled={!file} className="px-6 font-semibold">
+              Verify File
             </Button>
           )}
 
           {(step === "resolving" || step === "ready") && (
             <Button
               onClick={handleImport}
-              className="px-8 font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="px-6 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {step === "resolving"
-                ? `Skip Duplicates & Import ${cleanCount}`
+                ? `Import ${cleanCount} Voter${cleanCount !== 1 ? "s" : ""}`
                 : `Register ${verifyResult?.total ?? 0} Voter${(verifyResult?.total ?? 0) !== 1 ? "s" : ""}`}
             </Button>
           )}
@@ -416,70 +405,53 @@ export function ImportVotersDialog({ electionId, allCategories }: ImportVotersDi
   )
 }
 
-// ─── Reusable info notices ────────────────────────────────────────────────────
+// ── Tiny stat pill ────────────────────────────────────────────────────────────
 
-function InfoNotices({
-  verifyResult,
-  cleanCount,
+function StatPill({
+  label,
+  value,
+  color,
 }: {
-  verifyResult: VerifyResult
-  cleanCount: number
+  label: string
+  value: number
+  color: "emerald" | "amber"
 }) {
+  const styles = {
+    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  }
+
   return (
-    <div className="space-y-3">
-      {/* Clean count summary */}
-      <div className="p-4 rounded-2xl border border-dashed text-center">
-        <p className="text-sm text-muted-foreground">
-          <span className="text-foreground font-bold text-base">{cleanCount}</span>{" "}
-          voter{cleanCount !== 1 ? "s" : ""} ready to import
+    <div className={cn("rounded-xl px-4 py-3 text-center", styles[color])}>
+      <p className="text-2xl font-black tabular-nums">{value}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5 opacity-80">{label}</p>
+    </div>
+  )
+}
+
+// ── Category summary ──────────────────────────────────────────────────────────
+
+function CategorySummary({ categorySummary }: { categorySummary: Record<string, number> }) {
+  const entries = Object.entries(categorySummary).filter(([, count]) => count > 0)
+  if (entries.length === 0) return null
+
+  return (
+    <div className="rounded-xl border bg-muted/30 overflow-hidden">
+      <div className="px-3 py-2 border-b bg-muted/50">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          Category breakdown
         </p>
       </div>
-
-      {/* Missing IDs info */}
-      {verifyResult.missingIdCount > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-blue-700 dark:text-blue-400">
-          <HugeiconsIcon icon={InformationCircleIcon} className="w-4 h-4 shrink-0 mt-0.5" />
-          <p className="text-xs font-medium leading-relaxed">
-            <span className="font-bold">{verifyResult.missingIdCount}</span> record{verifyResult.missingIdCount !== 1 ? "s" : ""} without a Unique ID —
-            secure identifiers will be auto-generated.
-          </p>
-        </div>
-      )}
-
-      {/* Invalid category codes info */}
-      {verifyResult.invalidCategoryCount > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-700 dark:text-amber-400">
-          <HugeiconsIcon icon={Alert01Icon} className="w-4 h-4 shrink-0 mt-0.5" />
-          <p className="text-xs font-medium leading-relaxed">
-            <span className="font-bold">{verifyResult.invalidCategoryCount}</span> voter{verifyResult.invalidCategoryCount !== 1 ? "s" : ""} had
-            unrecognised category codes — they will be treated as <strong>global voters</strong>.
-          </p>
-        </div>
-      )}
-
-      {/* Category breakdown */}
-      {Object.keys(verifyResult.categorySummary).length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
-            Category Breakdown
-          </p>
-          <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
-            {Object.entries(verifyResult.categorySummary)
-              .filter(([, count]) => count > 0)
-              .map(([name, count]) => (
-                <div key={name} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <HugeiconsIcon icon={GridIcon} className="size-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-xs truncate">{name}</span>
-                  </div>
-                  <Badge variant="secondary" className="shadow-none shrink-0 text-xs">
-                    {count} voter{count !== 1 ? "s" : ""}
-                  </Badge>
-                </div>
-              ))}
+      <div className="divide-y divide-border/50">
+        {entries.map(([name, count]) => (
+          <div key={name} className="flex items-center justify-between px-3 py-2.5">
+            <p className="text-xs font-medium truncate">{name}</p>
+            <span className="ml-2 shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
+              {count} voter{count !== 1 ? "s" : ""}
+            </span>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   )
 }
