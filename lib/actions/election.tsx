@@ -25,9 +25,9 @@ function generateCode(orgName: string = "EV") {
 
 // C2: Defines the only permitted status transitions. Terminal states have no exits.
 const VALID_TRANSITIONS: Record<string, ElectionStatus[]> = {
-  [ElectionStatus.UPCOMING]:  [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
-  [ElectionStatus.ACTIVE]:    [ElectionStatus.PAUSED, ElectionStatus.COMPLETED, ElectionStatus.CANCELLED],
-  [ElectionStatus.PAUSED]:    [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
+  [ElectionStatus.UPCOMING]: [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
+  [ElectionStatus.ACTIVE]: [ElectionStatus.PAUSED, ElectionStatus.COMPLETED, ElectionStatus.CANCELLED],
+  [ElectionStatus.PAUSED]: [ElectionStatus.ACTIVE, ElectionStatus.CANCELLED],
   [ElectionStatus.COMPLETED]: [], // terminal
   [ElectionStatus.CANCELLED]: [], // terminal
 }
@@ -153,7 +153,7 @@ export async function createElection(formData: {
       where: { id: organization.ownerId || "" },
       select: { email: true, name: true, id: true }
     })
-    
+
     const creator = await db.user.findUnique({
       where: { id: userId },
       select: { email: true, name: true, id: true }
@@ -163,16 +163,16 @@ export async function createElection(formData: {
       await sendEmail({
         to: owner.email,
         subject: `New Election Created: ${result.name}`,
-        react: <ElectionCreatedEmail 
-                 userName={owner.name} 
-                 electionName={result.name} 
-                 electionCode={result.code} 
-                 orgName={organization.name} 
-                 electionId={result.id}
-                 startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
-                 endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
-                 createdBy={creator?.name || "an administrator"}
-               />,
+        react: <ElectionCreatedEmail
+          userName={owner.name}
+          electionName={result.name}
+          electionCode={result.code}
+          orgName={organization.name}
+          electionId={result.id}
+          startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+          endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+          createdBy={creator?.name || "an administrator"}
+        />,
       })
     }
 
@@ -180,16 +180,16 @@ export async function createElection(formData: {
       await sendEmail({
         to: creator.email,
         subject: `You Created an Election: ${result.name}`,
-        react: <ElectionCreatedEmail 
-                 userName={creator.name} 
-                 electionName={result.name} 
-                 electionCode={result.code} 
-                 orgName={organization.name} 
-                 electionId={result.id}
-                 startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
-                 endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
-                 createdBy="you"
-               />,
+        react: <ElectionCreatedEmail
+          userName={creator.name}
+          electionName={result.name}
+          electionCode={result.code}
+          orgName={organization.name}
+          electionId={result.id}
+          startDate={result.startTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+          endDate={result.endTime.toLocaleDateString("en-US", { dateStyle: "medium" })}
+          createdBy="you"
+        />,
       })
     }
     // -------------------
@@ -215,7 +215,7 @@ export async function createElection(formData: {
           status: AuditStatus.FAILURE,
           metadata: { formData, error: error?.message || "Unknown error" }
         })
-      } catch (e) {}
+      } catch (e) { }
     }
     return { success: false, error: error.message || "Failed to create election. Please try again." }
   }
@@ -306,7 +306,7 @@ export async function updateElection(
           status: AuditStatus.FAILURE,
           metadata: { formData, error: error?.message || "Unknown error" }
         })
-      } catch (e) {}
+      } catch (e) { }
     }
     return { success: false, error: error.message || "Failed to update election. Please try again." }
   }
@@ -372,7 +372,7 @@ export async function deleteElection(id: string) {
           status: AuditStatus.FAILURE,
           metadata: { error: error?.message || "Unknown error" }
         })
-      } catch (e) {}
+      } catch (e) { }
     }
     return { success: false, error: error.message || "Failed to delete election. Please try again." }
   }
@@ -456,7 +456,7 @@ export async function toggleElectionStatus(id: string) {
           status: AuditStatus.FAILURE,
           metadata: { error: error?.message || "Unknown error" }
         })
-      } catch (e) {}
+      } catch (e) { }
     }
     return { success: false, error: error.message || "Failed to update election status" }
   }
@@ -493,8 +493,9 @@ export async function updateElectionSettings(electionId: string, data: any) {
       action: "ELECTION_SETTINGS_UPDATED",
       entityType: AuditEntityType.ELECTION,
       entityId: electionId,
+      adminOnly: false,
     })
-    
+
     const result = await db.electionSettings.update({
       where: { electionId },
       data: {
@@ -512,7 +513,7 @@ export async function updateElectionSettings(electionId: string, data: any) {
         updatedByUserId: access.userId
       }
     })
-    
+
     await logAdminAction({
       action: "ELECTION_SETTINGS_UPDATED",
       entityType: AuditEntityType.ELECTION,
@@ -542,7 +543,7 @@ export async function updateElectionSettings(electionId: string, data: any) {
           metadata: { data }
         })
       }
-    } catch {}
+    } catch { }
     return { success: false, error: error.message || "Failed to update settings" }
   }
 }

@@ -102,7 +102,7 @@ export function ElectionSettingsContainer({ election, role }: ElectionSettingsCo
 
       <div className="w-full">
         <TabsContent value="general" className="space-y-6 mt-0 outline-none">
-          <ElectionGeneralForm election={election} canManage={canManage} />
+          <ElectionGeneralForm election={election} canManage={canManage || isStaff} />
         </TabsContent>
 
         {!isStaff && (
