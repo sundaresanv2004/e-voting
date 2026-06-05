@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { GlobalSearch } from "@/components/dashboard/global-search"
 
 // Map URL segment → display label
 const PAGE_LABELS: Record<string, string> = {
@@ -71,7 +72,7 @@ function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-export function DashboardHeader() {
+export function DashboardHeader({ userRole }: { userRole?: string }) {
   const pathname = usePathname()
   const { contextLabel, contextHref, pageLabel } = getBreadcrumb(pathname)
   const isRoot = pathname === "/organisation"
@@ -108,6 +109,8 @@ export function DashboardHeader() {
       </div>
 
       <div className="flex items-center gap-2">
+        <GlobalSearch userRole={userRole} />
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild variant="ghost" size="icon">

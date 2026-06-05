@@ -3,17 +3,34 @@ import { Settings02Icon } from "@hugeicons/core-free-icons"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { SettingsContainer } from "./_components/settings-container"
-import { getOrganizationData } from "@/lib/actions/settings"
 import { requireOrgAdmin } from "@/lib/auth/access"
+import { db } from "@/lib/db"
+import { UserRole } from "@prisma/client"
 
 export default async function OrganizationSettingsPage() {
-  // Layout already enforces org_admin / admin
-  const { session } = await requireOrgAdmin()
+  const { session, member, freshUser } = await requireOrgAdmin()
 
-  const organization = await getOrganizationData()
+  const organization = await db.organization.findUnique({
+    where: { id: member.organizationId },
+    include: {
+      settings: true,
+    },
+  })
 
   if (!organization) {
-    redirect("/organisation")
+    redirect("/setup/organization")
+  }
+
+  // Ensure settings exist
+  if (!organization.settings) {
+    const newSettings = await db.organizationSettings.create({
+      data: {
+        organizationId: organization.id,
+        createdByUserId: freshUser.id,
+        updatedByUserId: freshUser.id,
+      },
+    })
+    organization.settings = newSettings
   }
 
   const currentUserId = session.user.id

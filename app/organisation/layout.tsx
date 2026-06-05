@@ -40,7 +40,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <AppSidebar elections={formattedElections} userRole={userRole} defaultElectionId={defaultElectionId} />
       <SidebarInset>
-        <DashboardHeader />
+        <DashboardHeader userRole={userRole} />
         <div className="flex flex-1 flex-col">
           {children}
         </div>

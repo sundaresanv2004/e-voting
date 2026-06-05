@@ -144,34 +144,45 @@ export function AppSidebar({
   ]
 
   const organizationNav = [
-    {
-      name: "Dashboard",
-      url: "/organisation",
-      icon: (
-        <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
-      ),
-    },
-    {
-      name: "Elections",
-      url: "/organisation/elections",
-      icon: (
-        <HugeiconsIcon icon={MapsIcon} strokeWidth={2} />
-      ),
-    },
-    {
-      name: "Members",
-      url: "/organisation/members",
-      icon: (
-        <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
-      ),
-    },
-    {
-      name: "Settings",
-      url: "/organisation/settings",
-      icon: (
-        <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
-      ),
-    },
+    ...(userRole === "ORG_ADMIN"
+      ? [
+          {
+            name: "Dashboard",
+            url: "/organisation",
+            icon: (
+              <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} />
+            ),
+          },
+          {
+            name: "Elections",
+            url: "/organisation/elections",
+            icon: (
+              <HugeiconsIcon icon={MapsIcon} strokeWidth={2} />
+            ),
+          },
+          {
+            name: "Members",
+            url: "/organisation/members",
+            icon: (
+              <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
+            ),
+          },
+          {
+            name: "Settings",
+            url: "/organisation/settings",
+            icon: (
+              <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
+            ),
+          },
+          {
+            name: "Audit Logs",
+            url: "/organisation/audit-logs",
+            icon: (
+              <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -186,25 +197,6 @@ export function AppSidebar({
           userRole={userRole}
         />
         {userRole === "ORG_ADMIN" && <NavOrganization organizationNav={organizationNav} />}
-
-        {userRole === "ORG_ADMIN" && (
-          <SidebarGroup className="mt-auto">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Audit Logs"
-                  isActive={pathname === "/organisation/audit-logs"}
-                >
-                  <Link href="/organisation/audit-logs">
-                    <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
-                    <span>Audit Logs</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
