@@ -98,9 +98,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                             Privacy Policy
                         </Link>
                         <span className="text-muted-foreground/40">•</span>
-                        <Link href="mailto:contact@sundaresan.dev" className="hover:text-primary transition-colors">
-                            Help Center
-                        </Link>
+                        {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+                            <Link href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`} className="hover:text-primary transition-colors">
+                                Help Center
+                            </Link>
+                        ) : (
+                            <span className="text-muted-foreground/40 hover:text-primary transition-colors cursor-not-allowed">no contact is given</span>
+                        )}
                     </div>
                     <div className="text-[10px] text-muted-foreground/60">
                         © {new Date().getFullYear()} Sundaresan V. All rights reserved.

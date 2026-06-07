@@ -43,12 +43,16 @@ export const PasswordResetSuccessEmail = ({
         >
           <Text style={{ ...styles.infoText, color: "#9a3412" }}>
             <strong>Didn't make this change?</strong> If you did not authorize this password change, please contact our security team immediately at{" "}
-            <Link
-              href="mailto:support@evoting.sundaresan.dev"
-              style={{ color: "#9a3412", textDecoration: "underline" }}
-            >
-              support@evoting.sundaresan.dev
-            </Link>
+            {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+              <Link
+                href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`}
+                style={{ color: "#9a3412", textDecoration: "underline" }}
+              >
+                {process.env.NEXT_PUBLIC_CONTACT_MAIL}
+              </Link>
+            ) : (
+              "no contact is given"
+            )}
           </Text>
         </div>
       </Section>

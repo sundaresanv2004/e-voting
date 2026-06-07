@@ -2,6 +2,13 @@ import type { NextConfig } from "next"
 
 const imagekitEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ?? "https://ik.imagekit.io"
 
+let imagekitOrigin = "https://ik.imagekit.io"
+try {
+  imagekitOrigin = new URL(imagekitEndpoint).origin
+} catch (e) {
+  // fallback if URL parsing fails
+}
+
 const isDev = process.env.NODE_ENV !== "production"
 
 // E2: Build a strict Content-Security-Policy allow-list
@@ -9,9 +16,9 @@ const ContentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,       // tighten further once nonces are implemented
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: ${imagekitEndpoint} https://lh3.googleusercontent.com`,
+  `img-src 'self' data: ${imagekitOrigin} https://lh3.googleusercontent.com`,
   "font-src 'self'",
-  `connect-src 'self' https://api.imagekit.io ${imagekitEndpoint} https://accounts.google.com`,
+  `connect-src 'self' https://api.imagekit.io ${imagekitOrigin} https://accounts.google.com`,
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",

@@ -282,9 +282,13 @@ export function BaseEmail({ preview, children }: BaseEmailProps) {
           <Section style={styles.footer}>
             <Text style={styles.footerText}>
               Questions? Contact us at{" "}
-              <Link href="mailto:support@evoting.sundaresan.dev" style={styles.footerLink}>
-                support@evoting.sundaresan.dev
-              </Link>
+              {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+                <Link href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`} style={styles.footerLink}>
+                  {process.env.NEXT_PUBLIC_CONTACT_MAIL}
+                </Link>
+              ) : (
+                "no contact is given"
+              )}
             </Text>
             <Text style={styles.footerText}>
               <Link href={`${cleanBaseUrl}/terms`} style={styles.footerLink}>Terms</Link>

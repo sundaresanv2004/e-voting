@@ -169,7 +169,7 @@ export function MailPreviewClient({ templates }: MailPreviewClientProps) {
                       <div className="h-3 w-3 rounded-full bg-green-500/90" />
                     </div>
                     <div className="flex-1 rounded-md bg-muted px-3 py-1.5 text-xs text-muted-foreground text-center line-clamp-1 border border-border/50">
-                      📧 {active.name} · support@evoting.sundaresan.dev
+                      📧 {active.name} · {process.env.NEXT_PUBLIC_CONTACT_MAIL || "no contact is given"}
                     </div>
                   </div>
                   

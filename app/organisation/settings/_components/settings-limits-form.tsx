@@ -40,7 +40,7 @@ export function SettingsLimitsForm({ settings }: SettingsLimitsFormProps) {
         <HugeiconsIcon icon={Alert01Icon} className="size-4 !text-current" />
         <AlertTitle className="font-semibold">Current Plan: {planName}</AlertTitle>
         <AlertDescription>
-          These limits and settings are managed by your current subscription plan. To upgrade capacity or enable branding, contact <a href="mailto:contact@sundaresan.dev" className="font-medium underline underline-offset-4 hover:opacity-80">contact@sundaresan.dev</a>.
+          These limits and settings are managed by your current subscription plan. To upgrade capacity or enable branding, contact {process.env.NEXT_PUBLIC_CONTACT_MAIL ? <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`} className="font-medium underline underline-offset-4 hover:opacity-80">{process.env.NEXT_PUBLIC_CONTACT_MAIL}</a> : "no contact is given"}.
         </AlertDescription>
       </Alert>
 

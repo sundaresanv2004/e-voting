@@ -172,3 +172,206 @@
     }
   }
 }
+
+/* ─── Print Styles ────────────────────────────────────────────────────────────
+   When the user triggers "Print Report" on the Results page, we:
+   1. Hide every part of the app shell (sidebar, header, topbar, buttons).
+   2. Reset the main content area so it fills the full page width.
+   3. Force light-mode colours so the report looks clean on paper / PDF.
+   4. Apply a professional header, section titles, and candidate rows.
+──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* ── 1. Force light background & black text throughout ── */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 11pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── 2. Hide everything that is not the results page content ── */
+  /* Sidebar */
+  aside,
+  [data-sidebar],
+  [data-slot="sidebar"],
+  nav {
+    display: none !important;
+  }
+
+  /* Top / page header bar with breadcrumbs and action buttons */
+  header,
+  [data-slot="page-header"],
+  .election-page-header,
+  [data-print="hide"],
+  /* Auto-refresh toggle + Export button row */
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* Tab navigation list */
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Filter bar (search + role select) */
+  /* Standings-only filter bar and any input groups */
+  [class*="InputGroup"],
+  [data-slot="input-group"],
+  select,
+  input[type="text"],
+  input[type="search"] {
+    display: none !important;
+  }
+
+  /* Recharts interactive tooltips & hover layers */
+  .recharts-tooltip-wrapper,
+  .recharts-active-dot {
+    display: none !important;
+  }
+
+  /* ── 3. Reset layout wrappers so content fills the page ── */
+  body > *:not(script):not(style):not(noscript):not([data-radix-portal]),
+  #__next,
+  main,
+  [data-slot="sidebar-inset"],
+  [data-slot="page-content"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  script,
+  style,
+  noscript,
+  [data-radix-portal] {
+    display: none !important;
+  }
+
+  /* ── 4. Make ALL tab panels visible (override hidden state) ── */
+  [role="tabpanel"] {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* ── 5. Results page wrapper: restore padding ── */
+  .px-4.md\:px-8.py-8 {
+    padding: 8mm 10mm !important;
+  }
+
+  /* ── 6. Report header injected via ::before on the results wrapper ── */
+  .space-y-6:first-of-type::before {
+    content: attr(data-election-name, "Election Results");
+    display: block;
+    text-align: center;
+    font-size: 18pt;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 2mm;
+    color: #111111;
+  }
+
+  /* ── 7. Cards: flat, bordered boxes ── */
+  [data-slot="card"],
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-3xl {
+    border: 1px solid #d4d4d8 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 6mm !important;
+  }
+
+  /* ── 8. Badges ── */
+  [data-slot="badge"] {
+    border: 1px solid #d4d4d8 !important;
+    background: #f4f4f5 !important;
+    color: #111111 !important;
+  }
+
+  /* ── 9. Progress bars – keep colour but ensure visibility ── */
+  .bg-blue-600,
+  .bg-blue-500,
+  .bg-sky-500,
+  .dark\:bg-blue-500 {
+    background-color: #2563eb !important;
+  }
+
+  .bg-emerald-500,
+  .bg-emerald-600 {
+    background-color: #16a34a !important;
+  }
+
+  /* ── 10. Avatars / images ── */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+
+  /* ── 11. Tables ── */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    break-inside: avoid;
+  }
+
+  th:not(.border-0),
+  td:not(.border-0) {
+    border: 1px solid #e4e4e7 !important;
+  }
+
+  th:not(.p-0),
+  td:not(.p-0) {
+    padding: 4pt 6pt !important;
+  }
+
+  th, td {
+    font-size: 9pt !important;
+  }
+
+  thead th {
+    background: #f4f4f5 !important;
+    font-weight: 700 !important;
+  }
+
+  /* ── 12. Charts: show but keep them compact ── */
+  .recharts-wrapper,
+  .recharts-surface {
+    width: 100% !important;
+  }
+
+  /* ── 13. Page breaks between major sections ── */
+  [data-slot="card"] + [data-slot="card"] {
+    page-break-before: auto;
+  }
+
+  .space-y-8 > *:nth-child(3) {
+    page-break-before: always;
+  }
+
+  /* ── 14. Footer on every page ── */
+  @page {
+    margin: 15mm 12mm 18mm 12mm;
+    size: A4 portrait;
+  }
+
+  /* ── 15. Utility: anything explicitly tagged no-print ── */
+  .no-print {
+    display: none !important;
+  }
+}

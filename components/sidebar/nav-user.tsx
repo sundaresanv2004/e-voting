@@ -137,16 +137,30 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <a href="mailto:feedback@evoting.sundaresa.dev">
-                  <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
-                  Feedback & Suggestion
-                </a>
+                {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+                  <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`}>
+                    <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
+                    Feedback & Suggestion
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground/40 cursor-not-allowed">
+                    <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
+                    no contact is given
+                  </span>
+                )}
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <a href="mailto:support@evoting.sundaresa.dev">
-                  <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
-                  Contact Support
-                </a>
+                {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+                  <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`}>
+                    <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
+                    Contact Support
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground/40 cursor-not-allowed">
+                    <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
+                    no contact is given
+                  </span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

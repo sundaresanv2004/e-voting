@@ -261,6 +261,7 @@ export default async function ResultsPage({
 
   // ── Export data (passed to header actions) ───────────────────────────────────
   const exportData: ResultsExportData = {
+    electionId,
     electionName: election.name,
     organizationName: election.organization.name,
     orgLogo: election.organization.logo,

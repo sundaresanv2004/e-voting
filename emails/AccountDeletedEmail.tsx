@@ -41,12 +41,16 @@ export const AccountDeletedEmail = ({
 
         {/* Support CTA */}
         <div style={{ ...styles.buttonWrapper, marginTop: "24px" }}>
-          <Link 
-            href="mailto:support@evoting.sundaresan.dev" 
-            style={{ ...styles.button, backgroundColor: "#52525b", color: "#ffffff" }}
-          >
-            Contact Support
-          </Link>
+          {process.env.NEXT_PUBLIC_CONTACT_MAIL ? (
+            <Link 
+              href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_MAIL}`} 
+              style={{ ...styles.button, backgroundColor: "#52525b", color: "#ffffff" }}
+            >
+              Contact Support
+            </Link>
+          ) : (
+            <Text style={{ ...styles.infoText, color: "#9a3412", fontWeight: 600 }}>no contact is given</Text>
+          )}
         </div>
       </Section>
     </BaseEmail>

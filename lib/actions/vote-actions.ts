@@ -603,12 +603,13 @@ export async function startAnonymousSessionAction(
             metadata: { electionId, categoryId }
         })
 
-        await createVoterSession({ voterId: crypto.randomUUID(), electionId: election.id, isAnonymous: true })
+        const anonymousVoterId = crypto.randomUUID();
+        await createVoterSession({ voterId: anonymousVoterId, electionId: election.id, isAnonymous: true })
 
         return {
             success: true,
             voter: {
-                id: "anonymous",
+                id: anonymousVoterId,
                 uniqueId: "anonymous",
                 name: "Anonymous Voter",
                 image: null,
