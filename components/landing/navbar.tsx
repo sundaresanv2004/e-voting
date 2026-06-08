@@ -25,7 +25,7 @@ export function Navbar() {
     const { data: session, isPending } = useSession();
 
     return (
-        <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center pointer-events-none">
+        <div className={`absolute top-4 left-4 right-4 z-50 flex items-center pointer-events-none ${isHomePage ? "justify-end" : "justify-between"}`}>
             {!isHomePage ? (
                 <div className="pointer-events-auto">
                     <Button
@@ -41,9 +41,7 @@ export function Navbar() {
                         <span className="text-sm font-medium">Back</span>
                     </Button>
                 </div>
-            ) : (
-                <div />
-            )}
+            ) : null}
             <div className="flex items-center gap-2 pointer-events-auto">
                 {isPending ? (
                     <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />

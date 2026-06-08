@@ -54,10 +54,6 @@ export const LoginAlertEmail = ({
                 <td style={{ padding: "4px 0", color: "#3f3f5a", fontSize: "14px", fontWeight: "500" }}>{ipAddress}</td>
               </tr>
               <tr>
-                <td style={{ padding: "4px 0", color: "#71717a", fontSize: "14px" }}>Location</td>
-                <td style={{ padding: "4px 0", color: "#3f3f5a", fontSize: "14px", fontWeight: "500" }}>{location}</td>
-              </tr>
-              <tr>
                 <td style={{ padding: "4px 0", color: "#71717a", fontSize: "14px" }}>Time</td>
                 <td style={{ padding: "4px 0", color: "#3f3f5a", fontSize: "14px", fontWeight: "500" }}>{loginTime}</td>
               </tr>

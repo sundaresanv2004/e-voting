@@ -51,7 +51,7 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     async sendResetPassword({ user, url }: any, request?: any) {
-      await sendEmail({
+      void sendEmail({
         to: user.email,
         subject: "Reset your password – e-voting",
         react: <ResetPasswordEmail resetPasswordLink={url} userName={user.name} />,
@@ -137,16 +137,6 @@ export const auth = betterAuth({
 
               if (city && country) {
                 location = `${decodeURIComponent(city)}, ${country}`;
-              } else if (ip !== "Unknown IP" && ip !== "127.0.0.1" && ip !== "::1") {
-                try {
-                  const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,country`);
-                  const geoData = await geoRes.json();
-                  if (geoData.status === "success") {
-                    location = `${geoData.city}, ${geoData.country}`;
-                  }
-                } catch (e) {
-                  // Silently ignore geo-ip fetch errors
-                }
               }
 
               // Determine login method from the account linked to this user
@@ -165,7 +155,6 @@ export const auth = betterAuth({
                   browser={browser}
                   os={os}
                   ipAddress={ip}
-                  location={location}
                   loginTime={new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
                 />,
               });
@@ -201,7 +190,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp, type }) {
         if (type === "email-verification") {
           const user = await db.user.findUnique({ where: { email } });
-          await sendEmail({
+          void sendEmail({
             to: email,
             subject: "Verify your email address – e-voting",
             react: <VerificationEmail otp={otp} userName={user?.name} />,
