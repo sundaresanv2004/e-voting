@@ -21,6 +21,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { logVoterIdAccess } from "@/lib/actions/voter"
+import { copyToClipboard } from "@/lib/utils"
 
 import {
   Sheet,
@@ -41,11 +42,15 @@ function CopyButton({ text, electionId, voterId }: { text: string; electionId: s
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    toast.success("Voter ID copied!")
-    logVoterIdAccess(electionId, voterId, "copied").catch(() => {})
-    setTimeout(() => setCopied(false), 2000)
+    const success = await copyToClipboard(text)
+    if (success) {
+      setCopied(true)
+      toast.success("Voter ID copied!")
+      logVoterIdAccess(electionId, voterId, "copied").catch(() => {})
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy ID")
+    }
   }
 
   return (

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { OrganizationType } from "@prisma/client"
+import { copyToClipboard } from "@/lib/utils"
 
 interface OrgCodeCardProps {
   code: string
@@ -34,11 +35,15 @@ export function OrgCodeCard({ code, orgName, orgType, createdAt }: OrgCodeCardPr
   const [isVisible, setIsVisible] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    toast.success("Organization code copied!")
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = async () => {
+    const success = await copyToClipboard(code)
+    if (success) {
+      setCopied(true)
+      toast.success("Organization code copied!")
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy code")
+    }
   }
 
   const handleReveal = () => {

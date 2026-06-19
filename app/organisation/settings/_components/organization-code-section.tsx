@@ -6,7 +6,7 @@ import { ShieldKeyIcon, Copy01Icon, Tick01Icon, EyeIcon, Alert01Icon } from "@hu
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { cn, copyToClipboard } from "@/lib/utils"
 import { logOrgCodeCopied, logOrgCodeRevealed } from "@/lib/actions/settings"
 
 interface CodeSectionProps {
@@ -17,12 +17,16 @@ export function OrganizationCodeSection({ code }: CodeSectionProps) {
   const [copied, setCopied] = React.useState(false)
   const [revealed, setRevealed] = React.useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    toast.success("Organization code copied to clipboard")
-    logOrgCodeCopied().catch(() => { })
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = async () => {
+    const success = await copyToClipboard(code)
+    if (success) {
+      setCopied(true)
+      toast.success("Organization code copied to clipboard")
+      logOrgCodeCopied().catch(() => { })
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy code")
+    }
   }
 
   const handleReveal = () => {

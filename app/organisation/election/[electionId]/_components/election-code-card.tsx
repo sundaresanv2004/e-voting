@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner"
 import { ElectionStatus } from "@prisma/client"
 import { logElectionCodeAccess } from "../_actions"
+import { copyToClipboard } from "@/lib/utils"
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
@@ -60,10 +61,14 @@ export function ElectionCodeCard({
   }
 
   const handleCopy = async () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    toast.success("Election code copied to clipboard")
-    setTimeout(() => setCopied(false), 2000)
+    const success = await copyToClipboard(code)
+    if (success) {
+      setCopied(true)
+      toast.success("Election code copied to clipboard")
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy code")
+    }
 
     try {
       await logElectionCodeAccess(electionId, "copied")

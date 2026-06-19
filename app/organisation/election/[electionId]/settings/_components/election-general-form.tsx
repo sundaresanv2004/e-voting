@@ -41,7 +41,7 @@ import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { updateElection, logElectionCodeCopy, toggleElectionStatus } from "@/lib/actions/election"
 import { getCalculatedElectionStatus } from "@/lib/utils/election"
 import { ElectionStatus } from "@prisma/client"
-import { cn } from "@/lib/utils"
+import { cn, copyToClipboard } from "@/lib/utils"
 
 const IdentityFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -191,12 +191,16 @@ export function ElectionGeneralForm({ election, canManage }: ElectionGeneralForm
   const [copied, setCopied] = React.useState(false)
   const [revealed, setRevealed] = React.useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(election.code)
-    setCopied(true)
-    logElectionCodeCopy(election.id).catch(() => { })
-    toast.success("Election code copied to clipboard!")
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = async () => {
+    const success = await copyToClipboard(election.code)
+    if (success) {
+      setCopied(true)
+      logElectionCodeCopy(election.id).catch(() => { })
+      toast.success("Election code copied to clipboard!")
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy code")
+    }
   }
 
   const handleReveal = () => {

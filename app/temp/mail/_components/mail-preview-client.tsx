@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { sendTestEmail } from "./actions"
+import { copyToClipboard } from "@/lib/utils"
 
 interface Template {
   id: string
@@ -31,9 +32,13 @@ export function MailPreviewClient({ templates }: MailPreviewClientProps) {
   const active = templates.find((t) => t.id === activeId)!
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(active.html)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    const success = await copyToClipboard(active.html)
+    if (success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy HTML")
+    }
   }
 
   const handleSendTest = async () => {

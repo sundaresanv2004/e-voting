@@ -74,14 +74,17 @@ export function Navbar() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 variant="destructive"
-                                onClick={() => signOut({
-                                    fetchOptions: {
-                                        onSuccess: () => {
-                                            toast.success("Logged out successfully");
-                                            router.push("/");
+                                onSelect={async (e) => {
+                                    e.preventDefault();
+                                    await signOut({
+                                        fetchOptions: {
+                                            onSuccess: () => {
+                                                toast.success("Logged out successfully");
+                                                router.push("/");
+                                            }
                                         }
-                                    }
-                                })}
+                                    });
+                                }}
                                 className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
                             >
                                 <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />

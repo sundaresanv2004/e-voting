@@ -167,7 +167,8 @@ export function NavUser({
             <DropdownMenuItem
               variant="destructive"
               className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer group"
-              onClick={async () => {
+              onSelect={async (e) => {
+                e.preventDefault();
                 await signOut({
                   fetchOptions: {
                     onSuccess: () => {

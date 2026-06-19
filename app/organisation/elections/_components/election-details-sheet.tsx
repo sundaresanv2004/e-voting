@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { toggleElectionStatus, logElectionCodeCopy } from "@/lib/actions/election"
 import { useRouter } from "next/navigation"
+import { copyToClipboard } from "@/lib/utils"
 
 interface ElectionDetailsSheetProps {
   open: boolean
@@ -78,11 +79,15 @@ function CopyButton({ text, electionId }: { text: string, electionId: string }) 
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    toast.success("Election code copied!")
-    logElectionCodeCopy(electionId).catch(() => { })
-    setTimeout(() => setCopied(false), 2000)
+    const success = await copyToClipboard(text)
+    if (success) {
+      setCopied(true)
+      toast.success("Election code copied!")
+      logElectionCodeCopy(electionId).catch(() => { })
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy code")
+    }
   }
 
   return (

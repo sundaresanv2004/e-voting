@@ -16,6 +16,7 @@ import {
   CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
+import { copyToClipboard } from "@/lib/utils"
 
 import {
   Sheet,
@@ -115,10 +116,14 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = React.useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    toast.success("Email copied to clipboard")
-    setTimeout(() => setCopied(false), 2000)
+    const success = await copyToClipboard(text)
+    if (success) {
+      setCopied(true)
+      toast.success("Email copied to clipboard")
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      toast.error("Failed to copy email")
+    }
   }
 
   return (
