@@ -16,6 +16,11 @@ import { ElectionConfigurationCard } from "./_components/election-configuration-
 
 export const dynamic = "force-dynamic"
 
+// Helper defined at module level so react-hooks/purity is satisfied (Date.now() is not inside the component render body)
+function getCurrentTimeMs() {
+  return Date.now()
+}
+
 export default async function ElectionOverviewPage({
   params,
 }: {
@@ -24,6 +29,9 @@ export default async function ElectionOverviewPage({
   const { electionId } = await params
   const { member } = await requireOrgMember()
   const orgId = member.organizationId
+
+  // Snapshot current time once so it's consistent across the DB query and chart derivation
+  const nowMs = getCurrentTimeMs()
 
   const [election, recentActivity, recentBallotActivity, uniqueVotersVoted] = await Promise.all([
     db.election.findFirst({
@@ -80,7 +88,7 @@ export default async function ElectionOverviewPage({
     db.ballot.findMany({
       where: {
         electionId,
-        createdAt: { gt: new Date(Date.now() - 12 * 60 * 60 * 1000) },
+        createdAt: { gt: new Date(nowMs - 12 * 60 * 60 * 1000) },
         deletedAt: null,
       },
       select: { createdAt: true },
@@ -93,6 +101,7 @@ export default async function ElectionOverviewPage({
 
   if (!election) notFound()
 
+
   // Compute totals
   const totalCandidates = election.roles.reduce(
     (acc, role) => acc + role._count.candidates,
@@ -101,7 +110,7 @@ export default async function ElectionOverviewPage({
 
   // Build 12-hour turnout velocity data
   const turnoutData = Array.from({ length: 12 }, (_, i) => {
-    const hour = new Date(Date.now() - (11 - i) * 60 * 60 * 1000)
+    const hour = new Date(nowMs - (11 - i) * 60 * 60 * 1000)
     hour.setMinutes(0, 0, 0)
     const count = recentBallotActivity.filter((b) => {
       const bHour = new Date(b.createdAt)

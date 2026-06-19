@@ -103,9 +103,9 @@ model OrganizationSettings {
   organizationId String @unique
 
   // Organization Configuration Settings
-  maxElections        Int     @default(5)
+  maxElections        Int     @default(15)
   maxMembers          Int     @default(100)
-  allowCustomBranding Boolean @default(false)
+  allowCustomBranding Boolean @default(true)
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt

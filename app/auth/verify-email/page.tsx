@@ -71,7 +71,7 @@ function VerifyEmailForm() {
         }
         
         toast.success("Account verified successfully")
-        window.location.href = "/auth/verified"
+        router.push("/auth/verified")
     }
 
     return (

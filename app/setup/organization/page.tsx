@@ -59,7 +59,7 @@ function CreateOrganizationForm() {
             })
 
             toast.success("Organization created successfully!")
-            window.location.href = "/organisation"
+            router.push("/organisation")
         } catch (err) {
             setErrorMsg("An unexpected error occurred.")
             setIsSubmitting(false)

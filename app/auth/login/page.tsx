@@ -67,7 +67,7 @@ function LoginForm() {
             setErrorMsg(error.message || "Invalid email or password.")
         } else {
             toast.success("Successfully logged in!")
-            window.location.href = "/organisation"
+            router.push("/organisation")
         }
     }
 
