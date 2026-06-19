@@ -54,20 +54,20 @@ function LoginForm() {
                     email: values.email,
                     type: "email-verification",
                 })
-                
+
                 if (res.error) {
                     toast.error(res.error.message || "Failed to send verification email. Please try resending from the next page.")
                 } else {
                     toast.success("A new verification code has been sent to your email.")
                 }
-                
+
                 router.push(`/auth/verify-email?email=${encodeURIComponent(values.email)}`)
                 return
             }
             setErrorMsg(error.message || "Invalid email or password.")
         } else {
             toast.success("Successfully logged in!")
-            router.push("/organisation")
+            window.location.href = "/organisation"
         }
     }
 

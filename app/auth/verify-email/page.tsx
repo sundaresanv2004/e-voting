@@ -63,15 +63,15 @@ function VerifyEmailForm() {
             otp: values.code
         })
         setIsSubmitting(false)
-        
+
         if (error) {
             form.setError("code", { message: error.message || "Invalid code" })
             form.setValue("code", "") // Automatically clear the invalid OTP
             return
         }
-        
+
         toast.success("Account verified successfully")
-        router.push("/auth/verified")
+        window.location.href = "/auth/verified"
     }
 
     return (
@@ -98,11 +98,11 @@ function VerifyEmailForm() {
                                 <AlertDescription>{form.formState.errors.code.message}</AlertDescription>
                             </Alert>
                         )}
-                        
+
                         <FieldGroup className="w-full flex flex-col items-center">
                             <Field data-invalid={!!form.formState.errors.code} className="flex flex-col items-center w-full">
                                 <FieldLabel htmlFor="code" className="sr-only">Verification Code</FieldLabel>
-                                
+
                                 <Controller
                                     control={form.control}
                                     name="code"
@@ -140,8 +140,8 @@ function VerifyEmailForm() {
                             </Field>
                         </FieldGroup>
 
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             className="w-full gap-2 mt-8"
                             disabled={isSubmitting}
                         >

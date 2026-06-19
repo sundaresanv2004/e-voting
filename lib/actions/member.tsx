@@ -109,16 +109,16 @@ export async function searchPotentialMember(query: string) {
       // Check member records
       const isAlreadyInThisOrg = user.members.some(m => m.organizationId === access.organizationId)
       const isAlreadyInAnotherOrg = user.members.length > 0 && !isAlreadyInThisOrg
-      
+
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         image: user.image,
-        status: isAlreadyInThisOrg 
-          ? "already_in_org" 
-          : isAlreadyInAnotherOrg 
-            ? "in_another_org" 
+        status: isAlreadyInThisOrg
+          ? "already_in_org"
+          : isAlreadyInAnotherOrg
+            ? "in_another_org"
             : "available"
       }
     })
@@ -161,13 +161,13 @@ export async function addMemberAction(
       where: { id: values.userId },
       include: { members: true }
     })
-    
+
     if (!user) return { success: false, error: "User not found" }
-    
+
     // Check if they are in another organization
     const isAlreadyInThisOrg = user.members.some(m => m.organizationId === orgId)
     const isAlreadyInAnotherOrg = user.members.length > 0 && !isAlreadyInThisOrg
-    
+
     if (isAlreadyInThisOrg) return { success: false, error: "User is already in this organization" }
     if (isAlreadyInAnotherOrg) return { success: false, error: "This user belongs to a different org. They need to leave it to join yours." }
 
@@ -243,7 +243,7 @@ export async function addMemberAction(
       await sendEmail({
         to: addedMember.email,
         subject: `You have been added to ${org.name}`,
-        react: <OrgMemberInviteEmail 
+        react: <OrgMemberInviteEmail
           userName={addedMember.name || undefined}
           orgName={org.name}
           role={values.role === "org_admin" ? "organization admin" : values.role}
@@ -268,7 +268,7 @@ export async function addMemberAction(
         status: AuditStatus.FAILURE,
         metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
       })
-    } catch(e) {}
+    } catch (e) { }
     return { success: false, error: error.message || "Failed to add member" }
   }
 }
@@ -309,7 +309,7 @@ export async function updateMemberAccess(
       where: { id: values.userId },
       include: { electionAccess: { include: { election: true } } }
     })
-    
+
     const oldRole = oldUser?.role || "viewer"
     const oldHasAllAccess = oldUser?.hasAllElectionsAccess || false
     const oldElectionAccess = oldUser?.electionAccess || []
@@ -337,9 +337,9 @@ export async function updateMemberAccess(
       // Update custom User role & global access flag
       await tx.user.update({
         where: { id: values.userId },
-        data: { 
+        data: {
           role: values.role,
-          hasAllElectionsAccess: values.hasAllAccess 
+          hasAllElectionsAccess: values.hasAllAccess
         }
       })
 
@@ -378,14 +378,14 @@ export async function updateMemberAccess(
     const org = await db.organization.findUnique({ where: { id: orgId! }, select: { name: true } })
     const admin = await db.user.findUnique({ where: { id: adminId! }, select: { name: true } })
 
-    const addedElectionNames: string[] = []
-    const removedElectionNames: string[] = []
+    let addedElectionNames: string[] = []
+    let removedElectionNames: string[] = []
 
     if (!values.hasAllAccess && validElectionIds.length > 0) {
       const newElections = await db.election.findMany({ where: { id: { in: validElectionIds } }, select: { id: true, name: true } })
       const newElectionIdsSet = new Set(newElections.map(e => e.id))
       const newElectionsMap = new Map(newElections.map(e => [e.id, e.name]))
-      
+
       for (const id of newElectionIdsSet) {
         if (!oldElectionIdsSet.has(id)) addedElectionNames.push(newElectionsMap.get(id)!)
       }
@@ -397,12 +397,12 @@ export async function updateMemberAccess(
         removedElectionNames.push(oldElectionsMap.get(id)!)
       }
     }
-    
+
     if (updatedMember?.email && org) {
       await sendEmail({
         to: updatedMember.email,
         subject: `Your access in ${org.name} has been updated`,
-        react: <OrgMemberAccessUpdatedEmail 
+        react: <OrgMemberAccessUpdatedEmail
           userName={updatedMember.name || undefined}
           orgName={org.name}
           newRole={values.role as any}
@@ -430,7 +430,7 @@ export async function updateMemberAccess(
         status: AuditStatus.FAILURE,
         metadata: { role, hasAllAccess, error: error?.message || "Unknown error" }
       })
-    } catch(e) {}
+    } catch (e) { }
     return { success: false, error: "Failed to update member access" }
   }
 }
@@ -533,7 +533,7 @@ export async function removeMemberAction(userId: string) {
         status: AuditStatus.FAILURE,
         metadata: { error: error?.message || "Unknown error" }
       })
-    } catch(e) {}
+    } catch (e) { }
     return { success: false, error: error.message || "Failed to remove member" }
   }
 }

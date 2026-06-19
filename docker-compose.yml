@@ -8,6 +8,7 @@ services:
         - NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=${NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY}
         - NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT=${NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}
         - NEXT_PUBLIC_CONTACT_MAIL=${NEXT_PUBLIC_CONTACT_MAIL}
+        - LOCAL_LAB_MODE=${LOCAL_LAB_MODE}
     environment:
       - NODE_ENV=production
       - LOCAL_LAB_MODE=true
@@ -68,6 +69,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:

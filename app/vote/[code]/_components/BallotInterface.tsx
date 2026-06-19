@@ -48,7 +48,7 @@ function prepareRoles(election: BallotElection, voterId: string): BallotRole[] {
         .filter((role) => role.candidates.length > 0)
         .sort((a, b) => a.order - b.order)
         .map((role) => {
-            const candidates = [...role.candidates]
+            let candidates = [...role.candidates]
 
             if (settings.shuffleCandidates) {
                 candidates.sort((a, b) => {
