@@ -39,7 +39,7 @@ export const auth = betterAuth({
       session_token: {
         attributes: {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: process.env.NODE_ENV === "production" && process.env.LOCAL_LAB_MODE !== "true",
           sameSite: "lax" as const,
           path: "/",
           // No maxAge — becomes a browser session cookie (expires on close)

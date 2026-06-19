@@ -23,8 +23,8 @@ const ContentSecurityPolicy = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "upgrade-insecure-requests",
   "frame-ancestors 'none'",
+  ...(!process.env.LOCAL_LAB_MODE ? ["upgrade-insecure-requests"] : []),
 ].join("; ")
 
 const nextConfig: NextConfig = {

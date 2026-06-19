@@ -22,7 +22,7 @@ export async function createVoterSession(payload: VoterSessionPayload) {
     const cookieStore = await cookies()
     cookieStore.set("voter_session", jwt, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production" && process.env.LOCAL_LAB_MODE !== "true",
         sameSite: "lax",
         path: "/",
         maxAge: 24 * 60 * 60, // 24 hours
