@@ -13,7 +13,9 @@ services:
       - LOCAL_LAB_MODE=true
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      # BETTER_AUTH_URL is intentionally set to localhost — it is used server-side only
+      # (inside Docker). It never needs an IP address, so it is immune to IP changes.
+      - BETTER_AUTH_URL=http://localhost
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
       - NEXT_PUBLIC_CONTACT_MAIL=${NEXT_PUBLIC_CONTACT_MAIL}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
