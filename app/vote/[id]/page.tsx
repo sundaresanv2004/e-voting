@@ -9,10 +9,8 @@ export const dynamic = "force-dynamic"
 
 export default async function VotePage({
     params,
-    searchParams,
 }: {
-    params: Promise<{ code: string }>
-    searchParams: Promise<{ categoryId?: string }>
+    params: Promise<{ id: string }>
 }) {
     // Check if an admin is logged in. They should not be able to access the voting portal.
     const session = await auth.api.getSession({
@@ -22,14 +20,11 @@ export default async function VotePage({
         redirect("/auth/vote")
     }
 
-    const { code } = await params
-    const { categoryId } = await searchParams
+    const { id } = await params
 
-    const normalizedCode = code.toUpperCase()
-
-    // Try to resolve as an Election code first
+    // Try to resolve as an Election ID first
     const election = await db.election.findUnique({
-        where: { code: normalizedCode },
+        where: { id },
         select: {
             id: true,
             name: true,
@@ -55,13 +50,13 @@ export default async function VotePage({
         },
     })
 
-    // If not found by election code, try category code
+    // If not found by election ID, try as a Category ID
     let resolvedElection = election
     let resolvedCategory: { id: string; name: string } | null = null
 
     if (!resolvedElection) {
-        const category = await db.electionCategory.findFirst({
-            where: { code: normalizedCode },
+        const category = await db.electionCategory.findUnique({
+            where: { id },
             include: {
                 election: {
                     select: {
@@ -95,13 +90,6 @@ export default async function VotePage({
             resolvedElection = category.election
             resolvedCategory = { id: category.id, name: category.name }
         }
-    } else if (categoryId) {
-        // Election code was used, but a categoryId was passed via query param
-        const cat = await db.electionCategory.findFirst({
-            where: { id: categoryId, electionId: resolvedElection.id },
-            select: { id: true, name: true },
-        })
-        if (cat) resolvedCategory = cat
     }
 
     // Guard: election must exist and have online voting enabled.
@@ -121,7 +109,6 @@ export default async function VotePage({
             <VoterSessionPortal
                 election={resolvedElection}
                 category={resolvedCategory}
-                accessCode={normalizedCode}
                 isPaused={isPaused}
             />
         </DeviceGuard>

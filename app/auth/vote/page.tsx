@@ -136,7 +136,10 @@ function VoteForm() {
                 })
             }
 
-            router.push(`/vote/${electionInfo.code}`)
+            // Redirect using the ID (election or category) — not the human-readable code.
+            // This hides the access code from the browser URL for security.
+            const redirectId = electionInfo.categoryId ?? electionInfo.electionId
+            router.push(`/vote/${redirectId}`)
         })
     }
 

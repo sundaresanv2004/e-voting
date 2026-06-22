@@ -56,14 +56,12 @@ interface CategoryInfo {
 interface VoterSessionPortalProps {
     election: ElectionInfo
     category: CategoryInfo | null
-    accessCode: string
     isPaused: boolean
 }
 
 export function VoterSessionPortal({
     election,
     category,
-    accessCode,
     isPaused,
 }: VoterSessionPortalProps) {
     const router = useRouter()
