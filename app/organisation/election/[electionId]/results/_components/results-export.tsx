@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
+import { notifyResultsDownloadAction } from "@/lib/actions/election"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,6 +110,8 @@ export function ResultsExport({ data }: ResultsExportProps) {
       const fileName = `results_${data.electionName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}.${type}`
       writeFile(wb, fileName, { bookType: type === "xlsx" ? "xlsx" : "csv" })
       toast.success(`Exported ${detailRows.length} rows to ${type.toUpperCase()}`)
+      // Notify owner — fire-and-forget
+      notifyResultsDownloadAction(data.electionId, type === "xlsx" ? "Excel Spreadsheet" : "CSV File")
     } catch (err) {
       console.error("Export failed:", err)
       toast.error("Failed to generate export file")
@@ -124,6 +127,8 @@ export function ResultsExport({ data }: ResultsExportProps) {
       return
     }
     window.open(`/organisation/election/${data.electionId}/results/print`, '_blank')
+    // Notify owner — fire-and-forget
+    notifyResultsDownloadAction(data.electionId, "Print Report (PDF)")
   }
 
   // ── UI ─────────────────────────────────────────────────────────────────────

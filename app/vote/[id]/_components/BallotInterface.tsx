@@ -48,7 +48,7 @@ function prepareRoles(election: BallotElection, voterId: string): BallotRole[] {
         .filter((role) => role.candidates.length > 0)
         .sort((a, b) => a.order - b.order)
         .map((role) => {
-            let candidates = [...role.candidates]
+            const candidates = [...role.candidates]
 
             if (settings.shuffleCandidates) {
                 candidates.sort((a, b) => {
@@ -154,7 +154,7 @@ export function BallotInterface({
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen relative">
             <BallotHeader
                 electionName={election.name}
                 isSubmitting={isSubmitting}
@@ -262,6 +262,19 @@ export function BallotInterface({
                             </Button>
                         </AlertDialogAction>
                     </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* ── Submitting Overlay ────────────────────────────────────────── */}
+            <AlertDialog open={isSubmitting}>
+                <AlertDialogContent className="flex flex-col items-center justify-center p-8 space-y-4 gap-0">
+                    <Spinner className="w-10 h-10 text-emerald-500" />
+                    <div className="space-y-1 text-center">
+                        <AlertDialogTitle className="text-xl font-bold tracking-tight text-center">Casting Ballot...</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm text-center">
+                            Please wait while your vote is securely recorded.
+                        </AlertDialogDescription>
+                    </div>
                 </AlertDialogContent>
             </AlertDialog>
         </div>

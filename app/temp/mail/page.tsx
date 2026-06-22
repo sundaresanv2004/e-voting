@@ -12,6 +12,7 @@ import { OrgLeftEmail } from "@/emails/OrgLeftEmail"
 import { ElectionCreatedEmail } from "@/emails/ElectionCreatedEmail"
 import { OrgOwnershipTransferredEmail } from "@/emails/OrgOwnershipTransferredEmail"
 import { OrgMemberInviteEmail } from "@/emails/OrgMemberInviteEmail"
+import { ResultsDownloadedEmail } from "@/emails/ResultsDownloadedEmail"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://evoting.sundaresan.dev";
 const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -132,6 +133,24 @@ const templateComponents = [
     tag: "Member",
     tagColor: "#8b5cf6",
     element: <OrgMemberInviteEmail userName="Sundar" orgName="Acme Corp" role="viewer" accessType="specific" elections={["Board Members 2026", "Q3 Budget Approval"]} addedBy="Admin" />,
+  },
+  {
+    id: "results-downloaded",
+    name: "Results Exported",
+    description: "Sent to org owner when election results are downloaded",
+    tag: "Election",
+    tagColor: "#2563eb",
+    element: (
+      <ResultsDownloadedEmail
+        ownerName="Sundar"
+        orgName="Acme Corp"
+        electionName="Board Members 2026"
+        electionId="e-12345"
+        downloadedBy="Jane Smith"
+        downloadType="Excel Spreadsheet"
+        downloadedAt="Jun 22, 2026, 2:30 PM"
+      />
+    ),
   },
 ]
 

@@ -175,9 +175,9 @@ export function VoterSessionPortal({
             }
 
             setVoterData(result.voter)
-            
+
             setBallotElection(result.ballot)
-            
+
             setHasConfirmedIdentity(false)
             setIsIdDialogOpen(false)
             setIsPausedDialogOpen(false)
@@ -199,14 +199,14 @@ export function VoterSessionPortal({
             }
 
             setVoterData(result.voter)
-            
+
             setBallotElection(result.ballot)
-            
+
             setHasConfirmedIdentity(true) // Auto-confirm identity for anonymous
             setIsIdDialogOpen(false)
             setIsPausedDialogOpen(false)
             setIsConfirmDialogOpen(false)
-            
+
             toast.success("Session Started", {
                 description: "Your ballot is ready.",
                 duration: 3000,
@@ -241,9 +241,9 @@ export function VoterSessionPortal({
             }
             // Election is now active — dismiss the dialog and let them vote
             setIsPausedDialogOpen(false)
-            
+
             // Cache removed: we always fetch fresh data on session start
-            
+
             toast.info("Secure Session Started", {
                 description: "Data refreshed. Your ballot is up to date.",
                 duration: 4000,
@@ -317,7 +317,7 @@ export function VoterSessionPortal({
 
     const handleConfirmExit = () => {
         if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {})
+            document.exitFullscreen().catch(() => { })
         }
         setIsVoting(false)
         setIsBallotSubmitted(false)
@@ -422,7 +422,7 @@ export function VoterSessionPortal({
                                 className={cn(
                                     "object-contain transition-all duration-300",
                                     election.organization.logo.toLowerCase().endsWith(".svg") &&
-                                        "brightness-0 dark:invert"
+                                    "brightness-0 dark:invert"
                                 )}
                                 priority
                             />

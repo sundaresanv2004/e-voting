@@ -12,6 +12,7 @@ import { randomBytes } from "crypto"
 import { requireOrgActionContext } from "@/lib/auth/access"
 import { sendEmail } from "@/lib/email"
 import ElectionCreatedEmail from "@/emails/ElectionCreatedEmail"
+import ResultsDownloadedEmail from "@/emails/ResultsDownloadedEmail"
 
 function generateCode(orgName: string = "EV") {
   const sanitized = orgName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -545,5 +546,80 @@ export async function updateElectionSettings(electionId: string, data: any) {
       }
     } catch { }
     return { success: false, error: error.message || "Failed to update settings" }
+  }
+}
+
+// ─── Notify Owner: Results Downloaded ────────────────────────────────────────
+
+export async function notifyResultsDownloadAction(
+  electionId: string,
+  downloadType: string
+) {
+  try {
+    const access = await requireOrgActionContext({
+      action: "RESULTS_EXPORTED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+      adminOnly: false,
+    })
+    const { userId, organizationId, organization } = access
+
+    // Fetch election name
+    const election = await db.election.findUnique({
+      where: { id: electionId, organizationId, deletedAt: null },
+      select: { name: true },
+    })
+    if (!election) return { success: false }
+
+    // Fetch who performed the download
+    const downloader = await db.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    })
+
+    // Fetch org owner
+    const owner = await db.user.findUnique({
+      where: { id: organization.ownerId || "" },
+      select: { name: true, email: true },
+    })
+
+    const downloadedAt = new Date().toLocaleString("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
+
+    if (owner?.email) {
+      await sendEmail({
+        to: owner.email,
+        subject: `Results Exported: ${election.name}`,
+        react: (
+          <ResultsDownloadedEmail
+            ownerName={owner.name}
+            orgName={organization.name}
+            electionName={election.name}
+            electionId={electionId}
+            downloadedBy={downloader?.name || "A member"}
+            downloadType={downloadType}
+            downloadedAt={downloadedAt}
+          />
+        ),
+      })
+    }
+
+    await logAdminAction({
+      action: "RESULTS_EXPORTED",
+      entityType: AuditEntityType.ELECTION,
+      entityId: electionId,
+      adminId: userId,
+      organizationId,
+      status: AuditStatus.INFO,
+      description: `Results exported as ${downloadType}`,
+      metadata: { downloadType, downloadedAt },
+    })
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("[NOTIFY_RESULTS_DOWNLOAD]", error)
+    return { success: false }
   }
 }
