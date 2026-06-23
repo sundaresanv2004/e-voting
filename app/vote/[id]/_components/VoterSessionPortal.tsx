@@ -24,7 +24,7 @@ import { VoterConfirmDialog } from "./VoterConfirmDialog"
 import { VoterPausedDialog } from "./VoterPausedDialog"
 import { VoterExitDialog } from "./VoterExitDialog"
 import { BallotInterface } from "./BallotInterface"
-import { verifyVoterUniqueIdAction, startAnonymousSessionAction, submitBallotAction, checkElectionStatusAction } from "@/lib/actions/vote-actions"
+import { verifyVoterUniqueIdAction, startAnonymousSessionAction, submitBallotAction, checkElectionStatusAction, clearAccessTicketAction } from "@/lib/actions/vote-actions"
 import { voterIdSchema } from "@/lib/schemas/auth"
 import type { BallotElection, VoterData } from "./BallotInterface"
 
@@ -323,6 +323,10 @@ export function VoterSessionPortal({
         setIsBallotSubmitted(false)
         resetVoterSession()
         toast.info("Session concluded. You have exited the election portal.")
+        // Clear the entrance ticket on explicit exit — this is the only place
+        // it should be cleared so that kiosk/booth mode works: multiple voters
+        // can vote back-to-back without re-entering the access code.
+        void clearAccessTicketAction(election.id)
         router.push("/auth/vote")
     }
 

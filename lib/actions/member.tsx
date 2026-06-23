@@ -378,8 +378,8 @@ export async function updateMemberAccess(
     const org = await db.organization.findUnique({ where: { id: orgId! }, select: { name: true } })
     const admin = await db.user.findUnique({ where: { id: adminId! }, select: { name: true } })
 
-    let addedElectionNames: string[] = []
-    let removedElectionNames: string[] = []
+    const addedElectionNames: string[] = []
+    const removedElectionNames: string[] = []
 
     if (!values.hasAllAccess && validElectionIds.length > 0) {
       const newElections = await db.election.findMany({ where: { id: { in: validElectionIds } }, select: { id: true, name: true } })

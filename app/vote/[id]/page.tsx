@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { VoterSessionPortal } from "./_components/VoterSessionPortal"
 import { DeviceGuard } from "../_components/DeviceGuard"
+import { verifyAccessTicket } from "@/lib/voting/access-ticket"
 
 export const dynamic = "force-dynamic"
 
@@ -100,6 +101,13 @@ export default async function VotePage({
         (resolvedElection.status !== "ACTIVE" && resolvedElection.status !== "PAUSED")
     ) {
         return notFound()
+    }
+
+    // Guard: Entrance Ticket — the voter must have validated the access code
+    // on /auth/vote first. Without this cookie, direct URL access is blocked.
+    const ticket = await verifyAccessTicket(resolvedElection.id)
+    if (!ticket) {
+        redirect("/auth/vote")
     }
 
     const isPaused = resolvedElection.status === "PAUSED"

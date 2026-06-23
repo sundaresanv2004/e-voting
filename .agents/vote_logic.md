@@ -52,6 +52,14 @@ A **PAUSED** election is a special state: the admin may be making last-minute ch
 - **Pre-Submit Paused Check**: Immediately before `submitBallotAction` is called (when the voter clicks "Cast Ballot"), the portal must re-check the election status. If it is `PAUSED`, abort the submission, exit the ballot interface, reset all local vote data (votes, voter state, ballot data), and open the Paused Dialog. This ensures the voter must re-start from scratch after the pause is lifted, accounting for any changes the admin may have made.
 - **Refresh/Back Navigation while Paused**: Because the page is a server component, a hard refresh will re-fetch the server data. If the election is still `PAUSED`, the `isPaused` flag will be true again and the Paused Dialog will re-open. All local state is lost on refresh, so the voter automatically returns to the clean entry state — no additional logic is required.
 
+### Step 1.6: Entrance Ticket (Kiosk Mode Security)
+To obfuscate the URL, the system redirects the user from `/auth/vote` to `/vote/[id]`. To prevent users from bypassing the code entry step by directly visiting `/vote/[id]`, the system issues a secure **Entrance Ticket**.
+- **Action**: When the access code is successfully validated at `/auth/vote`, the server creates a **Session Cookie** (`election_access_<electionId>`). The cookie is signed with a JWT and is `httpOnly`. It does not have a `maxAge` (making it a session cookie).
+- **Enforcement (`/vote/[id]`)**: The server-side page checks for this cookie before rendering the portal.
+- **Failure**: If the cookie is missing, tampered, or expired, the user is immediately redirected back to `/auth/vote`.
+- **Kiosk/Booth Mode**: Because it is a session cookie, it stays alive across page reloads and consecutive votes. This allows an admin to enter the code once on a dedicated device, and multiple voters can vote back-to-back (by clicking "Return to Election" on the success page) without needing to re-enter the code.
+- **Exit**: The cookie is intentionally **deleted only when** the user explicitly clicks the "Leave Portal" / "Exit" button in the portal, or when the Chrome browser is completely closed.
+
 ## 2. Portal Configuration
 
 Once the code is validated and the portal loads, we configure the UI based on settings.

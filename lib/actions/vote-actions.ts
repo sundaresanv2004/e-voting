@@ -7,6 +7,7 @@ import {
     reserveVoterBallotSlot,
 } from "@/lib/voting/integrity"
 import { createVoterSession, getVoterSession, clearVoterSession } from "@/lib/voting/session"
+import { createAccessTicket, clearAccessTicket } from "@/lib/voting/access-ticket"
 import { format } from "date-fns"
 import { headers } from "next/headers"
 import { logAdminAction } from "@/lib/auth/audit"
@@ -104,6 +105,9 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
             }
 
             if (election.status === "PAUSED") {
+                // Issue entrance ticket even for paused elections — the portal
+                // will show the paused dialog, but the voter is still allowed in.
+                await createAccessTicket(election.id, election.endTime)
                 return {
                     success: true,
                     electionId: election.id,
@@ -128,6 +132,7 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 return { error: "This election has ended." }
             }
 
+            await createAccessTicket(election.id, election.endTime)
             return {
                 success: true,
                 electionId: election.id,
@@ -160,6 +165,7 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
             }
 
             if (catElection.status === "PAUSED") {
+                await createAccessTicket(catElection.id, catElection.endTime)
                 return {
                     success: true,
                     electionId: catElection.id,
@@ -186,6 +192,7 @@ export async function validateElectionCodeAction(code: string): Promise<Validate
                 return { error: "This election has ended." }
             }
 
+            await createAccessTicket(catElection.id, catElection.endTime)
             return {
                 success: true,
                 electionId: catElection.id,
@@ -223,6 +230,16 @@ export async function checkElectionStatusAction(electionId: string): Promise<Che
         console.error("[CHECK_ELECTION_STATUS]", error)
         return { error: "Failed to check election status." }
     }
+}
+
+// ─── Exit Portal: Clear Entrance Ticket ──────────────────────────────────────
+
+// Called when the voter explicitly exits the portal ("Leave Portal" / "Exit" button).
+// Clearing here — not after ballot submission — preserves kiosk/booth mode:
+// multiple voters can vote back-to-back on the same device without re-entering
+// the code. The ticket stays alive until a conscious exit or the browser is closed.
+export async function clearAccessTicketAction(electionId: string): Promise<void> {
+    await clearAccessTicket(electionId)
 }
 
 // ─── Step 1.5: Prefetch Ballot Data for Caching ──────────────────────────────
