@@ -252,7 +252,7 @@ export default async function PrintResultsPage({
                 <div className="divide-y divide-gray-100">
                   {winners.map((winner) => (
                     <div key={winner.id} className="p-4 flex items-center gap-4 bg-green-50/30">
-                      <div className="flex gap-2 shrink-0">
+                      <div className="shrink-0">
                         {/* Profile Image */}
                         {winner.profileImage ? (
                           <div className="w-24 aspect-[3/4] rounded-lg border border-gray-300 bg-gray-100 p-0.5 overflow-hidden flex flex-col items-center justify-center relative shrink-0">
@@ -269,28 +269,6 @@ export default async function PrintResultsPage({
                           <div className="w-24 aspect-[3/4] rounded-lg border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400 shrink-0 p-1">
                             <span className="text-[8px] uppercase font-bold tracking-wider text-center leading-tight">No Image</span>
                           </div>
-                        )}
-
-                        {/* Symbol Image */}
-                        {election.settings?.showCandidateSymbols && (
-                          winner.symbolImage ? (
-                            <div className="w-24 aspect-[3/4] rounded-lg border border-gray-300 bg-gray-100 p-0.5 overflow-hidden flex flex-col items-center justify-center relative shrink-0">
-                              <div className="w-full h-full bg-white rounded-md p-1 flex items-center justify-center">
-                                <div className="relative w-full h-full">
-                                  <PrintableImage 
-                                    src={winner.symbolImage} 
-                                    alt="Symbol" 
-                                    fallbackText="No Symbol"
-                                    className="w-full h-full object-contain" 
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-24 aspect-[3/4] rounded-lg border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400 shrink-0 p-1">
-                              <span className="text-[8px] uppercase font-bold tracking-wider text-center leading-tight">No Symbol</span>
-                            </div>
-                          )
                         )}
                       </div>
                       

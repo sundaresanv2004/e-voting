@@ -13,6 +13,7 @@ import { ElectionRolesSnapshot } from "./_components/election-roles-snapshot"
 import { ElectionCategoriesSnapshot } from "./_components/election-categories-snapshot"
 import { ElectionVotersSnapshot } from "./_components/election-voters-snapshot"
 import { ElectionConfigurationCard } from "./_components/election-configuration-card"
+import { syncElectionStatus } from "@/lib/actions/election"
 
 export const dynamic = "force-dynamic"
 
@@ -24,6 +25,10 @@ export default async function ElectionOverviewPage({
   const { electionId } = await params
   const { member } = await requireOrgMember()
   const orgId = member.organizationId
+
+  // Correct a stale status before loading the dashboard so the header badge
+  // is always accurate. Awaited so the update lands before the query below.
+  await syncElectionStatus(electionId, orgId)
 
   const [election, recentActivity, recentBallotActivity, uniqueVotersVoted] = await Promise.all([
     db.election.findFirst({

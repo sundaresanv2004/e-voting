@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation"
 import { requireOrgMember } from "@/lib/auth/access"
 import { ElectionSettingsContainer } from "./_components/election-settings-container"
 import { UserRole } from "@prisma/client"
+import { syncElectionStatus } from "@/lib/actions/election"
 
 export default async function ElectionSettingsPage({
   params,
@@ -17,6 +18,10 @@ export default async function ElectionSettingsPage({
   if (member.role === "viewer") {
     redirect(`/organisation/election/${electionId}`)
   }
+
+  // Correct a stale status before loading settings. Awaited so the update
+  // lands before the election query below.
+  await syncElectionStatus(electionId, member.organizationId)
 
   const election = await db.election.findFirst({
     where: {

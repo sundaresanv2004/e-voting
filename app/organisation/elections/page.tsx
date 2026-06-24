@@ -7,10 +7,15 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { db } from "@/lib/db"
 import { ElectionsDataTable } from "./_components/elections-data-table"
 import { requireOrgAdmin } from "@/lib/auth/access"
+import { syncAllElectionStatuses } from "@/lib/actions/election"
 
 export default async function ElectionsPage() {
   // Enforce org_admin / admin for this specific page
   const { member } = await requireOrgAdmin()
+
+  // Correct any stale statuses before fetching so the table always reflects
+  // real-time state. Awaited so the update lands before the query below.
+  await syncAllElectionStatuses(member.organizationId)
 
   // Fetch elections — exclude soft-deleted
   const elections = await db.election.findMany({

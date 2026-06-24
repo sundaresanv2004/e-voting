@@ -549,6 +549,100 @@ export async function updateElectionSettings(electionId: string, data: any) {
   }
 }
 
+// ─── Sync Election Status Based on Time ──────────────────────────────────────
+//
+// Safety rules (production-safe):
+//   1. Never touches PAUSED    — manually set, must remain until admin acts.
+//   2. Never touches CANCELLED — terminal state, immutable.
+//   3. Never touches COMPLETED — terminal state, immutable.
+//   4. Only UPCOMING → ACTIVE and ACTIVE → COMPLETED are auto-applied.
+//   5. Skips the DB write entirely when status already matches — zero writes for healthy rows.
+//   6. Never throws — always swallows errors so callers can fire-and-forget.
+
+/**
+ * Syncs a single election's status against its startTime / endTime.
+ * Safe to call without awaiting from any server component.
+ */
+export async function syncElectionStatus(
+  electionId: string,
+  organizationId: string
+): Promise<void> {
+  try {
+    const election = await db.election.findFirst({
+      where: { id: electionId, organizationId, deletedAt: null },
+      select: { status: true, startTime: true, endTime: true },
+    })
+
+    if (!election) return
+
+    // Skip manual and terminal states — never auto-override these.
+    const SKIP_STATUSES: ElectionStatus[] = [
+      ElectionStatus.PAUSED,
+      ElectionStatus.CANCELLED,
+      ElectionStatus.COMPLETED,
+    ]
+    if (SKIP_STATUSES.includes(election.status)) return
+
+    const calculated = getCalculatedElectionStatus(
+      election.startTime,
+      election.endTime
+    )
+
+    // Nothing to do — DB is already correct.
+    if (calculated === election.status) return
+
+    await db.election.update({
+      where: { id: electionId, organizationId },
+      data: { status: calculated },
+    })
+    // No revalidatePath here — cannot call it during render. The pages that
+    // await this function are force-dynamic and re-fetch from DB immediately
+    // after, so the corrected status is always visible on the current request.
+  } catch (err) {
+    // Non-fatal — log and move on. A failed sync must never crash a page load.
+    console.error("[SYNC_ELECTION_STATUS]", electionId, err)
+  }
+}
+
+/**
+ * Bulk-syncs all elections for an org.
+ * Called from the elections list page so every row is corrected in one pass.
+ */
+export async function syncAllElectionStatuses(
+  organizationId: string
+): Promise<void> {
+  try {
+    const now = new Date()
+
+    // UPCOMING → ACTIVE: election has started but DB still says UPCOMING
+    await db.election.updateMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+        status: ElectionStatus.UPCOMING,
+        startTime: { lte: now },
+        endTime: { gt: now },
+      },
+      data: { status: ElectionStatus.ACTIVE },
+    })
+
+    // ACTIVE → COMPLETED: election has ended but DB still says ACTIVE
+    await db.election.updateMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+        status: ElectionStatus.ACTIVE,
+        endTime: { lte: now },
+      },
+      data: { status: ElectionStatus.COMPLETED },
+    })
+
+    // No revalidatePath here — same reason as syncElectionStatus above.
+  } catch (err) {
+    console.error("[SYNC_ALL_ELECTION_STATUSES]", organizationId, err)
+  }
+}
+
 // ─── Notify Owner: Results Downloaded ────────────────────────────────────────
 
 export async function notifyResultsDownloadAction(
